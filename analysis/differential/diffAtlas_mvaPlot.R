@@ -1,4 +1,4 @@
-#! /ebi/microarray/home/biocep/local/lib64/R/bin/Rscript
+#!/ebi/microarray/home/biocep/local/lib64/R/bin/Rscript
 
 # diffAtlas_mvaPlot()
 #  - Create an "MvA" plot (average intensity against log2 fold change), and write it to a file.
@@ -16,11 +16,6 @@ diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 	# complete.cases() function returns TRUE for rows where there is no missing
 	# data (e.g. "NA"s).
 	madf <- madf[complete.cases(madf),]
-
-	# add DE and non-DE calls to data frame
-	sig <- rep("non-DE", nrow(madf))
-	sig[which(madf$adjPval < 0.05)] <- "DE"
-	madf$sig <- sig
 
 	if(techType == "microarray") {
 
@@ -40,32 +35,24 @@ diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 		xAxisLabel = "average normalized count"
 	}
 
-
-	# Order of colours to give to ggplot matters -- the first element of the
-	# vector is used for the first design element in the data frame.
-	if(madf$sig[1] == "DE") { 
-		pointColours = c("red", "dimgrey") 
-		labels = c("DE", "non-DE")
-	}
-	else { 
-		pointColours = c("dimgrey", "red") 
-		labels = c("non-DE", "DE")
-	}
-
 	# load ggplot2
 	library(ggplot2)
 
 	# Plot!
 	#  - Start process with ggplot() function, give it the data for x and y, tell
-	#    it how to colour the points (using the "sig" column in the data frame);
+	#    it how to colour the points (using the "adjPval" column in the data
+	#    frame). "factor(adjPval < 0.05)" gives FALSE or TRUE. The levels
+	#    should be in the order: FALSE, TRUE. So later specify colour values
+	#    with "scale_colour_manual" in that order.
 	#  - Use geom_jitter() to reduce "overplotting" so that we can see points
 	#    that overlap easier. pass it alpha value for transparency of points
 	#    (lower=more transparent) and size for point size.
 	mvaPlot <- ggplot(madf, aes(x=avgExpr, y=logFC, colour=factor(adjPval < 0.05))) + geom_jitter(alpha=0.8, size=1) +
 		
-		# Apply the colours to the points in the plot. What's in the "name"
-		# argument ends up as the title of the legend/key.
-		scale_colour_manual(name="DE call (FDR < 0.05):", values=pointColours, labels=labels) +
+		# Apply the colours to the points in the plot. These should be in order
+		# "non-DE-colour, DE-colour". What's in the "name" argument ends up as
+		# the title of the legend/key.
+		scale_colour_manual(name="DE call (FDR < 0.05):", values=c("dimgrey", "red"), labels=c("non-DE", "DE")) +
 		
 		# Remove the default grey grid background to the plot and legend; add
 		# back the axis lines.
