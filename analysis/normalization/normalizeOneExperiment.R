@@ -273,8 +273,10 @@ normalizeOneExperiment <- function(files, outFile, scans, mode, miRBaseFile = NU
 # 	- dataSet <- for now either EListRaw or RGList object.
 # 	- miRBaseProbeFile <- filename for miRBase mappings.
 subsetProbes <<- function(dataSet, miRBaseFile) {
+
+	print(paste("There are" nrow(dataSet), "rows of data"))
 	
-	print(paste("Subsetting for probes found in", miRBaseFile))
+	print(paste("Subsetting data for probes found in", miRBaseFile))
 
 	# Read file with miRBase mappings.
 	miRBaseProbeMapping <- read.delim(miRBaseFile, stringsAsFactors = FALSE)
@@ -287,6 +289,9 @@ subsetProbes <<- function(dataSet, miRBaseFile) {
 	# 	- "EListRaw" : 1-colour
 	# 	- "RGList" : 2-colour
 	if(class(dataSet) %in% c("EListRaw", "RGList")) { dataSet <- dataSet[which(dataSet$genes$ProbeName %in% miRBaseProbes), ] }
+	else { print("Don't know how to subset for this type of array") }
+
+	print(paste("After subsetting there are", nrow(dataSet), "rows remaining"))
 
 	# TODO: add something here to subset for Affymetrix arrays.
 	# Need to think about how to map probes to probesets because before
