@@ -7,7 +7,7 @@
 
   Karyn Megy - 18-June-13
   kmegy@ebi.ac.uk
-  Ereap_Create_ContrastFile.pl
+  diffAtlas_generateContrastsForExperiment.pl
 
 =head1 SYNOPSIS
 
@@ -29,9 +29,9 @@
 =head1 EXAMPLES
 
   gxa_ereap_create_contrastfile.pl -idf file.idf.txt -dir path/to/idf-sdrf-files -conf config_file.txt -out contrast_file.xml
-oncatenate_FactorValues
+
   E.g. 
-  /nfs/ma/home/kmegy/eREAP/ereap/scripts/gxa_ereap_create_contrastfile.pl -idf E-MTAB-533.idf.txt -dir /net/isilon5/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/MTAB/E-MTAB-533/ -conf /nfs/ma/home/kmegy/eREAP_test_files/Contrast_config_file.txt
+  diffAtlas_generateContrastsForExperiment.pl -idf E-MTAB-533.idf.txt -dir /net/isilon5/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/MTAB/E-MTAB-533/ -conf atlasprod/analysis/differential/reference_assay_group_factor_values.txt
 
 =cut
 
