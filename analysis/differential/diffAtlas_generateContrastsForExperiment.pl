@@ -28,10 +28,10 @@
 
 =head1 EXAMPLES
 
-  Ereap_Create_ContrastFile.pl -idf file.idf.txt -conf config_file.txt -out contrast_file.xml
-
+  gxa_ereap_create_contrastfile.pl -idf file.idf.txt -dir path/to/idf-sdrf-files -conf config_file.txt -out contrast_file.xml
+oncatenate_FactorValues
   E.g. 
-  /nfs/ma/home/kmegy/eREAP/ereap/scripts/Ereap_Create_ContrastFile.pl -sdrf /nfs/ma/home/kmegy/eREAP_test_files/E-MTAB-141.sdrf.txt -conf /nfs/ma/home/kmegy/eREAP_test_files/Contrast_config_file.txt
+  /nfs/ma/home/kmegy/eREAP/ereap/scripts/gxa_ereap_create_contrastfile.pl -idf E-MTAB-533.idf.txt -dir /net/isilon5/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/MTAB/E-MTAB-533/ -conf /nfs/ma/home/kmegy/eREAP_test_files/Contrast_config_file.txt
 
 =cut
 
@@ -46,6 +46,7 @@
 use lib '/ebi/microarray/home/fgpt/sw/lib/perl/RH_prod/lib64/perl5','/ebi/microarray/home/fgpt/sw/lib/perl/RH_prod/lib';
 use lib '/ebi/microarray/home/fgpt/sw/lib/perl/RH_prod/lib';
 use lib '/ebi/microarray/home/fgpt/sw/lib/perl/FGPT_RH_prod/lib/' ;
+use lib '/nfs/ma/home/kmegy/' ;
 
 use strict ;
 use Getopt::Long qw(:config no_ignore_case);
@@ -67,65 +68,70 @@ BEGIN {
 
 
 ## Initialise global $, @ and %
-my ($idf, $conf, $xml, $help, $command_line) ; #arguments
+my ($idf, $dir, $conf, $xml, $help, $command_line) ; #arguments
 my %H_Config ; #contains info. from the config file 
+my %H_Concatenate_FactorValues ; #contains factor values to be parsed
+my $flag ; #to parse config file
+my $reference ; #reference factor value to calculate D.E. against
+my $exit_code1 ; #exist code for Atlas checks
+my $exit_code2 ; #exit code for FactorValue checks 
 
 
 ## Get arguments
 ################
 GetOptions( 'help|Help|h|H' => \$help,
 	    'idf=s' => \$idf,
-            'out=s' => \$xml,
+            'out=s' => \$xml,	
+            'dir=s' => \$dir,   
             'conf=s'=> \$conf
           ) ;
 
 $command_line = join(' ',@ARGV); 
 
-if (!$idf || !$conf) { print "[WARNING] Missing idf (-idf $idf) or configuration file (-conf $conf)!\n" ; $help  = 1 ; }
+if (!$idf || !$conf || !$dir) { print "[WARNING] Missing directory (-dir $dir), idf (-idf $idf) or configuration file (-conf $conf)!\n" ; $help  = 1 ; }
 
 if ($help) { usage($command_line) ; exit ; }
 
+$idf = $dir."/".$idf ;
 
 ## Extract information from the config file
 ## Only getting synonyms for 'reference' for now, but likely to expand.
 ###########################################
 open (CONF, $conf) || die "Can't open the configuration file $conf!\n" ;
 while (my $line=<CONF>) {
-        chomp $line ;   
-        #Getting synonyms for 'reference' - and store them
-        if ($line =~ /^REFERENCE/) { 
-                $line = lc($line);
-                my ($KeY, $VaLue) = split ("\t", $line) ;
-                my @A_VaLue = split (";", $VaLue) ;
-                foreach my $i (0..$#A_VaLue) {
-                        $A_VaLue[$i] =~ s/^ // ; #rm potential first/last spaces
-                        $A_VaLue[$i] =~ s/ $// ;
-                        $H_Config{REFERENCE}{$A_VaLue[$i]} = 1 ;
-                }       
-        }       
-}
+        chomp $line ; 
+
+	if ($line !~ /^#/) {
+		if ($line =~ /REFERENCE/) { $flag = "REFERENCE" ; }
+		elsif ($line =~ /FACTOR_VALUE_KILL/) { $flag = "FACTOR_VALUE_KILL" ; }
+		elsif ($line =~ /\[\//) { $flag = "" ; }
+        	else { if (($flag ne "") && ($line ne "")) { $H_Config{$flag}{$line} = 1 ; } }
+	}
+}	
 close CONF ;
 
 
 ##Print for a test
-#foreach my $word (keys %{$H_Config{REFERENCE}}) { print "->$word.\n" ; } print "=====\n" ;
+#foreach my $CaT (keys %H_Config) {
+#	print ">>$CaT<<\n" ; 
+#	foreach my $VaLuE (keys %{$H_Config{$CaT}}) {
+#		print ".$VaLuE.\n" ; 
+#	}	
+#} print "=====\n" ;
 #exit ;
 
 
 ## Test Atlas eligibility for that experiment
-## Call AEAtlas.pm
+## Call /ebi/microarray/home/fgpt/sw/lib/perl/FGPT_RH_prod/lib//EBI/FGPT/CheckSet/AEAtlas.pm
+## Output file (ae_atlas_eligibility*) in the same directory as the IDF/SDRF files 
 ############################################## 
-
-
-#------------------------------------------------------------------ START COPY / PASTE
-
-my $reader_params;
+my $reader_params ;
 
 # Checker will always perform basic validation checks
 # when the MAGE-TAB files are parsed.
 # Here we specify that it runs additional checks as required
 my $check_sets = {
-	'EBI::FGPT::CheckSet::AEAtlas' => 'ae_atlas_eligibility',
+       'eREAP::ereap::scripts::AEAtlas' => 'ae_atlas_eligibility',
 };
 
 # Set up parser params 
@@ -134,53 +140,152 @@ $reader_params->{'skip_data_checks'} = '1';  #Skips checking for the presence of
 $reader_params->{idf} = $idf ;
 $reader_params->{data_dir} = $dir ;
 
-print STDOUT "[FLAG] reader_param\n" ;
-
 # Call checker
-my $checker = EBI::FGPT::Reader::MAGETAB->new($reader_params);
-print STDOUT "[FLAG] checker\n" ;
 
-$checker->parse();
-print STDOUT "[FLAG] parse\n" ;
+print STDOUT "[FLAG] Reader param: $check_sets ; $idf ; $dir\n" ; 
 
-# Prints errors and warnings to SDTOUT (basic parsing + Atlas-specific checks)
-$checker->print_checker_status();
+my $magetab = EBI::FGPT::Reader::MAGETAB->new($reader_params);
 
-print STDOUT "[FLAG] print_checker_status\n" ;
+print STDOUT "[INFO] Checking Atlas eligibility\n" ;
+$magetab->parse();
 
+# Prints errors and warnings to STDOUT (basic parsing + Atlas-specific checks)
+$magetab->print_checker_status();
 
-#Exit with 1 (failed) or 0 (passed)
-if ($checker->has_errors) { print STDOUT "FAILED !\n" ; } ##exit 1 ; }
-else { print STDOUT "PASSED!\n" ; } ##exit 0 ; }
-
-#------------------------------------------------------------------ STOP STOP STOP
+#Return exit code: 1 (failed) or 0 (passed)
+if ($magetab->has_errors) { print STDOUT "[INFO][CHECK] Atlas checks FAILED!\n" ; $exit_code1 = 1 ; } 
+else { print STDOUT "[INFO][CHECK] Atlas checks PASSED!\n" ; }
 
 
-## If passed, 
-## check for 3 replicates (FactorValues)
-## then generate contrast file
+## If Atlas checked passed (exit code 0), 
+## Do more test on Factor Values (>= 3 replicates, reference etc.)
 ##################################
+print STDOUT "[INFO] Gathering factor values\n" ;
 
+print STDOUT "[FLAG] MAGETAB fetching!\n" ;
+my $sdrf = $magetab->get_magetab ;
+print STDOUT "[FLAG] MAGETAB fetched! $sdrf\n" ;
+my $error_msge ;
 
-## Check Factor Values
-#foreach my $sdrf_row ($magetab->get_sdrfRows){
-#
-#	my @all_factor_values = $sdrf_row->get_factorValues;            
-#
-#        foreach my $factor_value($sdrf_row->get_factorValues) {                      
-#		if ($factor_value->get_term) {   # anything except measurements
-#			my $factor_name = $factor_value->get_term->get_category;
-#                        my $factor_type = $factor_value->get_factor->get_factorType->get_value;
-#                        my $factor_value_term = $factor_value->get_term->get_value;
-#			print "NAME: $factor_name, TYPE: $factor_type, VALUE TERM: $factor_value_term\n" ;
+$exit_code1 = "" ; #for testing
+if (!$exit_code1) {
+
+	## Check Factor Values
+	foreach my $sdrf_row ($sdrf->get_sdrfRows){
+		my @all_factor_values = $sdrf_row->get_factorValues;            
+		my $factor_value_string ;
+
+        	foreach my $factor_value($sdrf_row->get_factorValues) {                      
+
+			if ($factor_value->get_term) {   # anything except measurements
+				my $factor_name = $factor_value->get_term->get_category ;
+                        	my $factor_type = $factor_value->get_factor->get_factorType->get_value ;
+                        	my $factor_value_term = $factor_value->get_term->get_value ;
+				print "$factor_name $factor_type $factor_value_term\n" ;	
+	
+				#Term belongs to the FactorValues kill list?
+				foreach my $ref_value (keys %{$H_Config{FACTOR_VALUE_KILL}}) {
+					if ($factor_type =~ /$ref_value/) { 
+						$exit_code2 = 1 ; 
+						$error_msge = "Experiment contains forbbiden term '$ref_value'\n" ;
+						print "[INFO][CHECK] Factor Value check FAILED! $error_msge\n" ;
+						exit 1 ;	
+					}	
+					
+				}	
+				
+				#Concatenate the FactorValues
+                                $factor_value_string = $factor_value_term ;
+			} 
+
+			if ($factor_value->get_measurement) { # For measurements (anything which come with units), e.g. Age, Dose, Time, etc 
+                		my $factor_type = $factor_value->get_factor->get_factorType->get_value ;
+                	      	my $factor_value_measurement = $factor_value->get_measurement->get_value ;
+				my $factor_value_measurement_unit = $factor_value->get_measurement->get_unit->get_value ;
+				#my $factor_value_measurement_unit_cat = $factor_value->get_measurement->get_unit->get_category ; #e.g. TimeUnit
+				#print "$factor_type: $factor_value_measurement $factor_value_measurement_unit\n" ;
+ 
+				#Concatenate the FactorValues
+				$factor_value_string .= "-".$factor_value_measurement."-".$factor_value_measurement_unit ;
+           		}      
+
+			NODE: foreach my $node ($sdrf_row->get_nodes) {
+				print "$node\n" ;
+                        	if ( $node->isa('Bio::MAGETAB::Comment') ) {
+                        		my $comment = $node;
+                       			print "[COMMENT] ".$comment->get_name.": ".$comment->get_value."\n" ;
+ 				} 
+			}
+
+#			foreach my $comment ($sdrf->get_comments) {
+#                        	if ($comment->get_name eq "ENA_RUN") {
+#                                	print "[COMMENT] ".$comment->get_name.": ".$comment->get_value."\n" ;
+#                        	}
+#			}	
+		}
+		## Store the concatenated FactorValues
+		$H_Concatenate_FactorValues{$factor_value_string}++ ;
+                #print "Factor Value String: $factor_value_string\n" ;
+
+		
+		##Get the ENA run identifier
+#		foreach my $comment ($sdrf->get_comments) {
+#			if ($comment->get_name eq "ENA_RUN") {
+#				print "[COMMENT] ".$comment->get_name.": ".$comment->get_value."\n" ;
+#			}
 #		}
-#
-#		#if ($factor_value->get_measurement) { # For measurements (anything which come with units), e.g. Age, Dose, Time, etc 
-#                #	my $factor_type = $factor_value->get_factor->get_factorType->get_value;
-#                #        my $factor_value_measurement = $factor_value->get_measurement->get_value;
-#            	#}             
-#	}
-#}
+
+	}
+}	
+
+## Parse the factor values: >= 3 replicates? Reference values?  
+print "[INFO] Checking Factor Values suitability for differential expression analysis\n" ;
+foreach my $FV_string (keys %H_Concatenate_FactorValues) {
+	
+	print "$FV_string\t$H_Concatenate_FactorValues{$FV_string}\n" ;
+
+	#Test replicates, delete if < 3
+	if ($H_Concatenate_FactorValues{$FV_string} < 3) { delete $H_Concatenate_FactorValues{$FV_string} ; }
+
+	#Test reference	
+	#Based on previous test, should have >=3 replicates!
+	foreach my $ref_value (keys %{$H_Config{REFERENCE}}) {
+		if ($FV_string =~ /$ref_value/) { 
+			if (!defined $reference) { $reference = $FV_string ; }
+			else { print STDOUT "MULTIPLE REFERENCE! $FV_string & $reference\n" ; } 
+		}
+	}	
+}
+
+
+#Reference Factor Value ? 
+if (!defined $reference) { print STDOUT "[INFO][CHECK] Factor Value check FAILED! No reference ($reference)\n" ; $exit_code2 = 1 ; }
+
+#Any Factor value left (>= 3 replicates)?
+#Need at least 2 of them!
+if (scalar %H_Concatenate_FactorValues < 2) { print STDOUT "[INFO][CHECK] Factor Value check FAILED! Less than 2 values with at least 3 replicates!\n" ; $exit_code2 = 1 ; }
+
+#If no error reported, then FactorValue test passed!
+if (!defined $exit_code2) { print "[INFO][CHECK] FactorValue test passed!\n" ;}
+
+##If test passed, then format in XML
+#print "<configuration>\n" ;
+#print "\t<analytics>\n" ;
+
+#print "\t\t<assay_groups>\n" ;
+#....
+#....
+#print \t\t<\assay_groups>\n" ;
+
+
+#print "\t\t<contrasts>\n" ;
+#....
+#....
+#print \t\t<\contrasts>\n" ;
+
+
+#print "\t<\analytics\n>"
+#print "<\configuration>\n" ;
 
 
 ## Subroutine
@@ -191,7 +296,8 @@ sub usage {
     print "Your command line was:\t".
 	"$0 $command_line\n".
 	"Compulsory parameters:\n".
-	"\t-idf: IDF file name. Note that there there should be an SDRF file in the same folder - it'll be picked automatically up by the program (MAGETAB modules)\n".
+	"\t-idf: IDF file name [NO path!]\n".
+        "\t-dir: directory in which the IDF and SDRF files are. The SDRF file will be picked up automatically by the program (MAGETAB modules)\n".
 	"\t-conf: configuration file name\n".
 	"\t-xml: xml output file name\n" ;
 
