@@ -1,0 +1,18 @@
+#List of factor value term that can be used as control
+#Strict match of what's on that list can be used as control  
+[REFERENCE]
+wild type
+wild_type
+normal
+control
+mock control
+unwounded control
+[/REFERENCE]
+
+
+#List of factor value type that should be excluded from
+#... a diff. expr. analysis  
+[FACTOR_VALUE_KILL]
+individual
+Individual
+[/FACTOR_VALUE_KILL]
