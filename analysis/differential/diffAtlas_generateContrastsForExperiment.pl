@@ -11,16 +11,18 @@
 
 =head1 SYNOPSIS
 
-  Generate a contrast file (XML) from SDRF & IDF files (ArrayExpress format)
+  Generate a contrast file (XML) from SDRF file (ArrayExpress format)
 
 =head1 DESCRIPTION
 
-  Generate a contrast file (XML) from a IDF & SDRF files (ArrayExpress format)
-  The IDF file is the argument but both files, in the same folder, are necessary                                  
-  The MAGETAB module will infer the SDRF file name from the IDF file.  
+  Generate a contrast file (XML) from a SDRF file (ArrayExpress format) and a config file. 
 
-  Step-1: test Atlas eligibility 
-  Step-2: if passed, test replicates, then generate contrast file
+  The config file contains the list of reference terms and factor values to exclude from further analysis.
+
+  Note: 
+	For now the SDRF parsing is with a gawk command
+	Later: use Maria's code  
+
 
 =head1 OPTIONS
 
@@ -28,74 +30,49 @@
 
 =head1 EXAMPLES
 
-  gxa_ereap_create_contrastfile.pl -idf file.idf.txt -dir path/to/idf-sdrf-files -conf config_file.txt -out contrast_file.xml
+  diffAtlas_generateContrastsForExperiment.pl -sdrf file.sdrf.txt -conf config_file.txt -out contrast_file.xml
 
   E.g. 
-  diffAtlas_generateContrastsForExperiment.pl -idf E-MTAB-533.idf.txt -dir /net/isilon5/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/MTAB/E-MTAB-533/ -conf atlasprod/analysis/differential/reference_assay_group_factor_values.txt
+	diffAtlas_generateContrastsForExperiment.pl -sdrf /net/isilon5/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/MTAB/E-MTAB-1066/E-MTAB-1066.sdrf.txt  -conf analysis/differential/reference_assay_group_factor_values.txt
+
+
 
 =cut
 
-##Use specific PERL path
-# --> future development: should we make it an option (centOS or redhat)?
-#
-#Running on banana (CentOS)
-#use lib '/ebi/microarray/home/fgpt/sw/lib/perl/CentOS_prod/lib64/perl5/site_perl','/ebi/microarray/home/fgpt/sw/lib/perl/CentOS_prod/lib';
-#use lib '/ebi/microarray/home/fgpt/sw/lib/perl/FGPT_CentOS_prod/lib';  # This takes precedence
-
-#Running on ebi-001 (RedHat OS)
-use lib '/ebi/microarray/home/fgpt/sw/lib/perl/RH_prod/lib64/perl5','/ebi/microarray/home/fgpt/sw/lib/perl/RH_prod/lib';
-use lib '/ebi/microarray/home/fgpt/sw/lib/perl/RH_prod/lib';
-use lib '/ebi/microarray/home/fgpt/sw/lib/perl/FGPT_RH_prod/lib/' ;
-use lib '/nfs/ma/home/kmegy/' ;
 
 use strict ;
 use Getopt::Long qw(:config no_ignore_case);
-use EBI::FGPT::Reader::MAGETAB;
-use Bio::MAGETAB::Util::Reader;
-
-use File::Spec; #required (?) for AEAtlas.pm
-use Data::Dumper; #required (?) for AEAtlas.pm
-use EBI::FGPT::Reader::MAGETAB; #required (?) for AEAtlas.pm
-use EBI::FGPT::Common qw(date_now); #required (?) for AEAtlas.pm
-
-
-# The following oracle-specific environment variables need to be set here at runtime
-# or else all oracle DB connections (e.g. to Conan DB) needed in checks will fail.
-BEGIN {
-	$ENV{ORACLE_HOME}       = "/sw/arch/dbtools/oracle/product/9.2.0";	
-	$ENV{ORA_NLS33}         = "/sw/arch/dbtools/oracle/product/9.2.0/ocommon/nls/admin/data";
-}
 
 
 ## Initialise global $, @ and %
-my ($idf, $dir, $conf, $xml, $help, $command_line) ; #arguments
-my %H_Config ; #contains info. from the config file 
-my %H_Concatenate_FactorValues ; #contains factor values to be parsed
+my ($sdrf, $conf, $xml, $help, $command_line) ; #arguments
+my %H_config ; #contains info. from the config file 
+my %H_hybNameFactorValue ; #store association factor value / hybridization name
+my @A_groups ; #store groups 
+
+my $errorCode = 0 ; #report error when testing the replicates, reference etc. 
 my $flag ; #to parse config file
 my $reference ; #reference factor value to calculate D.E. against
-my $exit_code1 ; #exist code for Atlas checks
-my $exit_code2 ; #exit code for FactorValue checks 
 
 
 ## Get arguments
 ################
 GetOptions( 'help|Help|h|H' => \$help,
-	    'idf=s' => \$idf,
-            'out=s' => \$xml,	
-            'dir=s' => \$dir,   
-            'conf=s'=> \$conf
+	    'sdrf=s' => \$sdrf,
+            'xml=s'  => \$xml,	
+            'conf=s' => \$conf
           ) ;
 
 $command_line = join(' ',@ARGV); 
 
-if (!$idf || !$conf || !$dir) { print "[WARNING] Missing directory (-dir $dir), idf (-idf $idf) or configuration file (-conf $conf)!\n" ; $help  = 1 ; }
+if (!$sdrf || !$conf) { print "[WARNING] Missing sdrf (-sdrf $sdrf) or configuration files (-conf $conf)!\n" ; $help  = 1 ; }
 
-if ($help) { usage($command_line) ; exit ; }
+#Suppress if automatic output file name generation, or merge with the above warning message
+if (!$xml) { print "[WARNING] Missing xml file name (-xml $xml)\n" ; $help = 1 ; }
 
-$idf = $dir."/".$idf ;
+if ($help) { usage($command_line) ; die ; }
 
 ## Extract information from the config file
-## Only getting synonyms for 'reference' for now, but likely to expand.
 ###########################################
 open (CONF, $conf) || die "Can't open the configuration file $conf!\n" ;
 while (my $line=<CONF>) {
@@ -105,201 +82,197 @@ while (my $line=<CONF>) {
 		if ($line =~ /REFERENCE/) { $flag = "REFERENCE" ; }
 		elsif ($line =~ /FACTOR_VALUE_KILL/) { $flag = "FACTOR_VALUE_KILL" ; }
 		elsif ($line =~ /\[\//) { $flag = "" ; }
-        	else { if (($flag ne "") && ($line ne "")) { $H_Config{$flag}{$line} = 1 ; } }
+        	else { if (($flag ne "") && ($line ne "")) { $H_config{$flag}{$line} = 1 ; } }
 	}
 }	
 close CONF ;
 
 
 ##Print for a test
-#foreach my $CaT (keys %H_Config) {
-#	print ">>$CaT<<\n" ; 
-#	foreach my $VaLuE (keys %{$H_Config{$CaT}}) {
-#		print ".$VaLuE.\n" ; 
-#	}	
+#foreach my $category (keys %H_Config) {
+#	print ">>$category<<\n" ; 
+#	foreach my $value (keys %{$H_Config{$category}}) { print ".$value.\n" ; }	
 #} print "=====\n" ;
 #exit ;
 
 
-## Test Atlas eligibility for that experiment
-## Call /ebi/microarray/home/fgpt/sw/lib/perl/FGPT_RH_prod/lib//EBI/FGPT/CheckSet/AEAtlas.pm
-## Output file (ae_atlas_eligibility*) in the same directory as the IDF/SDRF files 
-############################################## 
-my $reader_params ;
 
-# Checker will always perform basic validation checks
-# when the MAGE-TAB files are parsed.
-# Here we specify that it runs additional checks as required
-my $check_sets = {
-       'eREAP::ereap::scripts::AEAtlas' => 'ae_atlas_eligibility',
-};
-
-# Set up parser params 
-$reader_params->{'check_sets'} = $check_sets;
-$reader_params->{'skip_data_checks'} = '1';  #Skips checking for the presence of raw and processed data files
-$reader_params->{idf} = $idf ;
-$reader_params->{data_dir} = $dir ;
-
-# Call checker
-
-print STDOUT "[FLAG] Reader param: $check_sets ; $idf ; $dir\n" ; 
-
-my $magetab = EBI::FGPT::Reader::MAGETAB->new($reader_params);
-
-print STDOUT "[INFO] Checking Atlas eligibility\n" ;
-$magetab->parse();
-
-# Prints errors and warnings to STDOUT (basic parsing + Atlas-specific checks)
-$magetab->print_checker_status();
-
-#Return exit code: 1 (failed) or 0 (passed)
-if ($magetab->has_errors) { print STDOUT "[INFO][CHECK] Atlas checks FAILED!\n" ; $exit_code1 = 1 ; } 
-else { print STDOUT "[INFO][CHECK] Atlas checks PASSED!\n" ; }
+## Collect FactorValues & ENA IDs
+## ... to start with, use a basic gawk command
+## .... and focuse on a single experiment 
+##############################################
+#
+#Quick command lines
+#Later: use Maria's subroutine 
+#
+my $hybridizationNameFactorValue = `awk -F"\t" '{print \$15"\t"\$NF}' $sdrf` ;
+if ($hybridizationNameFactorValue eq "") { die "Couldn't parse SDRF file $sdrf\n" ; } 
+#print $hybridizationNameFactorValue ;
 
 
-## If Atlas checked passed (exit code 0), 
-## Do more test on Factor Values (>= 3 replicates, reference etc.)
-##################################
-print STDOUT "[INFO] Gathering factor values\n" ;
+#Get hybridization name and factor value from the output of the above command
+#Store in a hash of array:
+#	$H_Name_FactorValue{FactoreValueA} => [ HybName1, HybName2, HybName3]
+#	$H_Name_FactorValue{FactoreValueB} => [ HybName4, HybName5, HybName6, HybName7]
+#	etc. 	
+my @A_hybridizationNameFactorValue = split ("\n", $hybridizationNameFactorValue) ;	
+foreach my $hybridizationNameFactorValue (@A_hybridizationNameFactorValue) {
 
-print STDOUT "[FLAG] MAGETAB fetching!\n" ;
-my $sdrf = $magetab->get_magetab ;
-print STDOUT "[FLAG] MAGETAB fetched! $sdrf\n" ;
-my $error_msge ;
+	my ($hybridizationName, $factorValue) = split ("\t", $hybridizationNameFactorValue) ;
+	if ($hybridizationName ne "" && $factorValue ne "" && $hybridizationName !~ "Hybridization") { #discard header or empty lines
+		print "Read: -$factorValue- and -$hybridizationName-\n" ;
+		push(@{$H_hybNameFactorValue{$factorValue}}, $hybridizationName) ;
 
-$exit_code1 = "" ; #for testing
-if (!$exit_code1) {
-
-	## Check Factor Values
-	foreach my $sdrf_row ($sdrf->get_sdrfRows){
-		my @all_factor_values = $sdrf_row->get_factorValues;            
-		my $factor_value_string ;
-
-        	foreach my $factor_value($sdrf_row->get_factorValues) {                      
-
-			if ($factor_value->get_term) {   # anything except measurements
-				my $factor_name = $factor_value->get_term->get_category ;
-                        	my $factor_type = $factor_value->get_factor->get_factorType->get_value ;
-                        	my $factor_value_term = $factor_value->get_term->get_value ;
-				print "$factor_name $factor_type $factor_value_term\n" ;	
-	
-				#Term belongs to the FactorValues kill list?
-				foreach my $ref_value (keys %{$H_Config{FACTOR_VALUE_KILL}}) {
-					if ($factor_type =~ /$ref_value/) { 
-						$exit_code2 = 1 ; 
-						$error_msge = "Experiment contains forbbiden term '$ref_value'\n" ;
-						print "[INFO][CHECK] Factor Value check FAILED! $error_msge\n" ;
-						exit 1 ;	
-					}	
-					
-				}	
-				
-				#Concatenate the FactorValues
-                                $factor_value_string = $factor_value_term ;
-			} 
-
-			if ($factor_value->get_measurement) { # For measurements (anything which come with units), e.g. Age, Dose, Time, etc 
-                		my $factor_type = $factor_value->get_factor->get_factorType->get_value ;
-                	      	my $factor_value_measurement = $factor_value->get_measurement->get_value ;
-				my $factor_value_measurement_unit = $factor_value->get_measurement->get_unit->get_value ;
-				#my $factor_value_measurement_unit_cat = $factor_value->get_measurement->get_unit->get_category ; #e.g. TimeUnit
-				#print "$factor_type: $factor_value_measurement $factor_value_measurement_unit\n" ;
- 
-				#Concatenate the FactorValues
-				$factor_value_string .= "-".$factor_value_measurement."-".$factor_value_measurement_unit ;
-           		}      
-
-			NODE: foreach my $node ($sdrf_row->get_nodes) {
-				print "$node\n" ;
-                        	if ( $node->isa('Bio::MAGETAB::Comment') ) {
-                        		my $comment = $node;
-                       			print "[COMMENT] ".$comment->get_name.": ".$comment->get_value."\n" ;
- 				} 
-			}
-
-#			foreach my $comment ($sdrf->get_comments) {
-#                        	if ($comment->get_name eq "ENA_RUN") {
-#                                	print "[COMMENT] ".$comment->get_name.": ".$comment->get_value."\n" ;
-#                        	}
-#			}	
-		}
-		## Store the concatenated FactorValues
-		$H_Concatenate_FactorValues{$factor_value_string}++ ;
-                #print "Factor Value String: $factor_value_string\n" ;
-
-		
-		##Get the ENA run identifier
-#		foreach my $comment ($sdrf->get_comments) {
-#			if ($comment->get_name eq "ENA_RUN") {
-#				print "[COMMENT] ".$comment->get_name.": ".$comment->get_value."\n" ;
-#			}
-#		}
-
-	}
-}	
-
-## Parse the factor values: >= 3 replicates? Reference values?  
-print "[INFO] Checking Factor Values suitability for differential expression analysis\n" ;
-foreach my $FV_string (keys %H_Concatenate_FactorValues) {
-	
-	print "$FV_string\t$H_Concatenate_FactorValues{$FV_string}\n" ;
-
-	#Test replicates, delete if < 3
-	if ($H_Concatenate_FactorValues{$FV_string} < 3) { delete $H_Concatenate_FactorValues{$FV_string} ; }
-
-	#Test reference	
-	#Based on previous test, should have >=3 replicates!
-	foreach my $ref_value (keys %{$H_Config{REFERENCE}}) {
-		if ($FV_string =~ /$ref_value/) { 
-			if (!defined $reference) { $reference = $FV_string ; }
-			else { print STDOUT "MULTIPLE REFERENCE! $FV_string & $reference\n" ; } 
-		}
 	}	
 }
 
+## Factor Value parsing
+## Parse the factor values: 
+#	- >= 3 replicates	  -- delete the Factor Value if not true 
+#	- reference		  -- from the list of references generated from the config file
+#	- forbidden Factor Values -- from the kill list generated from the config file; delete Factor Value if true
+
+foreach my $FV (keys %H_hybNameFactorValue) {
+print "Testing $FV -- @{$H_hybNameFactorValue{$FV}}\n" ;
+
+#Test for forbidden factor value (e.g. 'individual')
+if (exists $H_config{"FACTOR_VALUE_KILL"}{$FV}) { delete $H_hybNameFactorValue{$FV} ; print "\tKill List!\n" ; } 		
+
+#Test for reference
+if (exists $H_config{"REFERENCE"}{$FV}) { $reference = $FV ; print "\tReference!\n" ; }  
+
+#Test for replicates
+my $replicateCount = scalar($H_hybNameFactorValue{$FV}) ;
+if ($replicateCount < 3) { delete $H_hybNameFactorValue{$FV} ; print "\tLess than 3 replicates\n" ; }
+}
+
+#Anything left afterwards
+print "[INFO] Checking Factor Values suitability for differential expression analysis\n" ;
 
 #Reference Factor Value ? 
-if (!defined $reference) { print STDOUT "[INFO][CHECK] Factor Value check FAILED! No reference ($reference)\n" ; $exit_code2 = 1 ; }
+if (!defined $reference) { print "[INFO][CHECK] Factor Value check FAILED! No reference ($reference)\n" ; $errorCode = 1 ; }
 
-#Any Factor value left (>= 3 replicates)?
+#Any Factor Value left (>= 3 replicates)?
 #Need at least 2 of them!
-if (scalar %H_Concatenate_FactorValues < 2) { print STDOUT "[INFO][CHECK] Factor Value check FAILED! Less than 2 values with at least 3 replicates!\n" ; $exit_code2 = 1 ; }
+if (keys %H_hybNameFactorValue < 2) { print "[INFO][CHECK] Factor Value check FAILED! Less than 2 values with at least 3 replicates!\n" ; $errorCode = 1 ; }
 
 #If no error reported, then FactorValue test passed!
-if (!defined $exit_code2) { print "[INFO][CHECK] FactorValue test passed!\n" ;}
+if ($errorCode == 0) { 
 
-##If test passed, then format in XML
-#print "<configuration>\n" ;
-#print "\t<analytics>\n" ;
+	print "[INFO][CHECK] Factor Value test passed!\n" ; 
 
-#print "\t\t<assay_groups>\n" ;
-#....
-#....
-#print \t\t<\assay_groups>\n" ;
+	##Make groups 
+	# Easier than making them on the fly when generating the XML
+	# For easiness, g1 will always be the reference and the rest assigned at random
+	my $groupCounter = 1 ;
+	$A_groups[$groupCounter] = $reference ; #$A_groups[0] empty, so that array position serves as group ID (g1, g2, g3 etc.) 
+
+	foreach my $FV (keys %H_hybNameFactorValue) {
+
+		if ($FV ne $reference) {
+			$groupCounter++ ;
+			$A_groups[$groupCounter] = $FV ;
+		}		
+	}
 
 
-#print "\t\t<contrasts>\n" ;
-#....
-#....
-#print \t\t<\contrasts>\n" ;
+	##Format in XML
+	open (XML, ">$xml") || die ("Can't open output XML file $xml\n") ;
+	
+	#Beginning XML
+	&XMLboundaries("start") ;
 
+	#Assay group section
+	&printAssayGroup ;
 
-#print "\t<\analytics\n>"
-#print "<\configuration>\n" ;
+	#Constrast section
+	&printContrast ;
+
+	#End XML
+	&XMLboundaries("end") ;
+
+	close XML ;
+
+} else {  #Cannot generate contrast file
+	die "[INFO] Contrast file cannot be generated\n" ; 
+} 	
 
 
 ## Subroutine
 #############
+#Print usage for the program
 sub usage {
     my ($command_line) = @_;
     
     print "Your command line was:\t".
 	"$0 $command_line\n".
 	"Compulsory parameters:\n".
-	"\t-idf: IDF file name [NO path!]\n".
-        "\t-dir: directory in which the IDF and SDRF files are. The SDRF file will be picked up automatically by the program (MAGETAB modules)\n".
+	"\t-sdrf: SDRF file name\n".
 	"\t-conf: configuration file name\n".
 	"\t-xml: xml output file name\n" ;
+}
 
+
+#Print tabulation n times 
+#'n' being given in argument
+sub tabulation {
+	print XML "\t" x $_[0] ;
+}
+
+
+#Print 'assay_group' section
+# [KM] Not sure how to format this to make it easy to read!
+# [KM] &tabulation(x) same line as the print 'xxx' ???
+sub printAssayGroup {
+	&tabulation(2) ; print XML "<assay_groups>\n" ;
+	foreach my $i (1..$#A_groups) { #there is nothing in $A_groups[0]
+        	my $factVal = $A_groups[$i] ;
+
+        	&tabulation(3) ; print XML "<assay_group id=\"g$i\">\n" ;
+        	foreach my $Names (@{$H_hybNameFactorValue{$factVal}}) {
+                	&tabulation(4) ;
+                	print XML "<assay>$Names</assay>\n" ;
+        	}
+        	&tabulation(3) ; print XML "</assay_group>\n" ;
+
+	}
+	&tabulation(2) ; print XML "</assay_groups>\n" ;
+}
+
+
+
+#Print 'contrast' section
+# [KM] Not sure how to format this to make it easy to read!
+# [KM] &tabulation(x) same line as the print 'xxx' ???
+sub printContrast {
+
+	&tabulation(2) ; print XML "<contrasts>\n" ;
+	foreach my $i (2..$#A_groups) { #starting at 2 because we have g vs. the rest
+
+        	&tabulation(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
+        	&tabulation(4) ; print XML "<name>'$A_groups[$i]' vs '$A_groups[1]'</name>\n" ;
+        	&tabulation(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
+        	&tabulation(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
+        	&tabulation(3) ; print XML "</contrast>\n" ;
+	}	
+	&tabulation(2) ; print XML "</contrasts>\n" ;
+}	
+
+
+#Print the beginning/end of the XML file
+#Both are in the same subroutine to make it easier 
+#to check that what's been open is being close
+sub XMLboundaries {
+	my $location = $_[0] ;
+
+	if ($location =~ /start/) {
+		print XML "<configuration>\n" ;
+		&tabulation(1) ; print XML "<analytics>\n" ;
+	}	
+
+	if ($location =~ /end/) {
+		&tabulation(1) ; print XML "</analytics>\n" ;
+		print XML "</configuration>\n" ;
+	}	
 }
 
