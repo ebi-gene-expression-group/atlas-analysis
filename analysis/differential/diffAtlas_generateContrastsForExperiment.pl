@@ -30,11 +30,12 @@
 
 =head1 EXAMPLES
 
-  diffAtlas_generateContrastsForExperiment.pl -sdrf file.sdrf.txt -conf config_file.txt -out contrast_file.xml
+  diffAtlas_generateContrastsForExperiment.pl -exp experiment_name -conf config_file.txt -outdir path/to/output/XML/file
 
   E.g. 
-	diffAtlas_generateContrastsForExperiment.pl -sdrf /net/isilon5/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/MTAB/E-MTAB-1066/E-MTAB-1066.sdrf.txt  -conf analysis/differential/reference_assay_group_factor_values.txt
+	diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt
 
+        diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt -outdir /homes/kmegy/tmp 
 
 
 =cut
@@ -45,7 +46,9 @@ use Getopt::Long qw(:config no_ignore_case);
 
 
 ## Initialise global $, @ and %
-my ($sdrf, $conf, $xml, $help, $command_line) ; #arguments
+my ($experiment, $conf, $help) ; #arguments
+my ($subDirectory, $commandLine) ; #values infered from command line
+my $outdir = "./" ;
 my %H_config ; #contains info. from the config file 
 my %H_hybNameFactorValue ; #store association factor value / hybridization name
 my @A_groups ; #store groups 
@@ -58,19 +61,36 @@ my $reference ; #reference factor value to calculate D.E. against
 ## Get arguments
 ################
 GetOptions( 'help|Help|h|H' => \$help,
-	    'sdrf=s' => \$sdrf,
-            'xml=s'  => \$xml,	
-            'conf=s' => \$conf
+	    'exp=s'=> \$experiment,
+            'conf=s' => \$conf,
+            'out=s'  => \$outdir,
           ) ;
 
-$command_line = join(' ',@ARGV); 
+$commandLine = join(' ',@ARGV); 
 
-if (!$sdrf || !$conf) { print "[WARNING] Missing sdrf (-sdrf $sdrf) or configuration files (-conf $conf)!\n" ; $help  = 1 ; }
+if (!$experiment || !$conf || !$outdir) { print "[WARNING] Missing experiment (-exp $experiment), configuration files (-conf $conf)\n" ; $help  = 1 ; }
 
-#Suppress if automatic output file name generation, or merge with the above warning message
-if (!$xml) { print "[WARNING] Missing xml file name (-xml $xml)\n" ; $help = 1 ; }
+if (!$outdir) { print "[WARNING] No output directory provided (-out $outdir). Default is current directory.\n" } ;
 
-if ($help) { usage($command_line) ; die ; }
+if ($help) { usage($commandLine) ; die ; }
+
+
+## Directory with SDRF file
+my $experimentDirectory = "/net/isilon5/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/" ;
+
+## Experiment sub-directory
+if ($experiment =~ /E-(\w+?)-\d+?/) {$subDirectory = $1 ; }
+else { die "[ERROR] Experiment -$experiment- not formatted as expected.\n" ; }
+
+## SDRF (input) and XML (output) files
+my $sdrf = "$experimentDirectory/$subDirectory/$experiment/$experiment.sdrf.txt" ;
+my $outfileXML = "$outdir/$experiment-configuration.xml" ;
+
+
+## [KM] If I run that program with "$outdir" containing relative path (~/) it works, 
+# [KM] ... but it might not work on LSF. 
+# [KM] I can easily plan for that (replacing ~/ by $HOME/) - but is it worth doing it?
+
 
 ## Extract information from the config file
 ###########################################
@@ -175,9 +195,8 @@ if ($errorCode == 0) {
 		}		
 	}
 
-
 	##Format in XML
-	open (XML, ">$xml") || die ("Can't open output XML file $xml\n") ;
+	open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
 	
 	#Beginning XML
 	&XMLboundaries("start") ;
@@ -202,60 +221,61 @@ if ($errorCode == 0) {
 #############
 #Print usage for the program
 sub usage {
-    my ($command_line) = @_;
-    
-    print "Your command line was:\t".
-	"$0 $command_line\n".
-	"Compulsory parameters:\n".
-	"\t-sdrf: SDRF file name\n".
-	"\t-conf: configuration file name\n".
-	"\t-xml: xml output file name\n" ;
+	my ($command_line) = @_;
+
+    	print "Your command line was:\t".
+	    "$0 $command_line\n".
+	    "Compulsory parameters:\n".
+	    "\t-exp: experiment name. E.g. E-MTAB-123\n".
+	    "\t-conf: configuration file name\n".
+	    "Optional parameters:\n".
+	    "\t-outdir: output directory. Default is the current directory.\n" ;
 }
 
 
-#Print tabulation n times 
+#Print tabulations n times, in XML output file 
 #'n' being given in argument
-sub tabulation {
+sub tabulationXML {
 	print XML "\t" x $_[0] ;
 }
 
 
 #Print 'assay_group' section
 # [KM] Not sure how to format this to make it easy to read!
-# [KM] &tabulation(x) same line as the print 'xxx' ???
+# [KM] &tabulationXML(x) same line as the print 'xxx' ???
 sub printAssayGroup {
-	&tabulation(2) ; print XML "<assay_groups>\n" ;
+	&tabulationXML(2) ; print XML "<assay_groups>\n" ;
 	foreach my $i (1..$#A_groups) { #there is nothing in $A_groups[0]
         	my $factVal = $A_groups[$i] ;
 
-        	&tabulation(3) ; print XML "<assay_group id=\"g$i\">\n" ;
+        	&tabulationXML(3) ; print XML "<assay_group id=\"g$i\">\n" ;
         	foreach my $Names (@{$H_hybNameFactorValue{$factVal}}) {
-                	&tabulation(4) ;
+                	&tabulationXML(4) ;
                 	print XML "<assay>$Names</assay>\n" ;
         	}
-        	&tabulation(3) ; print XML "</assay_group>\n" ;
+        	&tabulationXML(3) ; print XML "</assay_group>\n" ;
 
 	}
-	&tabulation(2) ; print XML "</assay_groups>\n" ;
+	&tabulationXML(2) ; print XML "</assay_groups>\n" ;
 }
 
 
 
 #Print 'contrast' section
 # [KM] Not sure how to format this to make it easy to read!
-# [KM] &tabulation(x) same line as the print 'xxx' ???
+# [KM] &tabulationXML(x) same line as the print 'xxx' ???
 sub printContrast {
 
-	&tabulation(2) ; print XML "<contrasts>\n" ;
+	&tabulationXML(2) ; print XML "<contrasts>\n" ;
 	foreach my $i (2..$#A_groups) { #starting at 2 because we have g vs. the rest
 
-        	&tabulation(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
-        	&tabulation(4) ; print XML "<name>'$A_groups[$i]' vs '$A_groups[1]'</name>\n" ;
-        	&tabulation(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
-        	&tabulation(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
-        	&tabulation(3) ; print XML "</contrast>\n" ;
+        	&tabulationXML(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
+        	&tabulationXML(4) ; print XML "<name>'$A_groups[$i]' vs '$A_groups[1]'</name>\n" ;
+        	&tabulationXML(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
+        	&tabulationXML(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
+        	&tabulationXML(3) ; print XML "</contrast>\n" ;
 	}	
-	&tabulation(2) ; print XML "</contrasts>\n" ;
+	&tabulationXML(2) ; print XML "</contrasts>\n" ;
 }	
 
 
@@ -267,11 +287,11 @@ sub XMLboundaries {
 
 	if ($location =~ /start/) {
 		print XML "<configuration>\n" ;
-		&tabulation(1) ; print XML "<analytics>\n" ;
+		&tabulationXML(1) ; print XML "<analytics>\n" ;
 	}	
 
 	if ($location =~ /end/) {
-		&tabulation(1) ; print XML "</analytics>\n" ;
+		&tabulationXML(1) ; print XML "</analytics>\n" ;
 		print XML "</configuration>\n" ;
 	}	
 }
