@@ -18,6 +18,18 @@
   Generate a contrast file (XML) from a SDRF file (ArrayExpress format) and a config file. 
 
   The config file contains the list of reference terms and factor values to exclude from further analysis.
+  It is formatted as follow:
+	[REFERENCE] 
+		wild type
+		control
+		no treatment 
+		....
+	[/REFERENCE]
+
+	[FACTOR_VALUE_KILL]
+		individual
+		....
+	[/FACTOR_VALUE_KILL]
 
   Note: 
 	For now the SDRF parsing is with a gawk command
@@ -48,14 +60,15 @@ use Getopt::Long qw(:config no_ignore_case);
 ## Initialise global $, @ and %
 my ($experiment, $conf, $help) ; #arguments
 my ($subDirectory, $commandLine) ; #values infered from command line
-my $outdir = "./" ;
+my $outdir = "./" ; #default output directory
 my %H_config ; #contains info. from the config file 
 my %H_hybNameFactorValue ; #store association factor value / hybridization name
-my @A_groups ; #store groups 
+my @A_assayGroups ; #store assay groups 
 
 my $errorCode = 0 ; #report error when testing the replicates, reference etc. 
+my $errorMessage ; #error message when testing the replicates, reference etc.
 my $flag ; #to parse config file
-my $reference ; #reference factor value to calculate D.E. against
+my $reference ; #reference Factor Value(s) to calculate D.E. against
 
 
 ## Get arguments
@@ -68,7 +81,7 @@ GetOptions( 'help|Help|h|H' => \$help,
 
 $commandLine = join(' ',@ARGV); 
 
-if (!$experiment || !$conf || !$outdir) { print "[WARNING] Missing experiment (-exp $experiment), configuration files (-conf $conf)\n" ; $help  = 1 ; }
+if (!$experiment || !$conf) { print "[WARNING] Missing experiment (-exp $experiment) and/or configuration files (-conf $conf)\n" ; $help  = 1 ; }
 
 if (!$outdir) { print "[WARNING] No output directory provided (-out $outdir). Default is current directory.\n" } ;
 
@@ -76,7 +89,7 @@ if ($help) { usage($commandLine) ; die ; }
 
 
 ## Directory with SDRF file
-my $experimentDirectory = "/net/isilon5/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/" ;
+my $experimentDirectory = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/" ;
 
 ## Experiment sub-directory
 if ($experiment =~ /E-(\w+?)-\d+?/) {$subDirectory = $1 ; }
@@ -108,113 +121,132 @@ while (my $line=<CONF>) {
 close CONF ;
 
 
-##Print for a test
+##### REMOVE ONCE PROGRAM FINISHED ###
+### Print for a test
 #foreach my $category (keys %H_Config) {
 #	print ">>$category<<\n" ; 
 #	foreach my $value (keys %{$H_Config{$category}}) { print ".$value.\n" ; }	
 #} print "=====\n" ;
 #exit ;
-
+##### END of 'REMOVE ONCE PROGRAM FINISHED'
 
 
 ## Collect FactorValues & ENA IDs
-## ... to start with, use a basic gawk command
-## .... and focuse on a single experiment 
+## ... to start with, use Maria's subroutine
+## ... later: use MAGETAB module
+## ... on a single experiment
 ##############################################
-#
-#Quick command lines
-#Later: use Maria's subroutine 
-#
-my $hybridizationNameFactorValue = `awk -F"\t" '{print \$15"\t"\$NF}' $sdrf` ;
-if ($hybridizationNameFactorValue eq "") { die "Couldn't parse SDRF file $sdrf\n" ; } 
-#print $hybridizationNameFactorValue ;
 
+# Using Maria's subroutine
+my ($factorvalueType, $Href_efvs2runAccessions) = &readSDRF($sdrf) ;
+my %H_eFactorValues2runIDs = %$Href_efvs2runAccessions ; #dereference the hash
 
-#Get hybridization name and factor value from the output of the above command
-#Store in a hash of array:
-#	$H_Name_FactorValue{FactoreValueA} => [ HybName1, HybName2, HybName3]
-#	$H_Name_FactorValue{FactoreValueB} => [ HybName4, HybName5, HybName6, HybName7]
-#	etc. 	
-my @A_hybridizationNameFactorValue = split ("\n", $hybridizationNameFactorValue) ;	
-foreach my $hybridizationNameFactorValue (@A_hybridizationNameFactorValue) {
-
-	my ($hybridizationName, $factorValue) = split ("\t", $hybridizationNameFactorValue) ;
-	if ($hybridizationName ne "" && $factorValue ne "" && $hybridizationName !~ "Hybridization") { #discard header or empty lines
-		print "Read: -$factorValue- and -$hybridizationName-\n" ;
-		push(@{$H_hybNameFactorValue{$factorValue}}, $hybridizationName) ;
-
-	}	
+##Print for a test
+print "=====> Print for a test\n" ;
+foreach my $species (keys %H_eFactorValues2runIDs) {
+	print "Species is $species ($factorvalueType)\n" ;
+	foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
+		print "\tArray is $array\n" ;
+		foreach my $factValue (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
+                	print "[REAL] $species - $array - $factValue @{$H_eFactorValues2runIDs{$species}{$array}{$factValue}}\n" ;
+		}
+	}
 }
+print "\n\n\n" ;
 
-## Factor Value parsing
+
+## Facter Value parsing
+## For each organism and each array design (usually: 1 of each only),
 ## Parse the factor values: 
 #	- >= 3 replicates	  -- delete the Factor Value if not true 
 #	- reference		  -- from the list of references generated from the config file
 #	- forbidden Factor Values -- from the kill list generated from the config file; delete Factor Value if true
+foreach my $species (keys %H_eFactorValues2runIDs) {
+        print "Species is $species ($factorvalueType)\n" ;
+        foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
+                print "\tArray is $array\n" ;
 
-foreach my $FV (keys %H_hybNameFactorValue) {
-print "Testing $FV -- @{$H_hybNameFactorValue{$FV}}\n" ;
+		foreach my $FV (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
+			print "Testing $FV -- @{$H_eFactorValues2runIDs{$species}{$array}{$FV}}\n" ; ##REMOVE ONCE PROGRAM FINISHED
 
-#Test for forbidden factor value (e.g. 'individual')
-if (exists $H_config{"FACTOR_VALUE_KILL"}{$FV}) { delete $H_hybNameFactorValue{$FV} ; print "\tKill List!\n" ; } 		
+			#Test for forbidden factor value (e.g. 'individual')
+			if (exists $H_config{"FACTOR_VALUE_KILL"}{$FV}) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; next ; } 		
 
-#Test for reference
-if (exists $H_config{"REFERENCE"}{$FV}) { $reference = $FV ; print "\tReference!\n" ; }  
+			#Test for reference
+			if (exists $H_config{"REFERENCE"}{$FV}) { $reference = $FV ; print"\tReference!\n" ; } ##REMOVE print ONCE PROGRAM FINISHED 
 
-#Test for replicates
-my $replicateCount = scalar($H_hybNameFactorValue{$FV}) ;
-if ($replicateCount < 3) { delete $H_hybNameFactorValue{$FV} ; print "\tLess than 3 replicates\n" ; }
-}
+			#Test for replicates
+			my $replicateCount = scalar @{$H_eFactorValues2runIDs{$species}{$array}{$FV}} ;
+			print "Replicate number: $replicateCount\n" ; #FOR TESTING PURPOSE ONLY
+			if ($replicateCount < 3) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; print "\tLess than 3 replicates\n" ; } ##REMOVE print ONCE PROGRAM FINISHED
+		}	
 
-#Anything left afterwards
-print "[INFO] Checking Factor Values suitability for differential expression analysis\n" ;
 
-#Reference Factor Value ? 
-if (!defined $reference) { print "[INFO][CHECK] Factor Value check FAILED! No reference ($reference)\n" ; $errorCode = 1 ; }
+		#Anything left afterwards
+		print "[INFO] Checking Factor Values suitability for differential expression analysis\n" ;
 
-#Any Factor Value left (>= 3 replicates)?
-#Need at least 2 of them!
-if (keys %H_hybNameFactorValue < 2) { print "[INFO][CHECK] Factor Value check FAILED! Less than 2 values with at least 3 replicates!\n" ; $errorCode = 1 ; }
+		#Reference Factor Value ? 
+		if (!defined $reference) { 
+			$errorCode = 1 ;
+			$errorMessage .= "No reference. \n" ;
+		}
 
-#If no error reported, then FactorValue test passed!
-if ($errorCode == 0) { 
+		#Any Factor Value left (>= 3 replicates)?
+		#Need at least 2 of them!
+		
+		if (keys %{$H_eFactorValues2runIDs{$species}{$array}} < 2) {
+		#if (keys %H_hybNameFactorValue < 2) {
+			$errorCode = 1 ;
+			$errorMessage .= "Less than 2 values with at least 3 replicates. \n" ; 
+		}	
 
-	print "[INFO][CHECK] Factor Value test passed!\n" ; 
+		#If no error reported, then FactorValue test passed!
+		if ($errorCode == 0) { 
 
-	##Make groups 
-	# Easier than making them on the fly when generating the XML
-	# For easiness, g1 will always be the reference and the rest assigned at random
-	my $groupCounter = 1 ;
-	$A_groups[$groupCounter] = $reference ; #$A_groups[0] empty, so that array position serves as group ID (g1, g2, g3 etc.) 
+			print "[INFO] Factor Value test passed!\n" ; 
 
-	foreach my $FV (keys %H_hybNameFactorValue) {
+			##Make groups 
+			# Easier than making them on the fly when generating the XML
+			# For simplicity, g1 will always be the reference and the rest assigned at random
+			my $groupCounter = 1 ;
+			$A_assayGroups[$groupCounter] = $reference ; #$A_assayGroups[0] empty, so that array position serves as group ID (g1, g2, g3 etc.) 
 
-		if ($FV ne $reference) {
-			$groupCounter++ ;
-			$A_groups[$groupCounter] = $FV ;
-		}		
-	}
+			foreach my $FV (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
 
-	##Format in XML
-	open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
+				if ($FV ne $reference) {
+					$groupCounter++ ;
+					$A_assayGroups[$groupCounter] = $FV ;
+				}		
+			}
+
+			print "=====> Print XML contrast file\n" ;
+			##Format in XML
+			open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
 	
-	#Beginning XML
-	&XMLboundaries("start") ;
+			#Beginning XML
+			&XMLboundaries("start") ;
 
-	#Assay group section
-	&printAssayGroup ;
+			#Array design section - only if experiment is an array
+			if ($array ne "0") { &printArrayDesign($array) ; }	
 
-	#Constrast section
-	&printContrast ;
+			#Assay group section
+			&printAssayGroup($species,$array) ;
 
-	#End XML
-	&XMLboundaries("end") ;
+			#Contrast section
+			&printContrast ;
 
-	close XML ;
+			#End XML
+			&XMLboundaries("end") ;
 
-} else {  #Cannot generate contrast file
-	die "[INFO] Contrast file cannot be generated\n" ; 
-} 	
+			close XML ;
+
+		} else {  #Cannot generate contrast file
+			die "[INFO] Contrast file cannot be generated for $species & $array: $errorMessage\n" ; 
+		}
+	}		 	
+}	
+print "\n\n\n" ;
+
 
 
 ## Subroutine
@@ -239,19 +271,31 @@ sub tabulationXML {
 	print XML "\t" x $_[0] ;
 }
 
+# Print 'array_design' section
+sub printArrayDesign {
+	my $subArray = $_[0] ;
+
+	&tabulationXML(2) ; print XML "<array_design>\n" ;
+        &tabulationXML(3) ; print XML "$subArray\n" ;
+        &tabulationXML(2) ; print XML "</array_design>\n" ;
+}
 
 #Print 'assay_group' section
-# [KM] Not sure how to format this to make it easy to read!
-# [KM] &tabulationXML(x) same line as the print 'xxx' ???
+#Parameters are supecies and array names
 sub printAssayGroup {
+
+	my $subSpecies = $_[0] ;	
+	my $subArray = $_[1] ;
+
 	&tabulationXML(2) ; print XML "<assay_groups>\n" ;
-	foreach my $i (1..$#A_groups) { #there is nothing in $A_groups[0]
-        	my $factVal = $A_groups[$i] ;
+	foreach my $i (1..$#A_assayGroups) { #there is nothing in $A_assayGroups[0]
+        	my $factVal = $A_assayGroups[$i] ;
 
         	&tabulationXML(3) ; print XML "<assay_group id=\"g$i\">\n" ;
-        	foreach my $Names (@{$H_hybNameFactorValue{$factVal}}) {
-                	&tabulationXML(4) ;
-                	print XML "<assay>$Names</assay>\n" ;
+        	foreach my $names (@{$H_eFactorValues2runIDs{$subSpecies}{$subArray}{$factVal}}) {
+                	
+			&tabulationXML(4) ;
+                	print XML "<assay>$names</assay>\n" ;
         	}
         	&tabulationXML(3) ; print XML "</assay_group>\n" ;
 
@@ -262,15 +306,15 @@ sub printAssayGroup {
 
 
 #Print 'contrast' section
-# [KM] Not sure how to format this to make it easy to read!
-# [KM] &tabulationXML(x) same line as the print 'xxx' ???
 sub printContrast {
 
+	$factorvalueType = lc($factorvalueType) ;
+
 	&tabulationXML(2) ; print XML "<contrasts>\n" ;
-	foreach my $i (2..$#A_groups) { #starting at 2 because we have g vs. the rest
+	foreach my $i (2..$#A_assayGroups) { #starting at 2 because we have g1 (reference) vs. the rest
 
         	&tabulationXML(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
-        	&tabulationXML(4) ; print XML "<name>'$A_groups[$i]' vs '$A_groups[1]'</name>\n" ;
+        	&tabulationXML(4) ; print XML "<name>$factorvalueType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]'</name>\n" ;
         	&tabulationXML(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
         	&tabulationXML(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
         	&tabulationXML(3) ; print XML "</contrast>\n" ;
@@ -281,7 +325,7 @@ sub printContrast {
 
 #Print the beginning/end of the XML file
 #Both are in the same subroutine to make it easier 
-#to check that what's been open is being close
+#to check that what's been open is being closer
 sub XMLboundaries {
 	my $location = $_[0] ;
 
@@ -295,4 +339,214 @@ sub XMLboundaries {
 		print XML "</configuration>\n" ;
 	}	
 }
+
+
+
+#sub readSDRF - modified from the program gxa_summarizeFPKMs.pl by Maria Keays (mkeays@ebi.ac.uk)
+# If we are passed the "-a" option, that means we want to calculate the average
+# FPKM for each group of replicates (e.g. for each tissue) in the dataset, and
+# not just return the FPKM for every run individually.
+# To do this we need to find out which run accessions (and hence FPKM tracking files) are
+# associated with which factor values. The mapping between run accessions and
+# factor values is available in the experiment's SDRF file. Run accessions are
+# in a column called "Comment[ENA_RUN]" and factor values in the
+# "FactorValue[xxx]" column(s).
+#
+# Here we read the SDRF file and create a hash mapping run accessions to factor
+# values. This must also be done "per organism", in cases where an experiment
+# contains data from more than one organism. E.g. we could have data from human
+# and mouse liver, but potentially the organism names might not be in a factor
+# value column (though they should be?). In this case we would have human ind
+# mouse runs assigned "liver" as the factor value and no way to tell them
+# apart. So we'll create a key for each organism and after that a key for each
+# factor value assigned to each organism. Assigned to each factor value will be
+# an array of the run accessions that were found to correspond to them in the
+# SDRF.
+#
+# The (anonymous) hash ends up like e.g.:
+#       $efvs2runAccessions->{ "Homo sapiens" }->{ "liver" } = [ "SRR00001", "SRR00002", "SRR00003", ... ]
+#                                              ->{ "heart" } = [ "SRR00004", "SRR00005", "SRR00006", ... ]
+#
+# Arguments:
+#       - $logfileHandle : to write to log file.
+#       - $sdrfFile : filename of SDRF.
+#       - $runAccessions : arrayref of run accessions.
+#
+# Returns:
+#       $efvs2runAccessions : reference to anonymous hash with mappings between factor
+#       values (for each organism) and run accessions.
+sub readSDRF {
+        # Get the arguments:
+        my $sdrfFile = $_[0] ; 
+       
+	#Declare variables
+	my ($ENArunInd, $assayNameInd, $arrayNameInd, $arrayDesignInd, $technologyTypeInd) ; #indexes 
+	my ($ENArun, $organism, $runAccession, $technologyType, $efvType) ;
+
+        # Simple way to check we have an SDRF.
+       if($sdrfFile !~ /\.sdrf\.txt$/) {
+                die "$sdrfFile doesn't look like an SDRF file to me. If it is, please append \".sdrf.txt\" to its name.\n";
+        }
+
+        # Open SDRF
+        open(my $sdrfHandle, "<", $sdrfFile) or die "Can't open $sdrfFile: $!\n";
+        
+        # Variables to store run name and factor value column indices.
+        my ($SDRFrunInd, @efvIndArray, $SDRForgInd);
+        
+        # Hash reference to remember which run accessions belong to which combination of factor values.
+        # $efvs2runAccessions->{ "Gallus gallus" }->{"AFFY-35"}->{ "brain" } = [ "SRR0005", "SRR0006", ... ]    
+        my $efvs2runAccessions = {};
+
+        # Remember the run accessions we've seen in the SDRF, because in SDRFs with paired-end
+        # data, we might have two rows per run!
+        my $seenRuns = [];
+        
+        # Loop through file.
+        while(defined (my $line = <$sdrfHandle>))  {
+        	# Remove newlines
+        	chomp($line);
+        
+        	# split on tabs
+                my @lineSplit = split("\t", $line);
+        
+               # Get column indices of run names and factor value(s) from the first line with headers.
+               # Characteristics[Organism] should be present in every SDRF header line in some form.
+               if($line =~ /characteristics\s*\[\s*organism\s*\]/i) {
+
+               		# Index of Characteristics[Organism] column. Technically it should
+               		# be in a FactorValue[] column if it varies but just in case we'll
+               		# account for possibility of different organisms here.
+                        my @orgIndArray = grep $lineSplit[$_] =~ /characteristics\s*\[\s*organism\s*\]/i, 0..$#lineSplit;
+                        $SDRForgInd = $orgIndArray[0];
+            
+                        # Index of FactorValue[xxxx] column(s)
+                        @efvIndArray = grep $lineSplit[$_] =~ /factor\s*value\s*\[/i, 0..$#lineSplit;
+                      
+			# Need to capture the factor value type (FactorValue[TYPE])
+			# ... get the 1st one only to start with
+			my $efv = $lineSplit[$efvIndArray[0]] ;
+			if ($efv =~ /factor\s*value\s*\[(.+?)\]/i) { $efvType = $1 ; } 
+
+			# Assay names - for old SDRF, use ENA_RUN (RNA-Seq) or Hybridization name (for microarray) 
+			#		for newer SDRF, there is an "Assay name" tag
+			# Expecting to get assayName from a single of those columns, 
+			# ... so using the same $assayName variable		
+			# Index of run names from ENA_RUN (old SDRF - RNA-Seq only)             
+			my @runIndArray = grep $lineSplit[$_] =~ /ENA_RUN/i, 0..$#lineSplit;
+			if (defined $runIndArray[0]) { 
+				$ENArunInd = $runIndArray[0];
+				$assayNameInd = $runIndArray[0];			
+			}
+
+			# Hybridization name (old SDRF - microarray only)
+			my @runIndArray = grep $lineSplit[$_] =~ /Hybridization Name/i, 0..$#lineSplit;	
+			if (defined $runIndArray[0]) { $assayNameInd = $runIndArray[0]; }
+			
+			# Assay name (newer SDRF - RNA-Seq and microarray)
+			my @runIndArray = grep $lineSplit[$_] =~ /Assay Name/i, 0..$#lineSplit;
+                        if (defined $runIndArray[0]) { $assayNameInd = $runIndArray[0]; }
+
+			# Array design
+			my @runIndArray = grep $lineSplit[$_] =~ /Array Design/i, 0..$#lineSplit;
+			$arrayDesignInd = $runIndArray[0];
+
+			# Technology Type - for old one, infer from ENA_RUN/FASTQ_URI (RNA-Seq) or Hyb Name/Array Design (microarray) 
+			# 		    for new ones, there is a "Technology Type" tag
+			# Array Names REF (old SDRF - microarray)
+			my @runIndArray = grep $lineSplit[$_] =~ /Array Name REF/i, 0..$#lineSplit;
+                        $arrayNameInd = $runIndArray[0];
+
+			# Technology Type (newer SDRF - RNA-Seq and microarray)
+			my @runIndArray = grep $lineSplit[$_] =~ /Technology Type/i, 0..$#lineSplit;
+                        $technologyTypeInd = $runIndArray[0];
+
+			#beware that if no Technology Type tag, get info. from other columns
+			#but $technologyType is a string rather than the index (position) of that value
+			if (!$technologyTypeInd) {
+				if ($arrayNameInd || $assayNameInd) { $technologyType = "array" ; }				
+				elsif ( $ENArun ) { $technologyType = "seq" ; }
+				#else { die "Cannot identify technology! $technologyTypeInd -$arrayDesignInd;$assayNameInd;$ENArun-\n" ; } #be more informative here? 
+			}	
+
+			## Print everything - just for a test
+			#print "==== HEADER ===\n" ;
+			#print "Organism: $SDRForgInd\n" ;
+			#print "Factor Value type [1st]: $efvType\n" ;
+			#print "Assay name: $assayNameInd\n" ;
+			#print "Array design: $arrayDesignInd\n" ;
+			#print "Technology: $technologyTypeInd or $technologyType\n" ;			
+			#print "===============\n" ;
+
+		} else {
+			# Check we got indices for organism, run accessions and EFVs
+			unless (defined($SDRForgInd) && defined($assayNameInd) && (defined($technologyTypeInd) || defined ($technologyType)) && @efvIndArray) { 
+                                die("Do not know SDRF columns for Organism, Assay Name, Technology Type or FactorValues.\n");
+			}
+
+                        # Get the run accession and factor values from their indices.
+                        my $runAccession = $lineSplit[$assayNameInd];
+
+			# Get the organism
+                        my $organism = $lineSplit[$SDRForgInd];
+
+			# Get the technology type, if not already defined
+			if (!defined $technologyType) { $technologyType = $lineSplit[$technologyTypeInd] ; }	
+
+			# If technology is microarray, 
+			# Get the array design, otherwise set to 0
+			my $arrayDesign = 0 ;
+			if ($technologyType =~ /array/) { $arrayDesign = $lineSplit[$arrayDesignInd] ; }
+	
+                        # Skip to next line if we have already seen this run accession -- SDRFs for
+                        # paired-end data have run accessions in twice.
+                        if( grep $_ eq $runAccession, @{ $seenRuns } ) { next; }
+                        # Otherwise add this run's accession to the seenRuns array so we'll skip it next time.
+                        else { push @{ $seenRuns }, $runAccession; }
+
+                        my @efvArray = @lineSplit[@efvIndArray];
+                        my $efvString = join " ", @efvArray;
+
+                        # Add run accession to the right array in %efvs2runAccessions
+                        if(exists($efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString })) {
+        			##print "Adding in table $efvs2runAccessions -> $organism -> $efvString , $runAccession\n" ;
+	                        push @{ $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } }, $runAccession;
+                        }
+                        else {
+				##print "Adding in table $efvs2runAccessions -> $organism -> $efvString = [ $runAccession ]\n" ;
+                                $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } = [ $runAccession ];
+                        }
+                }
+        }
+        # Close the file handle
+        close($sdrfHandle);
+
+
+	##Print for testing - to be removed after
+	#foreach my $species (keys %$efvs2runAccessions) {
+        #	print "[SUB] Species is $species\n" ;
+        #	foreach my $array (keys %{$efvs2runAccessions->{$species}}) {
+	#		print "[SUB] \tArray is $array\n" ;
+        #       	foreach my $organ (keys %{$efvs2runAccessions->{$species}->{$array}}) {
+        #        		print "[SUB] $species - $array - $organ %$efvs2runAccessions->{$species}->{$array}->{$organ}\n" ;
+	#		}
+        #	}
+	#}	
+
+       # Return the factor value type (e.g. "genotype") and the reference to a hash of mappings between factor values and run accessions
+       return($efvType, $efvs2runAccessions);
+}
+
+
+
+
+
+
+
+
+
+
+
+  
+                           
 
