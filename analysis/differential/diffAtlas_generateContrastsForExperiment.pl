@@ -155,7 +155,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 print "\n\n\n" ;
 
 
-## Facter Value parsing
+## Factor Value parsing
 ## For each organism and each array design (usually: 1 of each only),
 ## Parse the factor values: 
 #	- >= 3 replicates	  -- delete the Factor Value if not true 
@@ -233,7 +233,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 			&printAssayGroup($species,$array) ;
 
 			#Contrast section
-			&printContrast ;
+			&printContrast($array) ;
 
 			#End XML
 			&XMLboundaries("end") ;
@@ -272,6 +272,7 @@ sub tabulationXML {
 }
 
 # Print 'array_design' section
+#Parameter is array name
 sub printArrayDesign {
 	my $subArray = $_[0] ;
 
@@ -281,7 +282,7 @@ sub printArrayDesign {
 }
 
 #Print 'assay_group' section
-#Parameters are supecies and array names
+#Parameters are species and array names
 sub printAssayGroup {
 
 	my $subSpecies = $_[0] ;	
@@ -306,7 +307,9 @@ sub printAssayGroup {
 
 
 #Print 'contrast' section
+#Parameter is array name
 sub printContrast {
+	my $subArray = $_[0] ;
 
 	$factorvalueType = lc($factorvalueType) ;
 
@@ -314,7 +317,7 @@ sub printContrast {
 	foreach my $i (2..$#A_assayGroups) { #starting at 2 because we have g1 (reference) vs. the rest
 
         	&tabulationXML(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
-        	&tabulationXML(4) ; print XML "<name>$factorvalueType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]'</name>\n" ;
+        	&tabulationXML(4) ; print XML "<name>$factorvalueType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]' on $subArray</name>\n" ;
         	&tabulationXML(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
         	&tabulationXML(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
         	&tabulationXML(3) ; print XML "</contrast>\n" ;
