@@ -1,12 +1,59 @@
 #List of factor value term that can be used as control
 #Strict match of what's on that list can be used as control  
 [REFERENCE]
+0 hours
+0nM rotenone
+0 uGray', time
+control
+control no relaxation response
+control shRNA
+control siRNA
+DMSO
+DMSO 0.05 percent
+DMSO 1 micromolar
+DMSO 1 volume percent
+DMSO control
+empty vector
+empty vector control
+healthy
+mock control
+mock infected
+mock infection
+monolayer control
+none
+none 0 micrograms per kilogram
+none 0 micromolar
+none 0 milligrams per kilogram
+none 0 milligrams per kilogram per day
+none 0 milligrams per milliliter
+none 0 millimolar
+none 0 nanograms per milliliter
+none 0 nanomolar
+non-transgenic
+normal
+no treatment
+PBS
+placebo
+placebo 0 milligrams
+placebo 0 moles per liter
+reference
+sham
+sham infection
+uninfected
+unstimulated
+untreated
+untreated control
+unwounded control
+vector
+vehicle
+vehicle - control
+vehicle control
+wildtype
 wild type
 wild_type
-normal
-control
-mock control
-unwounded control
+wild-type
+wildtype
+WT
 [/REFERENCE]
 
 
