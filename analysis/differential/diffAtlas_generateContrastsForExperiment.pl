@@ -31,10 +31,6 @@
 		....
 	[/FACTOR_VALUE_KILL]
 
-  Note: 
-	For now the SDRF parsing is with a gawk command
-	Later: use Maria's code  
-
 
 =head1 OPTIONS
 
