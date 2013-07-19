@@ -46,7 +46,7 @@
 
   E.g. 
 	diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt
-
+     or 
         diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt -outdir /homes/kmegy/tmp 
 
 
@@ -161,6 +161,11 @@ print "\n\n\n" ;
 #	- >= 3 replicates	  -- delete the Factor Value if not true 
 #	- reference		  -- from the list of references generated from the config file
 #	- forbidden Factor Values -- from the kill list generated from the config file; delete Factor Value if true
+
+
+#Open the output XML file
+open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
+my $configurationTag = 0 ;
 foreach my $species (keys %H_eFactorValues2runIDs) {
         print "Species is $species ($factorvalueType)\n" ;
         foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
@@ -219,12 +224,12 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 				}		
 			}
 
-			print "=====> Print XML contrast file\n" ;
+			print "=====> Print XML contrast file $outfileXML\n" ;
 			##Format in XML
-			open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
-	
 			#Beginning XML
-			&XMLboundaries("start") ;
+			#If 1st one, print the 'configuration' tag
+			if ($configurationTag == 0) { &XMLboundaries("start-conf") ; $configurationTag = 1 ; }
+			&XMLboundaries("start-analytics") ; 
 
 			#Array design section - only if experiment is an array
 			if ($array ne "0") { &printArrayDesign($array) ; }	
@@ -236,15 +241,22 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 			&printContrast($array) ;
 
 			#End XML
-			&XMLboundaries("end") ;
-
-			close XML ;
+			&XMLboundaries("end-analytics") ;
 
 		} else {  #Cannot generate contrast file
 			die "[INFO] Contrast file cannot be generated for $species & $array: $errorMessage\n" ; 
 		}
 	}		 	
-}	
+}
+
+#If anything has been written in the XML contrast file
+#Close the <configuration> tag
+if ($configurationTag == 1) { &XMLboundaries("end-conf") ; }
+
+#Close XML file
+close XML ;
+
+	
 print "\n\n\n" ;
 
 
@@ -332,15 +344,22 @@ sub printContrast {
 sub XMLboundaries {
 	my $location = $_[0] ;
 
-	if ($location =~ /start/) {
+	if ($location =~ /start-conf/) {
 		print XML "<configuration>\n" ;
-		&tabulationXML(1) ; print XML "<analytics>\n" ;
+	}	
+	
+	if ($location =~ /start-analytics/) {
+                &tabulationXML(1) ; print XML "<analytics>\n" ;
+        }
+
+	if ($location =~ /end-analytics/) {
+		&tabulationXML(1) ; print XML "</analytics>\n" ;
 	}	
 
-	if ($location =~ /end/) {
-		&tabulationXML(1) ; print XML "</analytics>\n" ;
-		print XML "</configuration>\n" ;
-	}	
+	if ($location =~ /end-conf/) {
+                print XML "</configuration>\n" ;
+        }
+
 }
 
 
@@ -470,17 +489,9 @@ sub readSDRF {
 				if ($arrayNameInd || $assayNameInd) { $technologyType = "array" ; }				
 				elsif ( $ENArun ) { $technologyType = "seq" ; }
 				#else { die "Cannot identify technology! $technologyTypeInd -$arrayDesignInd;$assayNameInd;$ENArun-\n" ; } #be more informative here? 
-			}	
+			}
 
-			## Print everything - just for a test
-			#print "==== HEADER ===\n" ;
-			#print "Organism: $SDRForgInd\n" ;
-			#print "Factor Value type [1st]: $efvType\n" ;
-			#print "Assay name: $assayNameInd\n" ;
-			#print "Array design: $arrayDesignInd\n" ;
-			#print "Technology: $technologyTypeInd or $technologyType\n" ;			
-			#print "===============\n" ;
-
+		#If line is not header, get the values	
 		} else {
 			# Check we got indices for organism, run accessions and EFVs
 			unless (defined($SDRForgInd) && defined($assayNameInd) && (defined($technologyTypeInd) || defined ($technologyType)) && @efvIndArray) { 
@@ -489,6 +500,8 @@ sub readSDRF {
 
                         # Get the run accession and factor values from their indices.
                         my $runAccession = $lineSplit[$assayNameInd];
+			$runAccession =~ s/^\"// ; #remove potential initial double quote
+			$runAccession =~ s/\"$// ; # remove potential final double quote
 
 			# Get the organism
                         my $organism = $lineSplit[$SDRForgInd];
@@ -506,6 +519,8 @@ sub readSDRF {
                         if( grep $_ eq $runAccession, @{ $seenRuns } ) { next; }
                         # Otherwise add this run's accession to the seenRuns array so we'll skip it next time.
                         else { push @{ $seenRuns }, $runAccession; }
+
+			print "==> $runAccession <==\n" ; 
 
                         my @efvArray = @lineSplit[@efvIndArray];
                         my $efvString = join " ", @efvArray;
