@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # diffAtlas_DE.pl
 # 	- Get results of differential expression for either microarray or RNA-seq data.
