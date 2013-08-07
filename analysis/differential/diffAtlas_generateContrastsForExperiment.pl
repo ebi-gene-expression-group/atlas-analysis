@@ -138,6 +138,7 @@ my ($factorvalueType, $Href_efvs2runAccessions) = &readSDRF($sdrf) ;
 my %H_eFactorValues2runIDs = %$Href_efvs2runAccessions ; #dereference the hash
 
 ##Print for a test
+print "\nProcessing experiment: $experiment..." ;
 print "=====> Print for a test\n" ;
 foreach my $species (keys %H_eFactorValues2runIDs) {
 	print "Species is $species ($factorvalueType)\n" ;
