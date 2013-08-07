@@ -38,7 +38,7 @@
 
 =head1 EXAMPLES
 
-  diffAtlas_generateContrastsForExperiment.pl -exp experiment_name -conf config_file.txt -outdir path/to/output/XML/file
+  diffAtlas_generateContrastsForExperiment.pl -exp experiment_name -conf config_file.txt -out path/to/output/XML/file
 
   E.g. 
 	diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt
