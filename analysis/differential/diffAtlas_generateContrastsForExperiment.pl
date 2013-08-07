@@ -38,7 +38,7 @@
 
 =head1 EXAMPLES
 
-  diffAtlas_generateContrastsForExperiment.pl -exp experiment_name -conf config_file.txt -out path/to/output/XML/file
+  diffAtlas_generateContrastsForExperiment.pl -exp experiment_name -conf config_file.txt -out path/to/output/XML/dir
 
   E.g. 
 	diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt
@@ -65,6 +65,7 @@ my $errorCode = 0 ; #report error when testing the replicates, reference etc.
 my $errorMessage ; #error message when testing the replicates, reference etc.
 my $flag ; #to parse config file
 my $reference ; #reference Factor Value(s) to calculate D.E. against
+my $noReferenceError ; # factor: candidate values - to output in log when reporting that no reference could be found     
 
 
 ## Get arguments
@@ -89,7 +90,7 @@ my $experimentDirectory = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIM
 
 ## Experiment sub-directory
 if ($experiment =~ /E-(\w+?)-\d+?/) {$subDirectory = $1 ; }
-else { die "[ERROR] Experiment -$experiment- not formatted as expected.\n" ; }
+else { die "[ERROR] Experiment: $experiment not formatted as expected.\n" ; }
 
 ## SDRF (input) and XML (output) files
 my $sdrf = "$experimentDirectory/$subDirectory/$experiment/$experiment.sdrf.txt" ;
@@ -134,14 +135,14 @@ close CONF ;
 ##############################################
 
 # Using Maria's subroutine
-my ($factorvalueType, $Href_efvs2runAccessions) = &readSDRF($sdrf) ;
+my ($factorType, $Href_efvs2runAccessions) = &readSDRF($sdrf) ;
 my %H_eFactorValues2runIDs = %$Href_efvs2runAccessions ; #dereference the hash
 
 ##Print for a test
-print "\nProcessing experiment: $experiment...\n" ;
+print "\n *** Processing experiment: $experiment...\n" ;
 print "=====> Print for a test\n" ;
 foreach my $species (keys %H_eFactorValues2runIDs) {
-	print "Species is $species ($factorvalueType)\n" ;
+	print "Species is $species ($factorType)\n" ;
 	foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
 		print "\tArray is $array\n" ;
 		foreach my $factValue (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
@@ -163,17 +164,18 @@ print "\n\n\n" ;
 #Open the output XML file
 open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
 my $configurationTag = 0 ;
+$noReferenceError = "Candidate reference values for $factorType: ";
 foreach my $species (keys %H_eFactorValues2runIDs) {
-        print "Species is $species ($factorvalueType)\n" ;
+        print "Species is $species ($factorType)\n" ;
         foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
                 print "\tArray is $array\n" ;
 
 		foreach my $FV (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
 			print "Testing $FV -- @{$H_eFactorValues2runIDs{$species}{$array}{$FV}}\n" ; ##REMOVE ONCE PROGRAM FINISHED
-
+			
 			#Test for forbidden factor value (e.g. 'individual')
 			if (exists $H_config{"FACTOR_VALUE_KILL"}{$FV}) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; next ; } 		
-
+			$noReferenceError .= " '$FV' ";
 			#Test for reference
 			if (exists $H_config{"REFERENCE"}{$FV}) { $reference = $FV ; print"\tReference!\n" ; } ##REMOVE print ONCE PROGRAM FINISHED 
 
@@ -190,7 +192,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 		#Reference Factor Value ? 
 		if (!defined $reference) { 
 			$errorCode = 1 ;
-			$errorMessage .= "No reference. \n" ;
+			$errorMessage .= "No reference. $noReferenceError \n" ;
 		}
 
 		#Any Factor Value left (>= 3 replicates)?
@@ -320,13 +322,13 @@ sub printAssayGroup {
 sub printContrast {
 	my $subArray = $_[0] ;
 
-	$factorvalueType = lc($factorvalueType) ;
+	$factorType = lc($factorType) ;
 
 	&tabulationXML(2) ; print XML "<contrasts>\n" ;
 	foreach my $i (2..$#A_assayGroups) { #starting at 2 because we have g1 (reference) vs. the rest
 
         	&tabulationXML(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
-        	&tabulationXML(4) ; print XML "<name>$factorvalueType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]' on $subArray</name>\n" ;
+        	&tabulationXML(4) ; print XML "<name>$factorType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]' on $subArray</name>\n" ;
         	&tabulationXML(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
         	&tabulationXML(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
         	&tabulationXML(3) ; print XML "</contrast>\n" ;
