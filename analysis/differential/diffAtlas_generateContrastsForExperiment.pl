@@ -93,7 +93,7 @@ else { die "[ERROR] Experiment -$experiment- not formatted as expected.\n" ; }
 
 ## SDRF (input) and XML (output) files
 my $sdrf = "$experimentDirectory/$subDirectory/$experiment/$experiment.sdrf.txt" ;
-my $outfileXML = "$outdir/$experiment-configuration.xml" ;
+my $outfileXML = "$outdir/$experiment-configuration.xml.auto" ;
 
 
 ## [KM] If I run that program with "$outdir" containing relative path (~/) it works, 
