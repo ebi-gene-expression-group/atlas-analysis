@@ -241,7 +241,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 			&XMLboundaries("end-analytics") ;
 
 		} else {  #Cannot generate contrast file
-			die "[INFO] Contrast file cannot be generated for $species & $array: $errorMessage\n" ; 
+			die "[ERROR] Contrast file cannot be generated for $experiment :: $species :: $array: $errorMessage\n" ; 
 		}
 	}		 	
 }
