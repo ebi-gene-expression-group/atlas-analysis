@@ -192,7 +192,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 		#Reference Factor Value ? 
 		if (!defined $reference) { 
 			$errorCode = 1 ;
-			$errorMessage .= "No reference. $noReferenceError \n" ;
+			$errorMessage .= "No reference: $noReferenceError. " ;
 		}
 
 		#Any Factor Value left (>= 3 replicates)?
@@ -201,7 +201,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 		if (keys %{$H_eFactorValues2runIDs{$species}{$array}} < 2) {
 		#if (keys %H_hybNameFactorValue < 2) {
 			$errorCode = 1 ;
-			$errorMessage .= "Less than 2 values with at least 3 replicates. \n" ; 
+			$errorMessage .= "Less than 2 values with at least 3 replicates. " ; 
 		}	
 
 		#If no error reported, then FactorValue test passed!
