@@ -75,8 +75,9 @@ diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 	# Label the axes. expression() function lets you make the "2" subscript (highly important! :)
 	mvaPlot <- mvaPlot + xlab(xAxisLabel) + ylab(expression(log[2](fold~change))) +
 
-		# Add the title (the description for this contrast).
-		ggtitle(contrastName)
+		# Add the title (the description for this contrast). Use strwrap()
+		# function to make it wrap after 70 characters.
+		ggtitle(paste(strwrap(contrastName, width=70), collapse="\n"))
 	
 	# Save the plot to a file (type specified by filename extension). Pass
 	# type="cairo" for the graphics library as the default doesn't seem to work
@@ -87,13 +88,10 @@ diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 }
 
 
-
-
-
 # Run with arguments if there are any, otherwise don't do anything.
 args <- commandArgs(TRUE)
 if(length(args) > 0) {
 	do.call(diffAtlas_mvaPlot, as.list(args))
 }
 		
-		
+
