@@ -274,7 +274,7 @@ normalizeOneExperiment <- function(files, outFile, scans, mode, miRBaseFile = NU
 # 	- miRBaseProbeFile <- filename for miRBase mappings.
 subsetProbes <<- function(dataSet, miRBaseFile) {
 
-	print(paste("There are" nrow(dataSet), "rows of data"))
+	print(paste("There are", nrow(dataSet), "rows of data"))
 	
 	print(paste("Subsetting data for probes found in", miRBaseFile))
 
@@ -282,20 +282,49 @@ subsetProbes <<- function(dataSet, miRBaseFile) {
 	miRBaseProbeMapping <- read.delim(miRBaseFile, stringsAsFactors = FALSE)
 	
 	# Probesets can be repeated; take unique set.
-	miRBaseProbes <- unique(miRBaseProbeMapping$adf.reporter.name)
+	adfReporterNameIDs <- unique(miRBaseProbeMapping$adf.reporter.name)
 
 	# Subset the data, taking only probesets from miRBase mapping file.
 	# Agilent data is read in to one of two classes:
 	# 	- "EListRaw" : 1-colour
 	# 	- "RGList" : 2-colour
-	if(class(dataSet) %in% c("EListRaw", "RGList")) { dataSet <- dataSet[which(dataSet$genes$ProbeName %in% miRBaseProbes), ] }
+	if(class(dataSet) %in% c("EListRaw", "RGList")) { 
+		
+		# Try subsetting on IDs from ADF Reporter Name column.
+		dataSetSubset <- dataSet[which(dataSet$genes$ProbeName %in% adfReporterNameIDs), ]
+		
+		# Check if we have any rows left, if not try subsetting on IDs from Probe name column.
+		if(nrow(dataSetSubset) == 0) {
+			print("No probes in raw data match ADF Reporter Name IDs.")
+			
+			# Try Probe name column if it exists, if not, die.
+			if(!is.null(miRBaseProbeMapping$Probe.name)) {
+				print("Trying IDs from Probe name column")
+				
+				# Take unit set of Probe name IDs.
+				probeNameIDs <- unique(miRBaseProbeMapping$Probe.name)
+				
+				# Try subsetting on IDs from Probe name column
+				dataSetSubset <- dataSet[which(dataSet$genes$ProbeName %in% probeNameIDs), ]
+				
+				# Check if we have any rows left, if not, die.
+				if(nrow(dataSetSubset) == 0) {
+					stop("No probes in raw data match Probe name IDs either, can't proceed.")
+				}
+			}
+			else {
+				stop("Don't have another column of probe set IDs to try, can't proceed.")
+			}
+		}
+	}
+	
 	else { print("Don't know how to subset for this type of array") }
 
-	print(paste("After subsetting there are", nrow(dataSet), "rows remaining"))
+	print(paste("After subsetting there are", nrow(dataSetSubset), "rows remaining"))
 
 	# TODO: add something here to subset for Affymetrix arrays.
 	# Need to think about how to map probes to probesets because before
 	# normalization probeset info is not available?
 	
-	return(dataSet)
+	return(dataSetSubset)
 }
