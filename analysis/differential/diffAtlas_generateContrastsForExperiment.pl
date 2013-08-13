@@ -488,13 +488,13 @@ sub readSDRF {
                                 die("Do not know SDRF columns for Organism, Assay Name, Technology Type or FactorValues.\n");
 			}
 
-                        # Get the run accession and factor values from their indices.
-                        my $runAccession = $lineSplit[$assayNameInd];
+			# Get the run accession and factor values from their indices.
+			my $runAccession = $lineSplit[$assayNameInd];
 			$runAccession =~ s/^\"// ; #remove potential initial double quote
 			$runAccession =~ s/\"$// ; # remove potential final double quote
 
 			# Get the organism
-                        my $organism = $lineSplit[$SDRForgInd];
+            my $organism = $lineSplit[$SDRForgInd];
 
 			# Get the technology type, if not already defined
 			if (!defined $technologyType) { $technologyType = $lineSplit[$technologyTypeInd] ; }	
@@ -511,14 +511,14 @@ sub readSDRF {
                         else { push @{ $seenRuns }, $runAccession; }
 
                         my @efvArray = @lineSplit[@efvIndArray];
+	
+						#Remove any empty values from the array
+						@efvArray = grep { $_ !~ /^\s*$/ } @efvArray ;
+
+						#Make a string of factor values
 						my $efvString = join " ", @efvArray;
 
-						#Remove any potential start/end spaces
-						$efvString =~ s/^\s*//g ;
-                        $efvString =~ s/\s*$//g ;
-
-
-                        # Add run accession to the right array in %efvs2runAccessions
+						# Add run accession to the right array in %efvs2runAccessions
                         if(exists($efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString })) {
 	                        push @{ $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } }, $runAccession;
                         }
