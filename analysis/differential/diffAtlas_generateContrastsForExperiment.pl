@@ -5,45 +5,45 @@
 
 =head1 NAME
 
-  Karyn Megy - 18-June-13
-  kmegy@ebi.ac.uk
-  diffAtlas_generateContrastsForExperiment.pl
+	Karyn Megy - 18-June-13
+	kmegy@ebi.ac.uk
+	diffAtlas_generateContrastsForExperiment.pl
 
 =head1 SYNOPSIS
 
-  Generate a contrast file (XML) from SDRF file (ArrayExpress format)
+	Generate a contrast file (XML) from SDRF file (ArrayExpress format)
 
 =head1 DESCRIPTION
 
-  Generate a contrast file (XML) from a SDRF file (ArrayExpress format) and a config file. 
+	Generate a contrast file (XML) from a SDRF file (ArrayExpress format) and a config file. 
 
-  The config file contains the list of reference terms and factor values to exclude from further analysis.
-  It is formatted as follow:
-	[REFERENCE] 
-		wild type
-		control
-		no treatment 
-		....
-	[/REFERENCE]
+	The config file contains the list of reference terms and factor values to exclude from further analysis.
+	It is formatted as follow:
+		[REFERENCE] 
+			wild type
+			control
+			no treatment 
+			....
+		[/REFERENCE]
 
-	[FACTOR_VALUE_KILL]
-		individual
-		....
-	[/FACTOR_VALUE_KILL]
+		[FACTOR_VALUE_KILL]
+			individual
+			....
+		[/FACTOR_VALUE_KILL]
 
 
 =head1 OPTIONS
 
-  none
+	none
 
 =head1 EXAMPLES
 
-  diffAtlas_generateContrastsForExperiment.pl -exp experiment_name -conf config_file.txt -out path/to/output/XML/dir
+	diffAtlas_generateContrastsForExperiment.pl -exp experiment_name -conf config_file.txt -out path/to/output/XML/dir
 
-  E.g. 
-	diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt
-     or 
-    diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt -outdir /homes/kmegy/tmp 
+	E.g. 
+	   diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt
+     	or 
+       diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt -outdir /homes/kmegy/tmp 
 
 
 =cut
@@ -70,11 +70,12 @@ my $noReferenceError ; # factor: candidate values - to output in log when report
 
 ## Get arguments
 ################
-GetOptions( 'help|Help|h|H' => \$help,
-	    'exp=s'=> \$experiment,
-            'conf=s' => \$conf,
-            'out=s'  => \$outdir,
-          ) ;
+GetOptions( 
+	'help|Help|h|H' => \$help,
+	'exp=s'	 => \$experiment,
+	'conf=s' => \$conf,
+	'out=s'  => \$outdir,
+) ;
 
 $commandLine = join(' ',@ARGV); 
 
@@ -89,7 +90,7 @@ if ($help) { usage($commandLine) ; die ; }
 my $experimentDirectory = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/" ;
 
 ## Experiment sub-directory
-if ($experiment =~ /E-(\w+?)-\d+?/) {$subDirectory = $1 ; }
+if ($experiment =~ /E-(\w+?)-\d+?/) { $subDirectory = $1 ; }
 else { die "[ERROR] Experiment: $experiment not formatted as expected.\n" ; }
 
 ## SDRF (input) and XML (output) files
@@ -106,13 +107,13 @@ my $outfileXML = "$outdir/$experiment-configuration.xml.auto" ;
 ###########################################
 open (CONF, $conf) || die "Can't open the configuration file $conf!\n" ;
 while (my $line=<CONF>) {
-        chomp $line ; 
+	chomp $line ; 
 
 	if ($line !~ /^#/) {
 		if ($line =~ /REFERENCE/) { $flag = "REFERENCE" ; }
 		elsif ($line =~ /FACTOR_VALUE_KILL/) { $flag = "FACTOR_VALUE_KILL" ; }
 		elsif ($line =~ /\[\//) { $flag = "" ; }
-        	else { if (($flag ne "") && ($line ne "")) { $H_config{$flag}{$line} = 1 ; } }
+		else { if (($flag ne "") && ($line ne "")) { $H_config{$flag}{$line} = 1 ; } }
 	}
 }	
 close CONF ;
@@ -136,7 +137,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 	foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
 		print "\tArray is $array\n" ;
 		foreach my $factorValue (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
-                	print "[REAL] $species - $array - '$factorValue' @{$H_eFactorValues2runIDs{$species}{$array}{$factorValue}}\n" ;
+			print "[REAL] $species - $array - '$factorValue' @{$H_eFactorValues2runIDs{$species}{$array}{$factorValue}}\n" ;
 		}
 	}
 }
@@ -156,9 +157,9 @@ open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
 my $configurationTag = 0 ;
 $noReferenceError = "Candidate reference values for $factorType: ";
 foreach my $species (keys %H_eFactorValues2runIDs) {
-        print "Species is $species ($factorType)\n" ;
-        foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
-                print "\tArray is $array\n" ;
+	print "Species is $species ($factorType)\n" ;
+	foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
+		print "\tArray is $array\n" ;
 
 		foreach my $FV (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
 			print "Testing '$FV' -- @{$H_eFactorValues2runIDs{$species}{$array}{$FV}}\n" ; ##REMOVE ONCE PROGRAM FINISHED
@@ -176,7 +177,6 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 			if ($replicateCount < 3) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; print "\tLess than 3 replicates\n" ; } ##REMOVE print ONCE PROGRAM FINISHED
 		}	
 
-
 		#Anything left afterwards
 		print "[INFO] Checking Factor Values suitability for differential expression analysis\n" ;
 
@@ -187,8 +187,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 		}
 
 		#Any Factor Value left (>= 3 replicates)?
-		#Need at least 2 of them!
-		
+		#Need at least 2 of them!		
 		if (keys %{$H_eFactorValues2runIDs{$species}{$array}} < 2) {
 		#if (keys %H_hybNameFactorValue < 2) {
 			$errorCode = 1 ;
@@ -245,8 +244,6 @@ if ($configurationTag == 1) { &XMLboundaries("end-conf") ; }
 
 #Close XML file
 close XML ;
-
-	
 print "\n\n\n" ;
 
 
@@ -256,14 +253,14 @@ print "\n\n\n" ;
 #Print usage for the program
 sub usage {
 	my ($command_line) = @_;
-
-    	print "Your command line was:\t".
-	    "$0 $command_line\n".
-	    "Compulsory parameters:\n".
-	    "\t-exp: experiment name. E.g. E-MTAB-123\n".
-	    "\t-conf: configuration file name\n".
-	    "Optional parameters:\n".
-	    "\t-outdir: output directory. Default is the current directory.\n" ;
+	
+	print "Your command line was:\t".
+		"$0 $command_line\n".
+		"Compulsory parameters:\n".
+		"\t-exp: experiment name. E.g. E-MTAB-123\n".
+		"\t-conf: configuration file name\n".
+		"Optional parameters:\n".
+		"\t-outdir: output directory. Default is the current directory.\n" ;
 }
 
 
@@ -279,8 +276,8 @@ sub printArrayDesign {
 	my $subArray = $_[0] ;
 
 	&tabulationXML(2) ; print XML "<array_design>\n" ;
-        &tabulationXML(3) ; print XML "$subArray\n" ;
-        &tabulationXML(2) ; print XML "</array_design>\n" ;
+	&tabulationXML(3) ; print XML "$subArray\n" ;
+	&tabulationXML(2) ; print XML "</array_design>\n" ;
 }
 
 #Print 'assay_group' section
@@ -292,20 +289,18 @@ sub printAssayGroup {
 
 	&tabulationXML(2) ; print XML "<assay_groups>\n" ;
 	foreach my $i (1..$#A_assayGroups) { #there is nothing in $A_assayGroups[0]
-        	my $factVal = $A_assayGroups[$i] ;
+		my $factVal = $A_assayGroups[$i] ;
 
-        	&tabulationXML(3) ; print XML "<assay_group id=\"g$i\">\n" ;
-        	foreach my $names (@{$H_eFactorValues2runIDs{$subSpecies}{$subArray}{$factVal}}) {
-                	
+		&tabulationXML(3) ; print XML "<assay_group id=\"g$i\">\n" ;
+		foreach my $names (@{$H_eFactorValues2runIDs{$subSpecies}{$subArray}{$factVal}}) {
+           	
 			&tabulationXML(4) ;
-                	print XML "<assay>$names</assay>\n" ;
-        	}
-        	&tabulationXML(3) ; print XML "</assay_group>\n" ;
-
+			print XML "<assay>$names</assay>\n" ;
+		}
+		&tabulationXML(3) ; print XML "</assay_group>\n" ;
 	}
 	&tabulationXML(2) ; print XML "</assay_groups>\n" ;
 }
-
 
 
 #Print 'contrast' section
@@ -317,12 +312,12 @@ sub printContrast {
 
 	&tabulationXML(2) ; print XML "<contrasts>\n" ;
 	foreach my $i (2..$#A_assayGroups) { #starting at 2 because we have g1 (reference) vs. the rest
-
-        	&tabulationXML(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
-        	&tabulationXML(4) ; print XML "<name>$factorType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]' on $subArray</name>\n" ;
-        	&tabulationXML(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
-        	&tabulationXML(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
-        	&tabulationXML(3) ; print XML "</contrast>\n" ;
+		
+		&tabulationXML(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
+		&tabulationXML(4) ; print XML "<name>$factorType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]' on $subArray</name>\n" ;
+		&tabulationXML(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
+		&tabulationXML(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
+		&tabulationXML(3) ; print XML "</contrast>\n" ;
 	}	
 	&tabulationXML(2) ; print XML "</contrasts>\n" ;
 }	
@@ -339,17 +334,16 @@ sub XMLboundaries {
 	}	
 	
 	if ($location =~ /start-analytics/) {
-                &tabulationXML(1) ; print XML "<analytics>\n" ;
-        }
+		&tabulationXML(1) ; print XML "<analytics>\n" ;
+	}
 
 	if ($location =~ /end-analytics/) {
 		&tabulationXML(1) ; print XML "</analytics>\n" ;
 	}	
 
 	if ($location =~ /end-conf/) {
-                print XML "</configuration>\n" ;
-        }
-
+		print XML "</configuration>\n" ;
+	}
 }
 
 
@@ -388,42 +382,42 @@ sub XMLboundaries {
 #       $efvs2runAccessions : reference to anonymous hash with mappings between factor
 #       values (for each organism) and run accessions.
 sub readSDRF {
-        # Get the arguments:
-        my $sdrfFile = $_[0] ; 
+	# Get the arguments:
+	my $sdrfFile = $_[0] ; 
        
 	#Declare variables
 	my ($ENArunInd, $assayNameInd, $arrayNameInd, $arrayDesignInd, $technologyTypeInd) ; #indexes 
 	my ($ENArun, $organism, $runAccession, $technologyType, $efvType) ;
 
-        # Simple way to check we have an SDRF.
-       if($sdrfFile !~ /\.sdrf\.txt$/) {
-                die "$sdrfFile doesn't look like an SDRF file to me. If it is, please append \".sdrf.txt\" to its name.\n";
-        }
+	# Simple way to check we have an SDRF.
+	if($sdrfFile !~ /\.sdrf\.txt$/) {
+		die "$sdrfFile doesn't look like an SDRF file to me. If it is, please append \".sdrf.txt\" to its name.\n";
+	}
 
-        # Open SDRF
-        open(my $sdrfHandle, "<", $sdrfFile) or die "Can't open $sdrfFile: $!\n";
+	# Open SDRF
+	open(my $sdrfHandle, "<", $sdrfFile) or die "Can't open $sdrfFile: $!\n";
         
-        # Variables to store run name and factor value column indices.
-        my ($SDRFrunInd, @efvIndArray, $SDRForgInd);
+	# Variables to store run name and factor value column indices.
+	my ($SDRFrunInd, @efvIndArray, $SDRForgInd);
         
-        # Hash reference to remember which run accessions belong to which combination of factor values.
-        # $efvs2runAccessions->{ "Gallus gallus" }->{"AFFY-35"}->{ "brain" } = [ "SRR0005", "SRR0006", ... ]    
-        my $efvs2runAccessions = {};
+	# Hash reference to remember which run accessions belong to which combination of factor values.
+	# $efvs2runAccessions->{ "Gallus gallus" }->{"AFFY-35"}->{ "brain" } = [ "SRR0005", "SRR0006", ... ]    
+	my $efvs2runAccessions = {};
 
-        # Remember the run accessions we've seen in the SDRF, because in SDRFs with paired-end
-        # data, we might have two rows per run!
-        my $seenRuns = [];
+	# Remember the run accessions we've seen in the SDRF, because in SDRFs with paired-end
+	# data, we might have two rows per run!
+	my $seenRuns = [];
         
-        # Loop through file.
-        while(defined (my $line = <$sdrfHandle>))  {
-        	# Remove newlines
-        	chomp($line);
+	# Loop through file.
+	while(defined (my $line = <$sdrfHandle>))  {
+		# Remove newlines
+		chomp($line);
         
-        	# split on tabs
-                my @lineSplit = split("\t", $line);
+ 		# split on tabs
+		my @lineSplit = split("\t", $line);
         
-               # Get column indices of run names and factor value(s) from the first line with headers.
-               # Characteristics[Organism] should be present in every SDRF header line in some form.
+		# Get column indices of run names and factor value(s) from the first line with headers.
+		# Characteristics[Organism] should be present in every SDRF header line in some form.
                if($line =~ /characteristics\s*\[\s*organism\s*\]/i) {
 
                		# Index of Characteristics[Organism] column. Technically it should
