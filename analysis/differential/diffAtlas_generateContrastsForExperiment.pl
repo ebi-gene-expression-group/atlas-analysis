@@ -113,7 +113,7 @@ while (my $line=<CONF>) {
 		if ($line =~ /REFERENCE/) { $flag = "REFERENCE" ; }
 		elsif ($line =~ /FACTOR_VALUE_KILL/) { $flag = "FACTOR_VALUE_KILL" ; }
 		elsif ($line =~ /\[\//) { $flag = "" ; }
-		else { if (($flag ne "") && ($line ne "")) { $H_config{$flag}{$line} = 1 ; } }
+		else { if (($flag ne "") && ($line ne "")) { $H_config{$flag}{lc($line)} = 1 ; } } #Use lc for case insensitive conparison
 	}
 }	
 close CONF ;
@@ -151,7 +151,6 @@ print "\n\n\n" ;
 #	- reference		  -- from the list of references generated from the config file
 #	- forbidden Factor Values -- from the kill list generated from the config file; delete Factor Value if true
 
-
 #Open the output XML file
 open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
 my $configurationTag = 0 ;
@@ -165,11 +164,15 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 			print "Testing '$FV' -- @{$H_eFactorValues2runIDs{$species}{$array}{$FV}}\n" ; ##REMOVE ONCE PROGRAM FINISHED
 			
 			#Test for forbidden factor value (e.g. 'individual')
-			if (exists $H_config{"FACTOR_VALUE_KILL"}{$FV}) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; next ; } 		
+			if (exists $H_config{"FACTOR_VALUE_KILL"}{lc($FV)}) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; next ; } 		
 			$noReferenceError .= " '$FV' ";
 
-			#Test for reference
-			if (exists $H_config{"REFERENCE"}{$FV}) { $reference = $FV ; print"\tReference!\n" ; } ##REMOVE print ONCE PROGRAM FINISHED 
+			#Test for reference - if already one, die loudly
+			#(case insensitive: lc only)
+			if (exists $H_config{"REFERENCE"}{lc($FV)}) { 
+				if ($reference eq "") { $reference = $FV ; }
+				else { die "[ERROR] More than one reference - $reference and $FV!\n" } ;
+			}
 
 			#Test for replicates
 			my $replicateCount = scalar @{$H_eFactorValues2runIDs{$species}{$array}{$FV}} ;
@@ -418,16 +421,16 @@ sub readSDRF {
         
 		# Get column indices of run names and factor value(s) from the first line with headers.
 		# Characteristics[Organism] should be present in every SDRF header line in some form.
-               if($line =~ /characteristics\s*\[\s*organism\s*\]/i) {
+		if($line =~ /characteristics\s*\[\s*organism\s*\]/i) {
 
-               		# Index of Characteristics[Organism] column. Technically it should
-               		# be in a FactorValue[] column if it varies but just in case we'll
-               		# account for possibility of different organisms here.
-                        my @orgIndArray = grep $lineSplit[$_] =~ /characteristics\s*\[\s*organism\s*\]/i, 0..$#lineSplit;
-                        $SDRForgInd = $orgIndArray[0];
+			# Index of Characteristics[Organism] column. Technically it should
+			# be in a FactorValue[] column if it varies but just in case we'll
+			# account for possibility of different organisms here.
+			my @orgIndArray = grep $lineSplit[$_] =~ /characteristics\s*\[\s*organism\s*\]/i, 0..$#lineSplit;
+			$SDRForgInd = $orgIndArray[0];
             
-                        # Index of FactorValue[xxxx] column(s)
-                        @efvIndArray = grep $lineSplit[$_] =~ /factor\s*value\s*\[/i, 0..$#lineSplit;
+			# Index of FactorValue[xxxx] column(s)
+			@efvIndArray = grep $lineSplit[$_] =~ /factor\s*value\s*\[/i, 0..$#lineSplit;
                       
 			# Need to capture the factor value type (FactorValue[TYPE])
 			# ... get the 1st one only to start with
@@ -461,11 +464,11 @@ sub readSDRF {
 			# 		    for new ones, there is a "Technology Type" tag
 			# Array Names REF (old SDRF - microarray)
 			my @runIndArray = grep $lineSplit[$_] =~ /Array Name REF/i, 0..$#lineSplit;
-                        $arrayNameInd = $runIndArray[0];
+			$arrayNameInd = $runIndArray[0];
 
 			# Technology Type (newer SDRF - RNA-Seq and microarray)
 			my @runIndArray = grep $lineSplit[$_] =~ /Technology Type/i, 0..$#lineSplit;
-                        $technologyTypeInd = $runIndArray[0];
+			$technologyTypeInd = $runIndArray[0];
 
 			#beware that if no Technology Type tag, get info. from other columns
 			#but $technologyType is a string rather than the index (position) of that value
@@ -479,16 +482,16 @@ sub readSDRF {
 		} else {
 			# Check we got indices for organism, run accessions and EFVs
 			unless (defined($SDRForgInd) && defined($assayNameInd) && (defined($technologyTypeInd) || defined ($technologyType)) && @efvIndArray) { 
-                                die("Do not know SDRF columns for Organism, Assay Name, Technology Type or FactorValues.\n");
+				die("Do not know SDRF columns for Organism, Assay Name, Technology Type or FactorValues.\n");
 			}
 
 			# Get the run accession and factor values from their indices.
 			my $runAccession = $lineSplit[$assayNameInd];
 			$runAccession =~ s/^\"// ; #remove potential initial double quote
-			$runAccession =~ s/\"$// ; # remove potential final double quote
+			$runAccession =~ s/\"$// ; #remove potential final double quote
 
 			# Get the organism
-            my $organism = $lineSplit[$SDRForgInd];
+			my $organism = $lineSplit[$SDRForgInd];
 
 			# Get the technology type, if not already defined
 			if (!defined $technologyType) { $technologyType = $lineSplit[$technologyTypeInd] ; }	
@@ -497,47 +500,37 @@ sub readSDRF {
 			# Get the array design, otherwise set to 0
 			my $arrayDesign = 0 ;
 			if ($technologyType =~ /array/) { $arrayDesign = $lineSplit[$arrayDesignInd] ; }
-	
-                        # Skip to next line if we have already seen this run accession -- SDRFs for
-                        # paired-end data have run accessions in twice.
-                        if( grep $_ eq $runAccession, @{ $seenRuns } ) { next; }
-                        # Otherwise add this run's accession to the seenRuns array so we'll skip it next time.
-                        else { push @{ $seenRuns }, $runAccession; }
+			
+			# Skip to next line if we have already seen this run accession -- SDRFs for
+			# paired-end data have run accessions in twice.
+			if( grep $_ eq $runAccession, @{ $seenRuns } ) { next; }
+			
+			# Otherwise add this run's accession to the seenRuns array so we'll skip it next time.
+			else { push @{ $seenRuns }, $runAccession; }
 
-                        my @efvArray = @lineSplit[@efvIndArray];
-	
-						#Remove any empty values from the array
-						@efvArray = grep { $_ !~ /^\s*$/ } @efvArray ;
+			# Factor Value
+			my @efvArray = @lineSplit[@efvIndArray];
 
-						#Make a string of factor values
-						my $efvString = join " ", @efvArray;
+			#Remove any empty values from the array
+			@efvArray = grep { $_ !~ /^\s*$/ } @efvArray ;
 
-						# Add run accession to the right array in %efvs2runAccessions
-                        if(exists($efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString })) {
-	                        push @{ $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } }, $runAccession;
-                        }
-                        else {
-                                $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } = [ $runAccession ];
-                        }
-                }
-        }
-        # Close the file handle
-        close($sdrfHandle);
+			#Make a string of factor values
+			my $efvString = join " ", @efvArray;
 
-       # Return the factor value type (e.g. "genotype") and the reference to a hash of mappings between factor values and run accessions
-       return($efvType, $efvs2runAccessions);
+			#Remove double quote
+			$efvString =~ s/\"//g ;
+
+			# Add run accession to the right array in %efvs2runAccessions
+			if(exists($efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString })) {
+				push @{ $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } }, $runAccession;
+			} else {
+				$efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } = [ $runAccession ];
+			}
+		}
+	}
+	# Close the file handle
+	close($sdrfHandle);
+
+	# Return the factor value type (e.g. "genotype") and the reference to a hash of mappings between factor values and run accessions
+	return($efvType, $efvs2runAccessions);
 }
-
-
-
-
-
-
-
-
-
-
-
-  
-                           
-
