@@ -271,18 +271,19 @@ normalizeOneExperiment <- function(files, outFile, scans, mode, miRBaseFile = NU
 #  the latest release of miRBase (www.mirbase.org). Subset the data here.
 # ARGUMENTS:
 # 	- dataSet <- for now either EListRaw or RGList object.
-# 	- miRBaseProbeFile <- filename for miRBase mappings.
+# 	- miRBaseFile <- filename for miRBase mappings.
 subsetProbes <<- function(dataSet, miRBaseFile) {
 
 	print(paste("There are", nrow(dataSet), "rows of data"))
 	
 	print(paste("Subsetting data for probes found in", miRBaseFile))
 
-	# Read file with miRBase mappings.
+	# Read file with miRBase mappings into a data frame.
 	miRBaseProbeMapping <- read.delim(miRBaseFile, stringsAsFactors = FALSE)
 	
-	# Probesets can be repeated; take unique set.
-	adfReporterNameIDs <- unique(miRBaseProbeMapping$adf.reporter.name)
+	# Probesets can be repeated; take unique set from design_element column in
+	# miRBase mapping data frame.
+	design_element <- unique(miRBaseProbeMapping$design_element)
 
 	# Subset the data, taking only probesets from miRBase mapping file.
 	# Agilent data is read in to one of two classes:
@@ -290,41 +291,24 @@ subsetProbes <<- function(dataSet, miRBaseFile) {
 	# 	- "RGList" : 2-colour
 	if(class(dataSet) %in% c("EListRaw", "RGList")) { 
 		
-		# Try subsetting on IDs from ADF Reporter Name column.
-		dataSetSubset <- dataSet[which(dataSet$genes$ProbeName %in% adfReporterNameIDs), ]
+		# Subset dataSet using design_element column from miRBase mapping file.
+		dataSet <- dataSet[which(dataSet$genes$ProbeName %in% design_element), ]
 		
-		# Check if we have any rows left, if not try subsetting on IDs from Probe name column.
-		if(nrow(dataSetSubset) == 0) {
-			print("No probes in raw data match ADF Reporter Name IDs.")
-			
-			# Try Probe name column if it exists, if not, die.
-			if(!is.null(miRBaseProbeMapping$Probe.name)) {
-				print("Trying IDs from Probe name column")
-				
-				# Take unit set of Probe name IDs.
-				probeNameIDs <- unique(miRBaseProbeMapping$Probe.name)
-				
-				# Try subsetting on IDs from Probe name column
-				dataSetSubset <- dataSet[which(dataSet$genes$ProbeName %in% probeNameIDs), ]
-				
-				# Check if we have any rows left, if not, die.
-				if(nrow(dataSetSubset) == 0) {
-					stop("No probes in raw data match Probe name IDs either, can't proceed.")
-				}
-			}
-			else {
-				stop("Don't have another column of probe set IDs to try, can't proceed.")
-			}
+		# Check if we have any rows left after subsetting.
+		if(nrow(dataSet) == 0) {
+			# If not, that means no probe names matched any of the values in
+			# the design_element column, so die.
+			stop("No probes in raw data match values in design_element column of miRBase mapping file. Cannot proceed.")
 		}
 	}
-	
+	# If it's not an "ElistRaw" or "RGList" object we can't handle it (yet).
 	else { print("Don't know how to subset for this type of array") }
 
-	print(paste("After subsetting there are", nrow(dataSetSubset), "rows remaining"))
+	print(paste("After subsetting there are", nrow(dataSet), "rows remaining"))
 
 	# TODO: add something here to subset for Affymetrix arrays.
 	# Need to think about how to map probes to probesets because before
 	# normalization probeset info is not available?
 	
-	return(dataSetSubset)
+	return(dataSet)
 }
