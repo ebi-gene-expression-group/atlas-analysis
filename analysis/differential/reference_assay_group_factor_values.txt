@@ -1,14 +1,31 @@
 #List of factor value term that can be used as control
 #Strict match of what's on that list can be used as control  
 [REFERENCE]
+0
 0 hours
+0 hours after puparium formation
 0nM rotenone
+0 no peptide
 0 uGray', time
+0 uM phosphate
+albumin control
+beta-lactamase control
+casein diet control (CAS)
 Col-0
+Col 0(wild type)
+Col 0
+Columbia-0
 control
+control diet
+control diet (uncontaminated) for 23 days ad libitum
+control nutrient solution
+control pregnancy
 control no relaxation response
 control shRNA
 control siRNA
+control (ethanol vehicle)
+control (non-isoflavone)
+day 0
 DMSO
 DMSO 0.05 percent
 DMSO 1 micromolar
@@ -16,12 +33,26 @@ DMSO 1 volume percent
 DMSO control
 empty vector
 empty vector control
+empty vector control RNAi
+empty-vector
+empty-vector control pCaMBIA 1302
+firefly luciferase
 healthy
+healthy control
+KRAS wildtype
+luciferase
+mock
 mock control
 mock infected
 mock infection
 monolayer control
+negative control siRNA
+never smoked
+no exercise
+no treatment 0
+ none
 none
+none 0
 none 0 micrograms per kilogram
 none 0 micromolar
 none 0 milligrams per kilogram
@@ -30,18 +61,38 @@ none 0 milligrams per milliliter
 none 0 millimolar
 none 0 nanograms per milliliter
 none 0 nanomolar
+none (input)
+non-targeting siRNA
 non-transgenic
+non-tumor
 normal
+normal conditions
+normal diet (10%) for 18 wks
+normoxic
+not specified Control knockdown (Control siRNA)
 no treatment
 PBS
 placebo
+placebo 0
 placebo 0 milligrams
 placebo 0 moles per liter
+placebo treated
+Pre-miR-Control
 reference
+regular chow diet
+retrovirus expressing control vector
+scramble siRNA
+scrambled control
+scrambled siRNA
 sham
 sham infection
+stably transfected with empty vector
+transfected with control siRNA
+unexposed
 uninfected
+uninfected control
 unstimulated
+unstressed control
 untreated
 untreated control
 unwounded control
@@ -49,12 +100,14 @@ vector
 vehicle
 vehicle - control
 vehicle control
+water
 wildtype
 wild type
 wild_type
 wild-type
 wildtype
 WT
+W303 wild-type
 [/REFERENCE]
 
 
@@ -62,5 +115,4 @@ WT
 #... a diff. expr. analysis  
 [FACTOR_VALUE_KILL]
 individual
-Individual
 [/FACTOR_VALUE_KILL]
