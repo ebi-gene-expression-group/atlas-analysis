@@ -4,6 +4,7 @@
 0 hours
 0nM rotenone
 0 uGray', time
+Col-0
 control
 control no relaxation response
 control shRNA
