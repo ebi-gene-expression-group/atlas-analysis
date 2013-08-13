@@ -43,7 +43,7 @@
   E.g. 
 	diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt
      or 
-        diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt -outdir /homes/kmegy/tmp 
+    diffAtlas_generateContrastsForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt -outdir /homes/kmegy/tmp 
 
 
 =cut
@@ -118,16 +118,6 @@ while (my $line=<CONF>) {
 close CONF ;
 
 
-##### REMOVE ONCE PROGRAM FINISHED ###
-### Print for a test
-#foreach my $category (keys %H_Config) {
-#	print ">>$category<<\n" ; 
-#	foreach my $value (keys %{$H_Config{$category}}) { print ".$value.\n" ; }	
-#} print "=====\n" ;
-#exit ;
-##### END of 'REMOVE ONCE PROGRAM FINISHED'
-
-
 ## Collect FactorValues & ENA IDs
 ## ... to start with, use Maria's subroutine
 ## ... later: use MAGETAB module
@@ -176,6 +166,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 			#Test for forbidden factor value (e.g. 'individual')
 			if (exists $H_config{"FACTOR_VALUE_KILL"}{$FV}) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; next ; } 		
 			$noReferenceError .= " '$FV' ";
+
 			#Test for reference
 			if (exists $H_config{"REFERENCE"}{$FV}) { $reference = $FV ; print"\tReference!\n" ; } ##REMOVE print ONCE PROGRAM FINISHED 
 
@@ -519,36 +510,25 @@ sub readSDRF {
                         # Otherwise add this run's accession to the seenRuns array so we'll skip it next time.
                         else { push @{ $seenRuns }, $runAccession; }
 
-			print "==> $runAccession <==\n" ; 
-
                         my @efvArray = @lineSplit[@efvIndArray];
-                        my $efvString = join " ", @efvArray;
+						my $efvString = join " ", @efvArray;
+
+						#Remove any potential start/end spaces
+						$efvString =~ s/^\s*//g ;
+                        $efvString =~ s/\s*$//g ;
+
 
                         # Add run accession to the right array in %efvs2runAccessions
                         if(exists($efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString })) {
-        			##print "Adding in table $efvs2runAccessions -> $organism -> $efvString , $runAccession\n" ;
 	                        push @{ $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } }, $runAccession;
                         }
                         else {
-				##print "Adding in table $efvs2runAccessions -> $organism -> $efvString = [ $runAccession ]\n" ;
                                 $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } = [ $runAccession ];
                         }
                 }
         }
         # Close the file handle
         close($sdrfHandle);
-
-
-	##Print for testing - to be removed after
-	#foreach my $species (keys %$efvs2runAccessions) {
-        #	print "[SUB] Species is $species\n" ;
-        #	foreach my $array (keys %{$efvs2runAccessions->{$species}}) {
-	#		print "[SUB] \tArray is $array\n" ;
-        #       	foreach my $organ (keys %{$efvs2runAccessions->{$species}->{$array}}) {
-        #        		print "[SUB] $species - $array - $organ %$efvs2runAccessions->{$species}->{$array}->{$organ}\n" ;
-	#		}
-        #	}
-	#}	
 
        # Return the factor value type (e.g. "genotype") and the reference to a hash of mappings between factor values and run accessions
        return($efvType, $efvs2runAccessions);
