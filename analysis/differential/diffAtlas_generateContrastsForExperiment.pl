@@ -145,8 +145,8 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 	print "Species is $species ($factorType)\n" ;
 	foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
 		print "\tArray is $array\n" ;
-		foreach my $factValue (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
-                	print "[REAL] $species - $array - $factValue @{$H_eFactorValues2runIDs{$species}{$array}{$factValue}}\n" ;
+		foreach my $factorValue (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
+                	print "[REAL] $species - $array - '$factorValue' @{$H_eFactorValues2runIDs{$species}{$array}{$factorValue}}\n" ;
 		}
 	}
 }
@@ -171,7 +171,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
                 print "\tArray is $array\n" ;
 
 		foreach my $FV (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
-			print "Testing $FV -- @{$H_eFactorValues2runIDs{$species}{$array}{$FV}}\n" ; ##REMOVE ONCE PROGRAM FINISHED
+			print "Testing '$FV' -- @{$H_eFactorValues2runIDs{$species}{$array}{$FV}}\n" ; ##REMOVE ONCE PROGRAM FINISHED
 			
 			#Test for forbidden factor value (e.g. 'individual')
 			if (exists $H_config{"FACTOR_VALUE_KILL"}{$FV}) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; next ; } 		
