@@ -7,8 +7,8 @@
 # 	summarizing statistics results for all contrasts into a single
 # 	tab-delimited text file.
 # 	- For RNA-seq, differential expression stats for each contrast have already
-# 	been calculated using DESeq via eREAP. For this data, find contrast
-# 	definitions in eREAP config and display names in Atlas contrasts XML file,
+# 	been calculated using DESeq via iRAP. For this data, find contrast
+# 	definitions in iRAP config and display names in Atlas contrasts XML file,
 # 	read DESeq results for each contrast, create an MvA plot for each contrast,
 # 	and then summarize statistics results for all contrasts into a single
 # 	tab-delimited text file.
@@ -27,7 +27,7 @@ my $limmaScript = "diffAtlas_DE_limma.R";
 
 
 # Get commandline arguments
-my ($atlasXML, $ereapConfig) = init();
+my ($atlasXML, $irapConfig) = init();
 
 
 # Get experiment accession from contrasts filename.
@@ -48,8 +48,8 @@ print "Experiment accession: $exptAcc\n";
 my $contrastHash = readAtlasXML($atlasXML);
 
 # If we have an RNA-Seq experiment, get DESeq results filenames.
-if($ereapConfig) { 
-	$contrastHash = readEreapConf($contrastHash, $ereapConfig, $exptAcc); 
+if($irapConfig) { 
+	$contrastHash = readEreapConf($contrastHash, $irapConfig, $exptAcc); 
 }
 
 
@@ -61,7 +61,7 @@ if($ereapConfig) {
 # getDEresults() and go through each contrast in turn:
 # 	- for microarray data, we run differential expression statistics in limma
 # 	via an R script to get p-values, t-statistics, and log2 fold-changes.
-# 	- for RNA-seq data, stats have already been run in eREAP so we just read in
+# 	- for RNA-seq data, stats have already been run in iRAP so we just read in
 # 	the results from that and get the p-values and log2 fold-changes. We don't
 # 	have t-statistics for RNA-seq obviously and for now we're not interested in
 # 	the likelihood ratio.
@@ -84,23 +84,23 @@ getDEresults($contrastHash, $exptAcc, $mvaScript, $limmaScript);
 # init
 # 	Get commandline arguments using Getopt::Long.
 # 		--atlasxml <Atlas contrasts XML file> (required)
-# 		--ereapconf <eREAP config file> (for RNA-seq)
+# 		--irapconf <iRAP config file> (for RNA-seq)
 sub init {
 	
 	use vars qw/ %opt /;
 	use Getopt::Long;
 
-	my ($atlasXML, $ereapConfig);
+	my ($atlasXML, $irapConfig);
 	GetOptions(
 		'atlasxml=s' => \$atlasXML,
-		'ereapconf=s' => \$ereapConfig,
+		'irapconf=s' => \$irapConfig,
 	);
 
 	unless($atlasXML) {
-		die "Cannot proceed without Atlas contrasts XML file. Please provide it with \"--atlasxml <filename>\"\nFor RNA-seq experiments please also provide \"--ereapconf <eREAP config filename>\"\n";
+		die "Cannot proceed without Atlas contrasts XML file. Please provide it with \"--atlasxml <filename>\"\nFor RNA-seq experiments please also provide \"--irapconf <iRAP config filename>\"\n";
 	}
 	
-	return ($atlasXML, $ereapConfig);
+	return ($atlasXML, $irapConfig);
 }
 
 
@@ -116,9 +116,9 @@ sub init {
 #	to do the DE analysis with limma.
 #	- RNA-seq analytics section doesn't have an <array_design> section. All
 #	RNA-seq data goes into the same <analytics> section. If there are multiple
-#	reference genomes used this is taken care of in the eREAP config file but
+#	reference genomes used this is taken care of in the iRAP config file but
 #	this script doesn't care about that, because it is just retrieving
-#	pre-computed results for each contrast found in the XML and eREAP config.
+#	pre-computed results for each contrast found in the XML and iRAP config.
 sub readAtlasXML {
 
 	$_ = shift for my ($atlasXML);
@@ -200,38 +200,38 @@ sub readAtlasXML {
 
 
 # readEreapConf
-#  - read eREAP config file to get filename for DESeq results for each contrast.
-#  - check experiment accession in eREAP config matches that of Atlas contrasts XML.
-#  - die if we find an extra contrast in the eREAP config that was not in Atlas contrasts XML.
-#  - die if we couldn't find a contrast from the Atlas contrasts XML in the eREAP config.
+#  - read iRAP config file to get filename for DESeq results for each contrast.
+#  - check experiment accession in iRAP config matches that of Atlas contrasts XML.
+#  - die if we find an extra contrast in the iRAP config that was not in Atlas contrasts XML.
+#  - die if we couldn't find a contrast from the Atlas contrasts XML in the iRAP config.
 #  - match contrasts between the two files based on "assay group pairs" e.g. "g1_g2".
 sub readEreapConf {
 
-	$_ = shift for my ($contrastHash, $ereapConfig, $exptAcc);
+	$_ = shift for my ($contrastHash, $irapConfig, $exptAcc);
 
 	# Directory of config file is the same as the beginning of path to
 	# DESeq files.
-	my $deseqDir = (fileparse($ereapConfig))[1];
+	my $deseqDir = (fileparse($irapConfig))[1];
 
 	# Get experiment accession, mapper, quantification method and DE method
 	# from config file to create full path to DESeq results files.
 	# $inContrasts is flag for getting contrast names.
-	my ($ereapExptAcc, $mapper, $qMethod, $deMethod, $inContrasts, $numContrasts);
+	my ($irapExptAcc, $mapper, $qMethod, $deMethod, $inContrasts, $numContrasts);
 	
-	open(CONF, $ereapConfig) or die("Can't open $ereapConfig: $!\n");
+	open(CONF, $irapConfig) or die("Can't open $irapConfig: $!\n");
 
-	print "\nReading eREAP config: $ereapConfig...\n";
+	print "\nReading iRAP config: $irapConfig...\n";
 	while(defined(my $line = <CONF>)) {
 
 		chomp $line;
 
 		if($line =~ /^name=(.*)/) { 
-			$ereapExptAcc = $1; 
+			$irapExptAcc = $1; 
 		
-			# Check experiment accession from eREAP config matches that in filename of
+			# Check experiment accession from iRAP config matches that in filename of
 			# Atlas contrasts file.
-			unless($ereapExptAcc eq $exptAcc) {
-				die "\neREAP experiment accession is: $ereapExptAcc -- does not match Atlas experiment accession ($exptAcc)\n";
+			unless($irapExptAcc eq $exptAcc) {
+				die "\niRAP experiment accession is: $irapExptAcc -- does not match Atlas experiment accession ($exptAcc)\n";
 			}
 		}
 		
@@ -247,8 +247,8 @@ sub readEreapConf {
 
 			# join assay group numbers with an underscore.
 			my $agPair = join "_", (split " ", $assayGroups);
-			# use assay group string as key in hash, add eREAP's contrast name
-			# under "ereap" key.
+			# use assay group string as key in hash, add iRAP's contrast name
+			# under "irap" key.
 			my $contrastName = (split "=", $line)[0];
 			
 			# Get the filename of DESeq results for this contrast.
@@ -272,10 +272,10 @@ sub readEreapConf {
 
 	# Log what we've found.
 	# Die if we have a contrast in the Atlas XML file for which we did not find
-	# a corresponding contrast in the eREAP config.
+	# a corresponding contrast in the iRAP config.
 	print "$numContrasts contrast";
 	unless($numContrasts == 1) { print "s"; }
-	print " found in eREAP config:\n";
+	print " found in iRAP config:\n";
 	
 	foreach my $agPair (keys %{ $contrastHash->{ "rnaseq"} }) {
 		if(exists($contrastHash->{ "rnaseq" }->{ $agPair }->{ "deseqFile" })) {
@@ -284,7 +284,7 @@ sub readEreapConf {
 			$contrastName =~ s/\.genes_de\.tsv//;
 			print "\t$contrastName\n";
 		} else {
-			die "Contrast \"", $contrastHash->{ "rnaseq" }->{ $agPair }->{ "atlasName "}, "\" ($agPair) was not found in eREAP config.\n";
+			die "Contrast \"", $contrastHash->{ "rnaseq" }->{ $agPair }->{ "atlasName "}, "\" ($agPair) was not found in iRAP config.\n";
 		}
 	}
 	print "\n";
@@ -298,7 +298,7 @@ sub readEreapConf {
 
 
 # getDEresults
-# 	- For RNA-Seq, pull statistics results for each contrast out of DESeq results file from eREAP run.
+# 	- For RNA-Seq, pull statistics results for each contrast out of DESeq results file from iRAP run.
 # 	- For microarray, run limma for each contrast and take statistics results from there.
 # 	- For both, for each contrast, create an MvA plot in a PNG file.
 # 	- Call writeResults() for each platform to write the results to a single TSV file.
@@ -369,10 +369,12 @@ sub getDEresults {
 						unless(looks_like_number($baseMean)) {
 							die "\nDid not get numeric value for baseMean:\nGene ID: $geneID\nbaseMean: $baseMean\n";
 						}
-						unless(looks_like_number($adjPval)) {
+						# Allow "NA" adjusted p-values through.
+						unless(looks_like_number($adjPval) || $adjPval eq "NA") {
 							die "\nDid not get numeric value for adjusted p-value:\nGene ID: $geneID\nadjusted p-value: $adjPval\n";
 						}
-						unless(looks_like_number($logFC)) {
+						# Allow "NA" log fold-changes through.
+						unless(looks_like_number($logFC) || $logFC eq "NA") {
 							die "\nDid not get numeric value for log2FoldChange:\nGene ID: $geneID\nlog2FoldChange: $logFC\n";
 						}
 						
