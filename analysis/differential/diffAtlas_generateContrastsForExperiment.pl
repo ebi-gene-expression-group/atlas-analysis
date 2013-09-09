@@ -98,10 +98,6 @@ my $sdrf = "$experimentDirectory/$subDirectory/$experiment/$experiment.sdrf.txt"
 my $outfileXML = "$outdir/$experiment-configuration.xml.auto" ;
 
 
-## [KM] If I run that program with "$outdir" containing relative path (~/) it works, 
-# [KM] ... but it might not work on LSF. 
-# [KM] I can easily plan for that (replacing ~/ by $HOME/) - but is it worth doing it?
-
 
 ## Extract information from the config file
 ###########################################
@@ -261,7 +257,7 @@ sub usage {
 		"$0 $command_line\n".
 		"Compulsory parameters:\n".
 		"\t-exp: experiment name. E.g. E-MTAB-123\n".
-		"\t-conf: configuration file name\n".
+		"\t-conf: generic configuration file for that program. It should be in the same directory, and possible named reference_assay_group_factor_values.txt\n".
 		"Optional parameters:\n".
 		"\t-outdir: output directory. Default is the current directory.\n" ;
 }
@@ -317,7 +313,9 @@ sub printContrast {
 	foreach my $i (2..$#A_assayGroups) { #starting at 2 because we have g1 (reference) vs. the rest
 		
 		&tabulationXML(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
-		&tabulationXML(4) ; print XML "<name>$factorType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]' on $subArray</name>\n" ;
+		&tabulationXML(4) ; print XML "<name>$factorType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]'" ;
+		if ($subArray != 0) { print XML " on $subArray" ; } 
+		print XML "</name>\n" ;
 		&tabulationXML(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
 		&tabulationXML(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
 		&tabulationXML(3) ; print XML "</contrast>\n" ;
@@ -416,6 +414,7 @@ sub readSDRF {
 		# Remove newlines
 		chomp($line);
         
+
  		# split on tabs
 		my @lineSplit = split("\t", $line);
         
@@ -486,7 +485,10 @@ sub readSDRF {
 			}
 
 			# Get the run accession and factor values from their indices.
-			my $runAccession = $lineSplit[$assayNameInd];
+			my $runAccession ;
+			if ( defined $ENArunInd) {
+				$runAccession = $lineSplit[$ENArunInd];
+			} else { $runAccession = $lineSplit[$assayNameInd]; }
 			$runAccession =~ s/^\"// ; #remove potential initial double quote
 			$runAccession =~ s/\"$// ; #remove potential final double quote
 
