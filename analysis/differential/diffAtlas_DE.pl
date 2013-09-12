@@ -49,7 +49,7 @@ my $contrastHash = readAtlasXML($atlasXML);
 
 # If we have an RNA-Seq experiment, get DESeq results filenames.
 if($irapConfig) { 
-	$contrastHash = readEreapConf($contrastHash, $irapConfig, $exptAcc); 
+	$contrastHash = readIrapConf($contrastHash, $irapConfig, $exptAcc); 
 }
 
 
@@ -199,13 +199,13 @@ sub readAtlasXML {
 
 
 
-# readEreapConf
+# readIrapConf
 #  - read iRAP config file to get filename for DESeq results for each contrast.
 #  - check experiment accession in iRAP config matches that of Atlas contrasts XML.
 #  - die if we find an extra contrast in the iRAP config that was not in Atlas contrasts XML.
 #  - die if we couldn't find a contrast from the Atlas contrasts XML in the iRAP config.
 #  - match contrasts between the two files based on "assay group pairs" e.g. "g1_g2".
-sub readEreapConf {
+sub readIrapConf {
 
 	$_ = shift for my ($contrastHash, $irapConfig, $exptAcc);
 
