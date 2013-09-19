@@ -17,7 +17,7 @@ my $exptAccession = shift;
 my $qcRscript = "arrayQC.R";
 
 # Path to directory with ArrayExpress/Atlas load directories underneath.
-my $exptsLoadStem = "/net/isilon5/ma/home/arrayexpress/ae2_production/data/EXPERIMENT";
+my $exptsLoadStem = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIMENT";
 
 # miRBase mapped array designs -- we need to subset probes if we find one of these.
 my $miRBaseFiles = `ls /nfs/ma/home/atlas3-production/bioentity_properties/mirbase/*.A-*.tsv`;
