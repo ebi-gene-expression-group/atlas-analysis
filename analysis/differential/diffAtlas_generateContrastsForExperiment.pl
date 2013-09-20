@@ -11,11 +11,11 @@
 
 =head1 SYNOPSIS
 
-	Generate a contrast file (XML) from SDRF file (ArrayExpress format)
+	Generate thecontrast file (XML) from a IDF/SDRF file (ArrayExpress format)
 
 =head1 DESCRIPTION
 
-	Generate a contrast file (XML) from a SDRF file (ArrayExpress format) and a config file. 
+	Generate the contrast file (XML) from a IDF/SDRF file (ArrayExpress format) and a config file. 
 
 	The config file contains the list of reference terms and factor values to exclude from further analysis.
 	It is formatted as follow:
@@ -50,7 +50,8 @@
 
 
 use strict ;
-use Getopt::Long qw(:config no_ignore_case);
+use Getopt::Long qw(:config no_ignore_case) ;
+use Magetab4Atlas ;
 
 
 ## Initialise global $, @ and %
@@ -93,10 +94,9 @@ my $experimentDirectory = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIM
 if ($experiment =~ /E-(\w+?)-\d+?/) { $subDirectory = $1 ; }
 else { die "[ERROR] Experiment: $experiment not formatted as expected.\n" ; }
 
-## SDRF (input) and XML (output) files
-my $sdrf = "$experimentDirectory/$subDirectory/$experiment/$experiment.sdrf.txt" ;
+## IDF & SDRF files (input) and XML file (output)
+my $idf = "$experimentDirectory/$subDirectory/$experiment/$experiment.idf.txt" ;
 my $outfileXML = "$outdir/$experiment-configuration.xml.auto" ;
-
 
 
 ## Extract information from the config file
@@ -121,8 +121,8 @@ close CONF ;
 ## ... on a single experiment
 ##############################################
 
-# Using Maria's subroutine
-my ($factorType, $Href_efvs2runAccessions) = &readSDRF($sdrf) ;
+# Using readSDRF subroutine (MAGETAB module)
+my ($factorType, $Href_efvs2runAccessions) = &readSDRF($idf) ;
 my %H_eFactorValues2runIDs = %$Href_efvs2runAccessions ; #dereference the hash
 
 ##Print for a test
@@ -326,7 +326,7 @@ sub printContrast {
 
 #Print the beginning/end of the XML file
 #Both are in the same subroutine to make it easier 
-#to check that what's been open is being closer
+#to check that what's been open is being closed
 sub XMLboundaries {
 	my $location = $_[0] ;
 
@@ -349,190 +349,88 @@ sub XMLboundaries {
 
 
 
-#sub readSDRF - modified from the program gxa_summarizeFPKMs.pl by Maria Keays (mkeays@ebi.ac.uk)
-# If we are passed the "-a" option, that means we want to calculate the average
-# FPKM for each group of replicates (e.g. for each tissue) in the dataset, and
-# not just return the FPKM for every run individually.
-# To do this we need to find out which run accessions (and hence FPKM tracking files) are
-# associated with which factor values. The mapping between run accessions and
-# factor values is available in the experiment's SDRF file. Run accessions are
-# in a column called "Comment[ENA_RUN]" and factor values in the
-# "FactorValue[xxx]" column(s).
+#sub readSDRF
+# Use MAGETAB.pm module
+# Keep the previous (working) one for the time being 
+# Since it's a subroutine, it should be easy to only chnage the SDRF reading 
+# ... and make the improvements requestee Magetab4Atlas;
 #
-# Here we read the SDRF file and create a hash mapping run accessions to factor
-# values. This must also be done "per organism", in cases where an experiment
-# contains data from more than one organism. E.g. we could have data from human
-# and mouse liver, but potentially the organism names might not be in a factor
-# value column (though they should be?). In this case we would have human ind
-# mouse runs assigned "liver" as the factor value and no way to tell them
-# apart. So we'll create a key for each organism and after that a key for each
-# factor value assigned to each organism. Assigned to each factor value will be
-# an array of the run accessions that were found to correspond to them in the
-# SDRF.
-#
-# The (anonymous) hash ends up like e.g.:
-#       $efvs2runAccessions->{ "Homo sapiens" }->{ "liver" } = [ "SRR00001", "SRR00002", "SRR00003", ... ]
-#                                              ->{ "heart" } = [ "SRR00004", "SRR00005", "SRR00006", ... ]
-#
-# Arguments:
-#       - $logfileHandle : to write to log file.
-#       - $sdrfFile : filename of SDRF.
-#       - $runAccessions : arrayref of run accessions.
-#
-# Returns:
-#       $efvs2runAccessions : reference to anonymous hash with mappings between factor
-#       values (for each organism) and run accessions.
 sub readSDRF {
-	# Get the arguments:
-	my $sdrfFile = $_[0] ; 
-       
-	#Declare variables
-	my ($ENArunInd, $assayNameInd, $arrayNameInd, $arrayDesignInd, $technologyTypeInd) ; #indexes 
-	my ($ENArun, $organism, $runAccession, $technologyType, $efvType) ;
 
-	# Simple way to check we have an SDRF.
-	if($sdrfFile !~ /\.sdrf\.txt$/) {
-		die "$sdrfFile doesn't look like an SDRF file to me. If it is, please append \".sdrf.txt\" to its name.\n";
-	}
+    my $efvs2runAccessions = {} ;
+	my $factorTypeString = "" ;
 
-	# Open SDRF
-	open(my $sdrfHandle, "<", $sdrfFile) or die "Can't open $sdrfFile: $!\n";
-        
-	# Variables to store run name and factor value column indices.
-	my ($SDRFrunInd, @efvIndArray, $SDRForgInd);
-        
-	# Hash reference to remember which run accessions belong to which combination of factor values.
-	# $efvs2runAccessions->{ "Gallus gallus" }->{"AFFY-35"}->{ "brain" } = [ "SRR0005", "SRR0006", ... ]    
-	my $efvs2runAccessions = {};
+	# Create a Magetab4Atlas object. This reads the MAGETAB documents (via the
+	# IDF filename provided) to get Atlas-relevant information for each assay in
+	# the experiment.
+	my $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idf );
+	
+	# Test if we find any assays.
+	if(!$magetab4atlas->has_assays) { die "No assay for this experiment!\n"; }
+	 		
+	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
+	
+		# Get the organism
+		my $organism = $assay4atlas->get_organism() ; 
+        print "\tOrganism:\n\t\t", $assay4atlas->get_organism, " ($organism) \n";
 
-	# Remember the run accessions we've seen in the SDRF, because in SDRFs with paired-end
-	# data, we might have two rows per run!
-	my $seenRuns = [];
-        
-	# Loop through file.
-	while(defined (my $line = <$sdrfHandle>))  {
-		# Remove newlines
-		chomp($line);
-        
+		# Get the assay name
+		# Old SDRF: should be ENA_run (RNA-seq) or hybridisation name (microarray)
+		# Newer SDRF: assay name field
+		my $runAccession ;
 
- 		# split on tabs
-		my @lineSplit = split("\t", $line);
-        
-		# Get column indices of run names and factor value(s) from the first line with headers.
-		# Characteristics[Organism] should be present in every SDRF header line in some form.
-		if($line =~ /characteristics\s*\[\s*organism\s*\]/i) {
+		##if ($magetab4atlas->get_experiment_type =~ /array/) {
+			$runAccession = $assay4atlas->get_name() ;
+			print "Assay: ", $assay4atlas->get_name, " ($runAccession)\n";
+		##}
+		
+		if ($magetab4atlas->get_experiment_type eq "RNA-seq") {
 
-			# Index of Characteristics[Organism] column. Technically it should
-			# be in a FactorValue[] column if it varies but just in case we'll
-			# account for possibility of different organisms here.
-			my @orgIndArray = grep $lineSplit[$_] =~ /characteristics\s*\[\s*organism\s*\]/i, 0..$#lineSplit;
-			$SDRForgInd = $orgIndArray[0];
-            
-			# Index of FactorValue[xxxx] column(s)
-			@efvIndArray = grep $lineSplit[$_] =~ /factor\s*value\s*\[/i, 0..$#lineSplit;
-                      
-			# Need to capture the factor value type (FactorValue[TYPE])
-			# ... get the 1st one only to start with
-			my $efv = $lineSplit[$efvIndArray[0]] ;
-			if ($efv =~ /factor\s*value\s*\[(.+?)\]/i) { $efvType = $1 ; } 
-
-			# Assay names - for old SDRF, use ENA_RUN (RNA-Seq) or Hybridization name (for microarray) 
-			#		for newer SDRF, there is an "Assay name" tag
-			# Expecting to get assayName from a single of those columns, 
-			# ... so using the same $assayName variable		
-			# Index of run names from ENA_RUN (old SDRF - RNA-Seq only)             
-			my @runIndArray = grep $lineSplit[$_] =~ /ENA_RUN/i, 0..$#lineSplit;
-			if (defined $runIndArray[0]) { 
-				$ENArunInd = $runIndArray[0];
-				$assayNameInd = $runIndArray[0];			
+			if($assay4atlas->has_fastq_uri_set) {
+				foreach my $ENArun (keys %{ $assay4atlas->get_fastq_uri_set }) {
+					$runAccession = $ENArun ;
+					print "\tENA run: $ENArun\n" ; 
+				}
 			}
+		}	
 
-			# Hybridization name (old SDRF - microarray only)
-			my @runIndArray = grep $lineSplit[$_] =~ /Hybridization Name/i, 0..$#lineSplit;	
-			if (defined $runIndArray[0]) { $assayNameInd = $runIndArray[0]; }
-			
-			# Assay name (newer SDRF - RNA-Seq and microarray)
-			my @runIndArray = grep $lineSplit[$_] =~ /Assay Name/i, 0..$#lineSplit;
-                        if (defined $runIndArray[0]) { $assayNameInd = $runIndArray[0]; }
+		# Get the Factor type(s) and values for this assay
+		print "\tFactors:\n";
+		my $H_factors = $assay4atlas->get_factors;
+		my $factorValueString = "" ; 
+		$factorTypeString = "" ;
+		foreach my $factorType (keys %{ $H_factors }) {
 
-			# Array design
-			my @runIndArray = grep $lineSplit[$_] =~ /Array Design/i, 0..$#lineSplit;
-			$arrayDesignInd = $runIndArray[0];
+            $factorValueString .= $H_factors->{ $factorType }." " ;
+			print "\t\t$factorType: ", $H_factors->{ $factorType }, "\n";
 
-			# Technology Type - for old one, infer from ENA_RUN/FASTQ_URI (RNA-Seq) or Hyb Name/Array Design (microarray) 
-			# 		    for new ones, there is a "Technology Type" tag
-			# Array Names REF (old SDRF - microarray)
-			my @runIndArray = grep $lineSplit[$_] =~ /Array Name REF/i, 0..$#lineSplit;
-			$arrayNameInd = $runIndArray[0];
+			#If >= 2 factor type, exclude the ones containing "*Time*"			
+			unless ( keys %{$H_factors} >= 2 && $factorType =~ /Time/) { $factorTypeString .= $factorType ; }
+		}
 
-			# Technology Type (newer SDRF - RNA-Seq and microarray)
-			my @runIndArray = grep $lineSplit[$_] =~ /Technology Type/i, 0..$#lineSplit;
-			$technologyTypeInd = $runIndArray[0];
+		$factorValueString =~ s/\s+?$// ; #remove trailing space
+		print "\t\tfactorType string: $factorValueString\n";
 
-			#beware that if no Technology Type tag, get info. from other columns
-			#but $technologyType is a string rather than the index (position) of that value
-			if (!$technologyTypeInd) {
-				if ($arrayNameInd || $assayNameInd) { $technologyType = "array" ; }				
-				elsif ( $ENArun ) { $technologyType = "seq" ; }
-				#else { die "Cannot identify technology! $technologyTypeInd -$arrayDesignInd;$assayNameInd;$ENArun-\n" ; } #be more informative here? 
-			}
-
-		#If line is not header, get the values	
-		} else {
-			# Check we got indices for organism, run accessions and EFVs
-			unless (defined($SDRForgInd) && defined($assayNameInd) && (defined($technologyTypeInd) || defined ($technologyType)) && @efvIndArray) { 
-				die("Do not know SDRF columns for Organism, Assay Name, Technology Type or FactorValues.\n");
-			}
-
-			# Get the run accession and factor values from their indices.
-			my $runAccession ;
-			if ( defined $ENArunInd) {
-				$runAccession = $lineSplit[$ENArunInd];
-			} else { $runAccession = $lineSplit[$assayNameInd]; }
-			$runAccession =~ s/^\"// ; #remove potential initial double quote
-			$runAccession =~ s/\"$// ; #remove potential final double quote
-
-			# Get the organism
-			my $organism = $lineSplit[$SDRForgInd];
-
-			# Get the technology type, if not already defined
-			if (!defined $technologyType) { $technologyType = $lineSplit[$technologyTypeInd] ; }	
-
-			# If technology is microarray, 
-			# Get the array design, otherwise set to 0
-			my $arrayDesign = 0 ;
-			if ($technologyType =~ /array/) { $arrayDesign = $lineSplit[$arrayDesignInd] ; }
-			
-			# Skip to next line if we have already seen this run accession -- SDRFs for
-			# paired-end data have run accessions in twice.
-			if( grep $_ eq $runAccession, @{ $seenRuns } ) { next; }
-			
-			# Otherwise add this run's accession to the seenRuns array so we'll skip it next time.
-			else { push @{ $seenRuns }, $runAccession; }
-
-			# Factor Value
-			my @efvArray = @lineSplit[@efvIndArray];
-
-			#Remove any empty values from the array
-			@efvArray = grep { $_ !~ /^\s*$/ } @efvArray ;
-
-			#Make a string of factor values
-			my $efvString = join " ", @efvArray;
-
-			#Remove double quote
-			$efvString =~ s/\"//g ;
-
-			# Add run accession to the right array in %efvs2runAccessions
-			if(exists($efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString })) {
-				push @{ $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } }, $runAccession;
-			} else {
-				$efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $efvString } = [ $runAccession ];
+		# Get array design for a microarray assay.
+		my $arrayDesign = 0 ;
+		if($magetab4atlas->get_experiment_type =~ /array/) {
+			if($assay4atlas->has_array_design) {
+				$arrayDesign = $assay4atlas->get_array_design() ;
+				print "\tArray design:\n\t\t", $assay4atlas->get_array_design, " ($arrayDesign) \n" ;
 			}
 		}
-	}
-	# Close the file handle
-	close($sdrfHandle);
 
-	# Return the factor value type (e.g. "genotype") and the reference to a hash of mappings between factor values and run accessions
-	return($efvType, $efvs2runAccessions);
+		#Store
+		if(exists($efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $factorValueString })) {
+			push @{ $efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $factorValueString } }, $runAccession ;
+		} else {
+			$efvs2runAccessions->{ $organism }->{ $arrayDesign }->{ $factorValueString } = [ $runAccession ] ;
+		}
+	}
+
+	#Return values
+	#Return the factor value types (e.g. "genotype" - if multiple array: same F.V. types because it's the same SDRF file)
+	# and the reference to a hash of mappings between factor values and run accessions
+	return($factorTypeString, $efvs2runAccessions) ;
+
 }
