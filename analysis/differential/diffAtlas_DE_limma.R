@@ -1,4 +1,4 @@
-#!/uar/bin/env Rscript
+#!/usr/bin/env Rscript
 
 # diffAtlas_DE_limma.R
 # Microarray differential expression statistics computation for the
