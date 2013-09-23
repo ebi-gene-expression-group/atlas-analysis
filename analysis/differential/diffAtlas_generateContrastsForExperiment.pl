@@ -116,28 +116,12 @@ close CONF ;
 
 
 ## Collect FactorValues & ENA IDs
-## ... to start with, use Maria's subroutine
-## ... later: use MAGETAB module
-## ... on a single experiment
-##############################################
+# from SDRF file. Use magetab2atlas module
+#################################
 
-# Using readSDRF subroutine (MAGETAB module)
-my ($factorType, $Href_efvs2runAccessions) = &readSDRF($idf) ;
+# Using readMagetab subroutine (MAGETAB module)
+my ($factorType, $Href_efvs2runAccessions) = &readMagetab($idf) ;
 my %H_eFactorValues2runIDs = %$Href_efvs2runAccessions ; #dereference the hash
-
-##Print for a test
-print "\n *** Processing experiment: $experiment...\n" ;
-print "=====> Print for a test\n" ;
-foreach my $species (keys %H_eFactorValues2runIDs) {
-	print "Species is $species ($factorType)\n" ;
-	foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
-		print "\tArray is $array\n" ;
-		foreach my $factorValue (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
-			print "[REAL] $species - $array - '$factorValue' @{$H_eFactorValues2runIDs{$species}{$array}{$factorValue}}\n" ;
-		}
-	}
-}
-print "\n\n\n" ;
 
 
 ## Factor Value parsing
@@ -348,14 +332,8 @@ sub XMLboundaries {
 }
 
 
-
-#sub readSDRF
-# Use MAGETAB.pm module
-# Keep the previous (working) one for the time being 
-# Since it's a subroutine, it should be easy to only chnage the SDRF reading 
-# ... and make the improvements requestee Magetab4Atlas;
-#
-sub readSDRF {
+#Read magetab file (SDRF / IDF files)
+sub readMagetab {
 
     my $efvs2runAccessions = {} ;
 	my $factorTypeString = "" ;
