@@ -1,4 +1,4 @@
-#!/ebi/microarray/home/biocep/local/lib64/R/bin/Rscript
+#!/usr/bin/env Rscript
 # 
 # Calculate Pearson's product-moment correlation coefficient using two sets of
 # RNA-seq read counts (or *PKMs) produced by different quantification methods.

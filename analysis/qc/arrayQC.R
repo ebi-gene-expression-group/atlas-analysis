@@ -1,5 +1,5 @@
-#!/ebi/microarray/home/biocep/local/lib64/R/bin/Rscript
-#
+#!/usr/bin/env Rscript
+
 # Run quality assessment on microarray data prior to loading to Atlas, using
 # the arrayQualityMetrics Bioconductor package. This script requires a
 # tab-delimited annotation file mapping factor values to raw data filenames,
