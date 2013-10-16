@@ -314,7 +314,7 @@ sub getDEresults {
 		my $diffExpRes = {};
 		
 		# Temp file for MvA plot data.
-		my $plotDataTempFile = ".plotData.txt";
+		my $plotDataTempFile = "/tmp/plotData.$$.txt";
 
 		# Get RNA-seq results from DESeq results file(s).
 		if($platform eq "rnaseq") {
@@ -401,7 +401,7 @@ sub getDEresults {
 		else {
 
 			# Temp file for limma results
-			my $limmaResTempFile = ".limma_res.txt";
+			my $limmaResTempFile = "/tmp/limma_res.$$.txt";
 			print "\n";
 
 			
