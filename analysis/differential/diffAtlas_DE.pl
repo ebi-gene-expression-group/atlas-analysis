@@ -447,8 +447,8 @@ sub getDEresults {
 						print "Contrast \"$atlasName\" has 2-colour design.\n";
 
 						# $normExpr gets filename for log-fold-changes
-						$normExpr = $exptAcc."_".$platform."-log-fold-changes.tsv";
-						$aValues = $exptAcc."_".$platform."-average-intensities.tsv";
+						$normExpr = $exptAcc."_".$platform."-log-fold-changes.tsv.undecorated";
+						$aValues = $exptAcc."_".$platform."-average-intensities.tsv.undecorated";
 					}
 					# If the ref and test assays are not identical after
 					# removing ".Cy3" and ".Cy5" and the array design is
@@ -465,7 +465,7 @@ sub getDEresults {
 					print "Contrast \"$atlasName\" has 1-colour design.\n";
 
 					# Normalized expressions filename
-					$normExpr = $exptAcc."_".$platform."-normalized-expressions.tsv";
+					$normExpr = $exptAcc."_".$platform."-normalized-expressions.tsv.undecorated";
 					unless(-e $normExpr) {
 						die "Can't find normalized expressions matrix \"$normExpr\"\n";
 					}
@@ -598,7 +598,7 @@ sub writeResults {
 	$_ = shift for my ($diffExpRes, $contrastHash, $exptAcc, $platform);
 	
 	# Results file needs array design accession if it's microarray.
-	my $resFile = ( $platform eq "rnaseq" ? $exptAcc."-analytics.tsv" : $exptAcc."_".$platform."-analytics.tsv" );
+	my $resFile = ( $platform eq "rnaseq" ? $exptAcc."-analytics.tsv.undecorated" : $exptAcc."_".$platform."-analytics.tsv.undecorated" );
 	
 	print "\nWriting results to $resFile\n";
 
