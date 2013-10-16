@@ -20,9 +20,17 @@ my $qcRscript = "arrayQC.R";
 my $exptsLoadStem = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIMENT";
 
 # miRBase mapped array designs -- we need to subset probes if we find one of these.
-my $miRBaseFiles = `ls /nfs/ma/home/atlas3-production/bioentity_properties/mirbase/*.A-*.tsv`;
-# Put them in an array.
-my @A_miRBaseFiles = split "\n", $miRBaseFiles;
+# Get an array of miRBase mapping files.
+my @A_miRBaseFiles = glob("/nfs/ma/home/atlas3-production/bioentity_properties/mirbase/*.A-*.tsv");
+
+# Create a hash for easy checking.
+my $H_miRBaseFileHash = {};
+foreach my $miRBaseFile (@A_miRBaseFiles) {
+	# Get the array design from the file name.
+	(my $arrayDesign = $miRBaseFile) =~ s/.*(A-\w{4}-\d+)\.tsv/$1/;
+	# Add the miRBase mapping file to the hash with the array design as key.
+	my $H_miRBaseFileHash->{ $arrayDesign } = $miRBaseFile;
+}
 
 # Get the pipeline (e.g. MEXP, MTAB, GEOD, ...) for this experiment.
 (my $pipeline = $exptAccession) =~ s/E-(\w{4})-\d+/$1/;
@@ -48,18 +56,12 @@ foreach my $arrayDesign (keys %{ $H_arraysToFactorValuesToFiles }) {
 	# Check if the array design has a miRBase mapping file
 	# Flag
 	my $miRBaseFile = 0;
-	# Go through the files and look for a match.
-	# This bit could end up taking a while if there are a lot of files?
-	foreach my $file (@A_miRBaseFiles) {
-		# If the array design matches log and remember the file.
-		if($file =~ /$arrayDesign/) {
-			print "miRNA array detected\n";
-			$miRBaseFile = $file;
-		}
+	if(exists($H_miRBaseFileHash->{ $arrayDesign })) {
+		$miRBaseFile = $H_miRBaseFileHash->{ $arrayDesign };
 	}
 	
-	# Name for temp file to write annotations to.
-	my $tempFile = ".$exptAccession"."_$arrayDesign.tsv";
+	# Name for temp file to write annotations to, in /tmp with process ID ($$).
+	my $tempFile = "/tmp/$exptAccession"."_$arrayDesign.$$.tsv";
 	# Create annotations temp file.
 	open(my $tmpFH, '>', $tempFile) or die "Can't create file \"$tempFile\": $!\n";
 	
@@ -208,8 +210,8 @@ sub removeLoadDirFromReport {
 	my @A_filesToFix = ("$reportDir/index.html", "$reportDir/arrayQualityMetrics.js");
 
 	foreach my $original (@A_filesToFix) {
-		# A filename for a temp file to write to.
-		my $temp = "$reportDir/.temp";
+		# A filename for a temp file to write to, in /tmp with process ID.
+		my $temp = "/tmp/$$.temp";
 		
 		# Open the report for reading.
 		open(my $originalFH, "<", $original) or die "Can't open $original : $!\n";
