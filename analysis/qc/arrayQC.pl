@@ -17,11 +17,11 @@ my $exptAccession = shift;
 my $qcRscript = "arrayQC.R";
 
 # Path to directory with ArrayExpress/Atlas load directories underneath.
-my $exptsLoadStem = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIMENT";
+my $exptsLoadStem = "/ebi/microarray/home/arrayexpress/ae2_production/data/EXPERIMENT";
 
 # miRBase mapped array designs -- we need to subset probes if we find one of these.
 # Get an array of miRBase mapping files.
-my @A_miRBaseFiles = glob("/nfs/ma/home/atlas3-production/bioentity_properties/mirbase/*.A-*.tsv");
+my @A_miRBaseFiles = glob("/ebi/microarray/home/atlas3-production/bioentity_properties/mirbase/*.A-*.tsv");
 
 # Create a hash for easy checking.
 my $H_miRBaseFileHash = {};
@@ -29,7 +29,7 @@ foreach my $miRBaseFile (@A_miRBaseFiles) {
 	# Get the array design from the file name.
 	(my $arrayDesign = $miRBaseFile) =~ s/.*(A-\w{4}-\d+)\.tsv/$1/;
 	# Add the miRBase mapping file to the hash with the array design as key.
-	my $H_miRBaseFileHash->{ $arrayDesign } = $miRBaseFile;
+	$H_miRBaseFileHash->{ $arrayDesign } = $miRBaseFile;
 }
 
 # Get the pipeline (e.g. MEXP, MTAB, GEOD, ...) for this experiment.
