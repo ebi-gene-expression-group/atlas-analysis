@@ -24,12 +24,17 @@ normalizeArrayData <- function(inFile, mode, outFile, miRBaseFile) {
 		files <- assaysToDataFiles$Filename
 		assayNames <- assaysToDataFiles$AssayName
 
-		# If data is from 2-colour Agilent array
+		# If data is from a 1-colour or 2-colour Agilent array, we do the
+		# pre-processing with limma. This consists of subsetting probes based
+		# on miRBase mappings, background correction, within- or between-array
+		# normalization, and averaging over duplicates.
+		# For 1-colour data, normalized intensities are written to a single file.
+		# For 2-colour data, log2(fols change)s are written to one file and
+		# average intensities to another file.
 		if(mode == "agil1" | mode == "agil2") {
 			
 			# load limma
 			library(limma)
-
 
 			# read files
 			if(mode == "agil1") {
@@ -45,12 +50,10 @@ normalizeArrayData <- function(inFile, mode, outFile, miRBaseFile) {
 			}
 			# check it worked, if not, return the error.
 			if(class(dataSet) == "try-error") { return(dataSet) }
-
 			
 			# Check if there's a microRNA miRBase probeset list and if so,
 			# subset based on that list.
 			if(miRBaseFile != 0) { dataSet <- subsetProbes(dataSet, miRBaseFile) }
-
 			
 			# Background correction.
 			# Using method outlined in Section 6.1 of Limma Users Guide (25
@@ -63,7 +66,6 @@ normalizeArrayData <- function(inFile, mode, outFile, miRBaseFile) {
 			# call limma's explicitly).
 			print("Background correcting")
 			dataSet <- backgroundCorrect(dataSet, method="normexp", offset=50)
-			
 			
 			if(mode == "agil1") {
 				
@@ -80,13 +82,10 @@ normalizeArrayData <- function(inFile, mode, outFile, miRBaseFile) {
 				normData <- normalizeWithinArrays(dataSet, method="loess")
 			}
 
-				
-
 			# average for probe duplicates -- some probes are on the array
 			# multiple times in different locations.
 			print("Averaging duplicated probes")
 			normData <- avereps(normData, ID=normData$genes$ProbeName)
-
 			
 			# Write results to file
 			if(mode == "agil1") {
@@ -101,7 +100,8 @@ normalizeArrayData <- function(inFile, mode, outFile, miRBaseFile) {
 
 				print("Writing normalized expressions matrix")
 				write.table(normExprs, file=outFile, sep="\t", quote=FALSE, row.names=FALSE)
-
+				
+				# Now files are written, function returns and script exits.
 				return("Agilent 1-colour normalization finished")
 			}
 			else if(mode == "agil2") {
@@ -126,13 +126,14 @@ normalizeArrayData <- function(inFile, mode, outFile, miRBaseFile) {
 				# write M-values and A-values, without column names because we already wrote them above.
 				write.table(mValues, file=outFile, sep="\t", quote=FALSE, row.names=FALSE)
 				write.table(aValues, file=outFile_A, sep="\t", quote=FALSE, row.names=FALSE)
-			
+		
+				# Now files are written, function returns and script exits.
 				return("Agilent 2-colour normalization complete")
 			}
 		}
-		
-		
-		# Use oligo package for pre-processing
+		# For Affymetrix data, use oligo package for pre-processing: this is
+		# background adjustment, normalization and probe set summarization (see
+		# below for details).
 		else if(mode == "oligo") {
 
 			# Load oligo
@@ -196,39 +197,11 @@ normalizeArrayData <- function(inFile, mode, outFile, miRBaseFile) {
 			}
 			print("rma finished")
 		} 
-		
-
 		# Now the pre-processing is done, either with oligo or affy, and the
 		# data is stored in the eSet object. 
 	
 		# Next, make sure the scan names in the vector 'assayNames' are in the same
 		# order as their corresponding samples in eSet.
-				
-		# relSort()
-		# 	- Function to sort the scan names (in assayNames) so they are in the correct
-		# 	order for the data in eSet.
-		# ARGUMENTS:
-		# 	- toSort <- a vector of things to reorder (scan names).
-		# 	- keys <- a vector of CEL filenames.
-		# 	- sortedKeys <- a vector of the same CEL filenames in the order they
-		# 	are in the eSet object.
-		relSort <- function(toSort, keys, sortedKeys) {
-
-			# Copy contents of toSort to a new vector called sorted
-			sorted <- toSort
-
-			# For i in 1:length(sortedKeys):
-			# 	- Find the position index of the CEL filename in the vector
-			# 	'keys' that matches the CEL filename at position 'i' in the
-			# 	vector 'sortedKeys';
-			#	- Get the scan name at that position in 'toSort' and put it at
-			#	position 'i' in the 'sorted' vector.
-			for (i in 1:length(sortedKeys)) sorted[i] <- toSort[which(keys==sortedKeys[i])]
-			
-			# Return the reordered scan names
-			return(sorted)
-		}
-
 		# shortFileNames is vector of CEL filenames with /path/to/files/ stripped off (i.e. just base names).
 		shortFileNames <- gsub(".+/", "", files)
 		
@@ -242,9 +215,8 @@ normalizeArrayData <- function(inFile, mode, outFile, miRBaseFile) {
 	    colnames(normExprs) <- c("DesignElementAccession", assayNamesSorted)
 
 		print("Writing normalized expressions matrix")
-		# Write to file.
+		# Write normalized data to file.
 		write.table(normExprs, file = outFile, sep = "\t", quote = FALSE, row.names=FALSE)
-	
 	})
 
 	# error catching -- return the error message if there was one (class(error)
@@ -259,7 +231,7 @@ normalizeArrayData <- function(inFile, mode, outFile, miRBaseFile) {
 
 
 
-# subsetProbes
+# subsetProbes()
 #  - For microRNA, we only want to normalize using probesets that are mapped to
 #  the latest release of miRBase (www.mirbase.org). Subset the data here.
 # ARGUMENTS:
@@ -306,6 +278,31 @@ subsetProbes <<- function(dataSet, miRBaseFile) {
 	return(dataSet)
 }
 
+
+# relSort()
+# 	- Function to sort the scan names (in assayNames) so they are in the correct
+# 	order for the data in eSet.
+# ARGUMENTS:
+# 	- toSort <- a vector of things to reorder (scan names).
+# 	- keys <- a vector of CEL filenames.
+# 	- sortedKeys <- a vector of the same CEL filenames in the order they
+# 	are in the eSet object.
+relSort <- function(toSort, keys, sortedKeys) {
+
+	# Copy contents of toSort to a new vector called sorted
+	sorted <- toSort
+
+	# For i in 1:length(sortedKeys):
+	# 	- Find the position index of the CEL filename in the vector
+	# 	'keys' that matches the CEL filename at position 'i' in the
+	# 	vector 'sortedKeys';
+	#	- Get the scan name at that position in 'toSort' and put it at
+	#	position 'i' in the 'sorted' vector.
+	for (i in 1:length(sortedKeys)) sorted[i] <- toSort[which(keys==sortedKeys[i])]
+	
+	# Return the reordered scan names
+	return(sorted)
+}
 
 # Run with arguments if there are any, otherwise don't do anything.
 args <- commandArgs(TRUE)
