@@ -34,7 +34,8 @@
 
 =head1 OPTIONS
 
-	none
+	See help 
+	diffAtlas_generateContrastsForExperiment.pl -h
 
 =head1 EXAMPLES
 
@@ -55,9 +56,9 @@ use Magetab4Atlas ;
 
 
 ## Initialise global $, @ and %
-my ($experiment, $conf, $help) ; #arguments
+my ($experiment, $conf, $referenceArg, $killFactorValue, $help) ; #arguments
 my ($subDirectory, $commandLine) ; #values infered from command line
-my $outdir = "./" ; #default output directory
+my $outdir = "." ; #default output directory
 my %H_config ; #contains info. from the config file 
 my %H_hybNameFactorValue ; #store association factor value / hybridization name
 my @A_assayGroups ; #store assay groups 
@@ -75,6 +76,8 @@ GetOptions(
 	'help|Help|h|H' => \$help,
 	'exp=s'	 => \$experiment,
 	'conf=s' => \$conf,
+	'ref=s'  => \$referenceArg,
+	'kill=s' => \$killFactorValue,
 	'out=s'  => \$outdir,
 ) ;
 
@@ -106,8 +109,33 @@ while (my $line=<CONF>) {
 	chomp $line ; 
 
 	if ($line !~ /^#/) {
-		if ($line =~ /REFERENCE/) { $flag = "REFERENCE" ; }
-		elsif ($line =~ /FACTOR_VALUE_KILL/) { $flag = "FACTOR_VALUE_KILL" ; }
+
+		#If reference value(s) or kill terms given in argument,
+		#they take precedence over the ones from the config file.
+		#Should be in double quotes and comma separated
+		if ($referenceArg) {
+				my @A_referenceArg = split(",", $referenceArg) ; 
+				for my $refArg (@A_referenceArg) {
+					#For each value, trim any start/end spaces (but not middle ones!)
+					#and store
+					$refArg =~ s/^\s+//g ; $refArg =~ s/\s+$//g ;
+					$H_config{"REFERENCE"}{lc($refArg)} = 1 ; 
+				}	
+		}	
+		if ($killFactorValue) { 	
+			my @A_killFV = split(",", $killFactorValue) ;
+			for my $factorValue (@A_killFV) {
+				#For each value, trim any start/end spaces (but not middle ones!)
+				#and store
+				$factorValue =~ s/^\s+//g ; $factorValue =~ s/\s+$//g ;
+				$H_config{"FACTOR_VALUE_KILL"}{lc($factorValue)} = 1 ; 
+			}
+		}
+
+		#If no reference value(s) or kill terms  given in argument,
+		#Take them from the config file.
+		if ($line =~ /REFERENCE/ && !$referenceArg) { $flag = "REFERENCE" ; }
+		elsif ($line =~ /FACTOR_VALUE_KILL/ && !$killFactorValue) { $flag = "FACTOR_VALUE_KILL" ; }
 		elsif ($line =~ /\[\//) { $flag = "" ; }
 		else { if (($flag ne "") && ($line ne "")) { $H_config{$flag}{lc($line)} = 1 ; } } #Use lc for case insensitive conparison
 	}
@@ -127,9 +155,9 @@ my %H_eFactorValues2runIDs = %$Href_efvs2runAccessions ; #dereference the hash
 ## Factor Value parsing
 ## For each organism and each array design (usually: 1 of each only),
 ## Parse the factor values: 
-#	- >= 3 replicates	  -- delete the Factor Value if not true 
-#	- reference		  -- from the list of references generated from the config file
-#	- forbidden Factor Values -- from the kill list generated from the config file; delete Factor Value if true
+#	- >= 3 replicates	      -- delete the Factor Value if not true 
+#	- reference		          -- from the list of references generated from the config file, or passed as argument
+#	- forbidden Factor Values -- from the kill list generated from the config file, or passed as argument; delete Factor Value if true
 
 #Open the output XML file
 open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
@@ -243,6 +271,8 @@ sub usage {
 		"\t-exp: experiment name. E.g. E-MTAB-123\n".
 		"\t-conf: generic configuration file for that program. It should be in the same directory, and possible named reference_assay_group_factor_values.txt\n".
 		"Optional parameters:\n".
+		"\t-ref: list of possible reference terms to search for. In double quotes and comma separated if multiple. Take precedence over the config file.\n".
+		"\t-kill: list of FactorValue terms to discard (to kill). In double quotes and comma separated if multiple. Take precedence over the config file.\n".
 		"\t-outdir: output directory. Default is the current directory.\n" ;
 }
 
