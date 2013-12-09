@@ -44,7 +44,7 @@ correlate <<- function(genes, runs, countsFile1, countsFile2, outFile) {
 	# method with counts from a totally different gene from the other method.
 	stopifnot(all(rownames(counts1) == rownames(counts2)))
 	
-	# Subset selected runs and/or genes if need be.
+	# Subset selected runs if need be.
 	if(runs != "all") {
 		
 		runs <- unlist(strsplit(runs, ","))
@@ -52,10 +52,14 @@ correlate <<- function(genes, runs, countsFile1, countsFile2, outFile) {
 		counts1 <- counts1[,runs, drop=FALSE]
 		counts2 <- counts2[,runs, drop=FALSE]
 	}
+	else{
+		print("Using all sequencing runs.")
+	}
+	# Read genes from a file unless "all" is passed.
 	if(genes != "all") {
+	
+		genes <- scan(file=genes, what="character")
 		
-		genes <- unlist(strsplit(genes, ","))
-
 		counts1 <- counts1[genes, , drop=FALSE]
 		counts2 <- counts2[genes, , drop=FALSE]
 	}
