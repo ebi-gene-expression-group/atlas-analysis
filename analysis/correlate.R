@@ -22,7 +22,16 @@
 # 3. All genes but only some runs:
 # 	Rscript correlate.R all SRR001,SRR003,SRR009 <counts file 1> <counts file 2> <plot filename>
 
-correlate <<- function(genes, runs, countsFile1, countsFile2, outFile) {
+
+# correlate
+# ARGUMENTS:
+# 	- genes : either "all" or name of a file containing a list of gene IDs (one per line) to use in correlation.
+# 	- runs : either "all" or a comma-separated list of run accessions to use in correlation.
+# 	- countsFile1 : name of first file containing data to use in correlation.
+# 	- countsFile2 : name of second file containing data to use in correlation.
+# 	- outFile : name of PDF file to write plot of correlation to.
+# 	- corType : either "pearson" for Pearson's product-moment correlation, or "spearman" for Spearman Rank correlation.
+correlate <<- function(genes, runs, countsFile1, countsFile2, outFile, corType) {
 	
 	# Get labels for plot axes from filenames.
 	counts1Lab <- basename(countsFile1)
@@ -51,19 +60,20 @@ correlate <<- function(genes, runs, countsFile1, countsFile2, outFile) {
 
 		counts1 <- counts1[,runs, drop=FALSE]
 		counts2 <- counts2[,runs, drop=FALSE]
-	}
-	else{
+	} else {
 		print("Using all sequencing runs.")
 	}
 	# Read genes from a file unless "all" is passed.
 	if(genes != "all") {
-	
+		
+		print(paste("Using genes from", genes))
 		genes <- scan(file=genes, what="character")
 		
 		counts1 <- counts1[genes, , drop=FALSE]
 		counts2 <- counts2[genes, , drop=FALSE]
+	} else {
+		print("Using all genes")
 	}
-
 
 	# Add counts for each gene and put the two vectors into a data frame.
 	counts1Sum <- apply(counts1, 1, function(x) { sum(x) })
@@ -71,27 +81,45 @@ correlate <<- function(genes, runs, countsFile1, countsFile2, outFile) {
 	sumDF <- data.frame(counts1Sum=counts1Sum, counts2Sum=counts2Sum)
 
 	# Correlate and plot.
-	cor.scatterplot(sumDF, "counts1Sum", "counts2Sum", counts1Lab, counts2Lab, outFile)
+	cor.scatterplot(sumDF, "counts1Sum", "counts2Sum", counts1Lab, counts2Lab, outFile, corType)
 }
 
 
-# Nuno's correlation plot function
-cor.scatterplot <- function(df, colA, colB, counts1Lab, counts2Lab, outFile) {
+# Correlation plot function
+# ARGUMENTS:
+# 	- df : data frame containing sum of counts from the two matrices supplied.
+# 	- colA : name of first column in above data frame.
+# 	- colB : name of second column in above data frame.
+# 	- counts1Lab : name of first data file.
+# 	- counts2Lab : name of second data file.
+# 	- outFile : name of PDF file to write to.
+# 	- corType : "pearson" or "spearman".
+cor.scatterplot <- function(df, colA, colB, counts1Lab, counts2Lab, outFile, corType) {
   	
-	# add 0.1 to all counts.
+	# Check corType makes sense
+	if(corType != "pearson" && corType != "spearman") {
+		stop(paste("Unknown correlation type:", corType))
+	}
+
+	# add 0.1 to all counts (why??).
 	del <- 0.1
 
-	# use cor() to get Pearson's correlation coefficient, and round it to 2 decimal places.
-    x<-round(cor(df[,colA], df[,colB]), 2)
-	#--------------------------------------------------
-	# cat(colA)
-	#-------------------------------------------------- 
+	print(paste("Running correlation with method =", corType))
+
+	# use cor() to get Pearson's or Spearman's correlation coefficient, and round it to 2 decimal places.
+    x<-round(cor(df[,colA], df[,colB], method=corType), 2)
 	
 	# Start PDF device to write plot to.
 	pdf(file=outFile)
 
 	# Plot!
-	plot(df[,colA]+del, df[,colB]+del, log="xy", type="p", pch=".", xlab=counts1Lab, ylab=counts2Lab, main=paste("Pearson r=", x, sep=""))
+	# Name for plot depends on correlation type:
+	if(corType == "pearson") {
+		plotNameStart <- "Pearson's coefficient = "
+	} else {
+		plotNameStart <- "Spearman's coefficient = "
+	}
+	plot(df[,colA]+del, df[,colB]+del, log="xy", type="p", pch=".", xlab=counts1Lab, ylab=counts2Lab, main=paste(plotNameStart, x, sep=""))
 	# add line y=x
 	abline(0, 1, col="red")
 	# close PDF.
