@@ -135,7 +135,6 @@ atlasArrayQC <- function(annotationFile, exptType, exptAcc, arrayDesign, outDir,
 						spatial = FALSE,
 						reporttitle = reportTitle)
 	
-
 	# Next want to inspect the output of arrayQualityMetrics stored in the
 	# arrayQCdata object. This object is a list, the element we are interested
 	# in is "modules", which is also a list. It contains all the data displayed
@@ -156,7 +155,7 @@ atlasArrayQC <- function(annotationFile, exptType, exptAcc, arrayDesign, outDir,
 	counts <- sapply(unique(outlierNames), function(x) {
 		# len is the number of times the assay name (x) appears in the outlierNames
 		# vector.
-		len <- length(grep(x, outlierNames))
+		len <- length(which(outlierNames == x))
 		# return len
 		len
 	})
