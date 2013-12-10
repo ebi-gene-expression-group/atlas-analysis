@@ -110,7 +110,7 @@ foreach my $arrayDesign (keys %{ $H_arraysToFactorValuesToFiles }) {
 	# Check for errors in the R output.
 	if($qcRscriptOutput =~ /error/i) {
 		# Warn that QC had problems but continue with the next array design (if any).
-		print "[WARNING] Error during quality metrics calculation for array $arrayDesign, outout from R below.\n------------\n$qcRscriptOutput\n------------\n";
+		print "[QC] $exptAccession: Error during quality metrics calculation for array $arrayDesign, outout from R below.\n------------\n$qcRscriptOutput\n------------\n";
 	}
 
 	# Delete the no longer needed temp file.
@@ -139,7 +139,7 @@ foreach my $arrayDesign (keys %{ $H_contrastHash }) {
 # Now check whether whole experiment has any array designs left.
 unless(keys %{ $H_contrastHash }) {
 	# Log that there aren't any contrasts left to STDOUT.
-	print "Experiment $exptAccession no longer has any eligible contrasts.\n";
+	print "[QC] $exptAccession no longer has any eligible contrasts.\n";
 	
 	# Rename XML config file.
 	print "\nRenaming $atlasXMLfile to $atlasXMLfile.beforeQC\n";
@@ -234,9 +234,9 @@ sub readAtlasXML {
 	# Log what we've found
 	foreach my $arrayDesign (keys %{ $H_contrastHash }) {
 		my $numContrasts = keys %{ $H_contrastHash->{ $arrayDesign }};
-		print "$numContrasts contrast";
+		print "$exptAccession: $numContrasts contrast";
 		unless($numContrasts == 1) { print "s";} 
-		print " found for $arrayDesign:\n";
+		print " found for $exptAccession - $arrayDesign:\n";
 		
 		foreach my $agPair (keys %{ $H_contrastHash->{ $arrayDesign } }) {
 
@@ -462,7 +462,7 @@ sub removeRejectedAssays {
 		# still have enough assays without rejected ones.
 		foreach my $rejected (@A_rejectedAssays) { 
 			# Log that this assay failed.
-			print "Assay \"$rejected\" failed QC and will be removed from XML config.\n";
+			print "[QC] $exptAccession: Assay \"$rejected\" failed QC and will be removed from XML config.\n";
 			
 			# Set flag
 			$failed = 1;
@@ -480,7 +480,7 @@ sub removeRejectedAssays {
 					my $contrastName = $H_contrastHash->{ $arrayDesign }->{ $assayGroupPair }->{ "atlasName" };
 					
 					# Log the contrast name the assay was found in.
-					print "Assay \"$rejected\" found in test assay group in contrast \"$contrastName\".\n";
+					print "[QC] $exptAccession: Assay \"$rejected\" found in test assay group in contrast \"$contrastName\".\n";
 
 					# Make a new array without the rejected assay
 					my @A_newTestAssays = ();
@@ -499,8 +499,8 @@ sub removeRejectedAssays {
 					# $H_contrastHash.
 					if(@A_newTestAssays < 3) {
 						# Log that
-						print "Contrast \"$contrastName\" is no longer eligible: the test assay group no longer has enough replicates.\n";
-						print "Removing contrast \"$contrastName\" from XML config.\n";
+						print "[QC] $exptAccession: Contrast \"$contrastName\" is no longer eligible: the test assay group no longer has enough replicates.\n";
+						print "[QC] Removing contrast \"$contrastName\" from XML config.\n";
 						
 						# Remove this contrast from $H_contrastHash.
 						delete $H_contrastHash->{ $arrayDesign }->{ $assayGroupPair };
@@ -514,7 +514,7 @@ sub removeRejectedAssays {
 					my $contrastName = $H_contrastHash->{ $arrayDesign }->{ $assayGroupPair }->{ "atlasName" };
 				
 					# Log the contrast name the assay was found in.
-					print "Assay \"$rejected\" found in reference assay group in contrast \"$contrastName\"\n";
+					print "[QC] $exptAccession: Assay \"$rejected\" found in reference assay group in contrast \"$contrastName\"\n";
 
 					# Make a new array without the rejected assay
 					my @A_newRefAssays = ();
@@ -533,8 +533,8 @@ sub removeRejectedAssays {
 					# $H_contrastHash.
 					if(@A_newRefAssays < 3) {
 						# Log that
-						print "Contrast \"$contrastName\" is no longer eligible: the reference assay group no longer has enough replicates\n\n";
-						print "Removing contrast \"$contrastName\" from XML config.\n";
+						print "[QC] $exptAccession: Contrast \"$contrastName\" is no longer eligible: the reference assay group no longer has enough replicates\n\n";
+						print "[QC] Removing contrast \"$contrastName\" from XML config.\n";
 						
 						# Remove this contrast from $H_contrastHash.
 						delete $H_contrastHash->{ $arrayDesign }->{ $assayGroupPair };
