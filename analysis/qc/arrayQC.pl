@@ -139,7 +139,7 @@ foreach my $arrayDesign (keys %{ $H_contrastHash }) {
 # Now check whether whole experiment has any array designs left.
 unless(keys %{ $H_contrastHash }) {
 	# Log that there aren't any contrasts left to STDOUT.
-	print "[QC] $exptAccession no longer has any eligible contrasts.\n";
+	print "[QC] $exptAccession no longer has any eligible contrasts\n";
 	
 	# Rename XML config file.
 	print "\nRenaming $atlasXMLfile to $atlasXMLfile.beforeQC\n";
