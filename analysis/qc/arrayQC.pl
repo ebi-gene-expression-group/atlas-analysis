@@ -500,7 +500,7 @@ sub removeRejectedAssays {
 					if(@A_newTestAssays < 3) {
 						# Log that
 						print "[QC] $exptAccession: Contrast \"$contrastName\" is no longer eligible: the test assay group no longer has enough replicates.\n";
-						print "[QC] Removing contrast \"$contrastName\" from XML config.\n";
+						print "Removing contrast \"$contrastName\" from XML config.\n";
 						
 						# Remove this contrast from $H_contrastHash.
 						delete $H_contrastHash->{ $arrayDesign }->{ $assayGroupPair };
@@ -534,7 +534,7 @@ sub removeRejectedAssays {
 					if(@A_newRefAssays < 3) {
 						# Log that
 						print "[QC] $exptAccession: Contrast \"$contrastName\" is no longer eligible: the reference assay group no longer has enough replicates\n\n";
-						print "[QC] Removing contrast \"$contrastName\" from XML config.\n";
+						print "Removing contrast \"$contrastName\" from XML config.\n";
 						
 						# Remove this contrast from $H_contrastHash.
 						delete $H_contrastHash->{ $arrayDesign }->{ $assayGroupPair };
