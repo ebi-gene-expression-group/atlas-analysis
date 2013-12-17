@@ -56,7 +56,7 @@ use Magetab4Atlas ;
 
 
 ## Initialise global $, @ and %
-my ($experiment, $conf, $referenceArg, $killFactorValue, $help) ; #arguments
+my ($experiment, $conf, $referenceArg, $killFactorValue, $help, $debug) ; #arguments
 my ($subDirectory, $commandLine) ; #values infered from command line
 my $outdir = "." ; #default output directory
 my %H_config ; #contains info. from the config file 
@@ -79,6 +79,7 @@ GetOptions(
 	'ref=s'  => \$referenceArg,
 	'kill=s' => \$killFactorValue,
 	'out=s'  => \$outdir,
+	'debug=s'=> \$debug,
 ) ;
 
 $commandLine = join(' ',@ARGV); 
@@ -146,11 +147,10 @@ close CONF ;
 ## Collect FactorValues & ENA IDs
 # from SDRF file. Use magetab2atlas module
 #################################
-
-# Using readMagetab subroutine (MAGETAB module)
+# Using readMageta
+if ($debug) { print "[DEBUG] Reading Magetab files\n" ; }
 my ($factorType, $Href_efvs2runAccessions) = &readMagetab($idf) ;
 my %H_eFactorValues2runIDs = %$Href_efvs2runAccessions ; #dereference the hash
-
 
 ## Factor Value parsing
 ## For each organism and each array design (usually: 1 of each only),
@@ -163,13 +163,14 @@ my %H_eFactorValues2runIDs = %$Href_efvs2runAccessions ; #dereference the hash
 open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
 my $configurationTag = 0 ;
 $noReferenceError = "Candidate reference values for $factorType: ";
+if ($debug) { print "[DEBUG] Parsing values collected in Magetab module\n" ; }
 foreach my $species (keys %H_eFactorValues2runIDs) {
-	print "Species is $species ($factorType)\n" ;
+	if ($debug) { print "[DEBUG] Species is $species ($factorType)\n" ; }
 	foreach my $array (keys %{$H_eFactorValues2runIDs{$species}}) {
-		print "\tArray is $array\n" ;
+		if ($debug) { print "[DEBUG]\tArray is $array\n" ; }
 
 		foreach my $FV (keys %{$H_eFactorValues2runIDs{$species}{$array}}) {
-			print "Testing '$FV' -- @{$H_eFactorValues2runIDs{$species}{$array}{$FV}}\n" ; ##REMOVE ONCE PROGRAM FINISHED
+			if ($debug) { print "[DEBUG] Testing '$FV' -- @{$H_eFactorValues2runIDs{$species}{$array}{$FV}}\n" ; }
 			
 			#Test for forbidden factor value (e.g. 'individual')
 			if (exists $H_config{"FACTOR_VALUE_KILL"}{lc($FV)}) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; next ; } 		
@@ -179,13 +180,13 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 			#(case insensitive: lc only)
 			if (exists $H_config{"REFERENCE"}{lc($FV)}) { 
 				if ($reference eq "") { $reference = $FV ; }
-				else { die "[ERROR] More than one reference - $reference and $FV!\n" } ;
+				else { die "[ERROR] $experiment - More than one reference: $reference and $FV!\n" } ;
 			}
 
 			#Test for replicates
 			my $replicateCount = scalar @{$H_eFactorValues2runIDs{$species}{$array}{$FV}} ;
-			print "Replicate number: $replicateCount\n" ; #FOR TESTING PURPOSE ONLY
-			if ($replicateCount < 3) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; print "\tLess than 3 replicates\n" ; } ##REMOVE print ONCE PROGRAM FINISHED
+			if ($debug) { print "[DEBUG] Replicate number: $replicateCount\n" ; }
+			if ($replicateCount < 3) { delete $H_eFactorValues2runIDs{$species}{$array}{$FV} ; }
 		}	
 
 		#Anything left afterwards
@@ -224,7 +225,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 				}		
 			}
 
-			print "=====> Print XML contrast file $outfileXML\n" ;
+			print "[INFO] Print XML contrast file $outfileXML\n" ;
 			##Format in XML
 			#Beginning XML
 			#If 1st one, print the 'configuration' tag
@@ -248,6 +249,7 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 		}
 	}		 	
 }
+if ($debug) { print "[DEBUG] Finish reading Magetab files\n" ; }
 
 #If anything has been written in the XML contrast file
 #Close the <configuration> tag
@@ -364,9 +366,10 @@ sub XMLboundaries {
 
 #Read magetab file (SDRF / IDF files)
 sub readMagetab {
-
     my $efvs2runAccessions = {} ;
 	my $factorTypeString = "" ;
+
+    if ($debug) { print "[DEBUG] readMagetab module\n" ; }
 
 	# Create a Magetab4Atlas object. This reads the MAGETAB documents (via the
 	# IDF filename provided) to get Atlas-relevant information for each assay in
@@ -374,10 +377,24 @@ sub readMagetab {
 	my $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idf );
 	
 	# Test if we find any assays.
-	if(!$magetab4atlas->has_assays) { die "No assay for this experiment!\n"; }
-	 		
-	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
+	if(!$magetab4atlas->has_assays) { print "[DEBUG] No assay found!\n" ; } #die "No assay for this experiment!\n"; }
+	 
+	##Testing ...
+	if ($debug) {print "[DEBUG] Experiment type: ".$magetab4atlas->get_experiment_type."\n"; }	
 	
+	if ($debug) {print "[DEBUG] Experiment type: ".$magetab4atlas->get_experiment_type."\n"; }
+
+	my @A_magetabAssay = $magetab4atlas->get_assays ;
+	if ($debug) {print "[DEBUG] Assays: $A_magetabAssay[0]\n"; }
+
+	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
+
+		#####
+		## Issue: for some of the experiments, this doesn't return anything!
+		# .... empty value!!
+		#####
+		if ($debug) { print "[DEBUG] Assays found!\n" ; }
+
 		# Get the organism
 		my $organism = $assay4atlas->get_organism() ; 
         print "\tOrganism:\n\t\t", $assay4atlas->get_organism, " ($organism) \n";
