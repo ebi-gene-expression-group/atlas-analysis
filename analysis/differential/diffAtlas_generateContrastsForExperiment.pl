@@ -59,6 +59,7 @@ use Magetab4Atlas ;
 my ($experiment, $conf, $referenceArg, $killFactorValue, $help, $debug) ; #arguments
 my ($subDirectory, $commandLine) ; #values infered from command line
 my $outdir = "." ; #default output directory
+my $experimentType ; #experiment (atlas) type
 my %H_config ; #contains info. from the config file 
 my %H_hybNameFactorValue ; #store association factor value / hybridization name
 my @A_assayGroups ; #store assay groups 
@@ -91,16 +92,26 @@ if (!$outdir) { print "[WARNING] No output directory provided (-out $outdir). De
 if ($help) { usage($commandLine) ; die ; }
 
 
-## Directory with SDRF file
-my $experimentDirectory = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/" ;
-
 ## Experiment sub-directory
 if ($experiment =~ /E-(\w+?)-\d+?/) { $subDirectory = $1 ; }
-else { die "[ERROR] Experiment: $experiment not formatted as expected.\n" ; }
+else { die "[ERROR] Experiment $experiment: name not formatted as expected. Expecting format E-xxx-0123\n" ; }
+
+## Directory with SDRF file
+my $experimentDirectory = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/" ;
 
 ## IDF & SDRF files (input) and XML file (output)
 my $idf = "$experimentDirectory/$subDirectory/$experiment/$experiment.idf.txt" ;
 my $outfileXML = "$outdir/$experiment-configuration.xml.auto" ;
+
+## Get list of miRNA
+my @A_miRnaList = glob("/ebi/microarray/home/atlas3-production/bioentity_properties/mirbase/*.A-*.tsv") ;
+my %H_miRnaList ;
+
+foreach my $miRNA (@A_miRnaList) {
+	(my $arrayDesign = $miRNA) =~ s/.*(A-\w{4}-\d+)\.tsv/$1/ ;
+	$arrayDesign =~ s/^A-/E-/ ;
+	$H_miRnaList{$arrayDesign} = 1 ;
+}
 
 
 ## Extract information from the config file
@@ -144,13 +155,45 @@ while (my $line=<CONF>) {
 close CONF ;
 
 
-## Collect FactorValues & ENA IDs
+## Collect experiment_type, FactorValues & ENA IDs
 # from SDRF file. Use magetab2atlas module
 #################################
-# Using readMageta
+# Using readMagetab
 if ($debug) { print "[DEBUG] Reading Magetab files\n" ; }
-my ($factorType, $Href_efvs2runAccessions) = &readMagetab($idf) ;
+my ($expmtType, $factorType, $Href_efvs2runAccessions) = &readMagetab($idf) ;
 my %H_eFactorValues2runIDs = %$Href_efvs2runAccessions ; #dereference the hash
+
+
+# Experiment type
+#
+# Magetab4atlas module, "get_experiment_type" returns
+# Array: "one-colour array" or "two-colour array"
+# RNA-Seq: "RNA-seq"
+#
+# Set to:
+#   - microarray_1colour_mrna_differential
+#   - microarray_2colour_mrna_differential
+#   - microarray_1colour_microrna_differential
+#   - rnaseq_mrna_differential
+
+my $type ;
+if ($expmtType =~ /array/) { $type = "microarray" ;}
+if ($expmtType =~ /RNA-seq/) { $type = "rnaseq" ;}
+
+#since color is only for microarray, add the "_", so can be skipped if RNA_seq
+my $color ;
+if ($expmtType =~ /one-colour array/) { $color = "1colour_" ;}
+if ($expmtType =~ /two-colour array/) { $color = "2colour_" ;} 
+
+my $RNA = "mrna";
+if (exists $H_miRnaList{$experiment}) { $RNA = "microrna" ;}
+
+#Make sure I've got all the bits
+if ($type ne '' && $color ne '' && $RNA ne '') {
+	$experimentType = "${type}_${color}${RNA}_differential" ;
+	if ($debug) { print "Exepriment (Atlas) type is $experimentType (from \"$expmtType\")\n" ;}
+} else { die "[ERROR] $experiment - Cannot get the experiment type: type:$type color:$color RNA:$RNA [from $expmtType]\n" ; } 
+
 
 ## Factor Value parsing
 ## For each organism and each array design (usually: 1 of each only),
@@ -229,7 +272,11 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 			##Format in XML
 			#Beginning XML
 			#If 1st one, print the 'configuration' tag
-			if ($configurationTag == 0) { &XMLboundaries("start-conf") ; $configurationTag = 1 ; }
+			if ($configurationTag == 0) { 
+				&XMLboundaries("start-conf", $experimentType) ;  ### [HERE] Add a argument about experiment_type!
+				$configurationTag = 1 ; 
+			}
+
 			&XMLboundaries("start-analytics") ; 
 
 			#Array design section - only if experiment is an array
@@ -345,9 +392,10 @@ sub printContrast {
 #to check that what's been open is being closed
 sub XMLboundaries {
 	my $location = $_[0] ;
+	my $type = $_[1] ;
 
 	if ($location =~ /start-conf/) {
-		print XML "<configuration>\n" ;
+		print XML "<configuration experimentType=\"$type\">\n" ;
 	}	
 	
 	if ($location =~ /start-analytics/) {
@@ -379,69 +427,68 @@ sub readMagetab {
 	# Test if we find any assays.
 	if(!$magetab4atlas->has_assays) { print "[DEBUG] No assay found!\n" ; } #die "No assay for this experiment!\n"; }
 	 
-	##Testing ...
-	if ($debug) {print "[DEBUG] Experiment type: ".$magetab4atlas->get_experiment_type."\n"; }	
+	##Experiment type
+	if ($debug) { print "[DEBUG] Experiment type: ".$magetab4atlas->get_experiment_type."\n"; }		
+	my $expType = $magetab4atlas->get_experiment_type ; 
 	
-	if ($debug) {print "[DEBUG] Experiment type: ".$magetab4atlas->get_experiment_type."\n"; }
-
 	my @A_magetabAssay = $magetab4atlas->get_assays ;
-	if ($debug) {print "[DEBUG] Assays: $A_magetabAssay[0]\n"; }
+	if ($debug) { print "[DEBUG] Assays: $A_magetabAssay[0]\n"; }
 
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
 
 		#####
 		## Issue: for some of the experiments, this doesn't return anything!
 		# .... empty value!!
+		# .... although $magetab4atlas->... returns something 
 		#####
 		if ($debug) { print "[DEBUG] Assays found!\n" ; }
 
 		# Get the organism
 		my $organism = $assay4atlas->get_organism() ; 
-        print "\tOrganism:\n\t\t", $assay4atlas->get_organism, " ($organism) \n";
+        if ($debug) { print "[DEBUG]\tOrganism:\n\t\t", $assay4atlas->get_organism, " ($organism) \n" ; }
 
 		# Get the assay name
 		# Old SDRF: should be ENA_run (RNA-seq) or hybridisation name (microarray)
 		# Newer SDRF: assay name field
 		my $runAccession ;
 
-		##if ($magetab4atlas->get_experiment_type =~ /array/) {
+		##if ($expType =~ /array/) {
 			$runAccession = $assay4atlas->get_name() ;
-			print "Assay: ", $assay4atlas->get_name, " ($runAccession)\n";
+			if ($debug) { print "[DEBUG] Assay: ", $assay4atlas->get_name, " ($runAccession)\n" ; }
 		##}
 		
-		if ($magetab4atlas->get_experiment_type eq "RNA-seq") {
-
+		if ($expType eq "RNA-seq") {
 			if($assay4atlas->has_fastq_uri_set) {
 				foreach my $ENArun (keys %{ $assay4atlas->get_fastq_uri_set }) {
 					$runAccession = $ENArun ;
-					print "\tENA run: $ENArun\n" ; 
+					if ($debug) { print "[DEBUG]\tENA run: $ENArun\n" ; } 
 				}
 			}
 		}	
 
 		# Get the Factor type(s) and values for this assay
-		print "\tFactors:\n";
+		if ($debug) { print "[DEBUG]\tFactors:\n"; }
 		my $H_factors = $assay4atlas->get_factors;
 		my $factorValueString = "" ; 
 		$factorTypeString = "" ;
 		foreach my $factorType (keys %{ $H_factors }) {
 
             $factorValueString .= $H_factors->{ $factorType }." " ;
-			print "\t\t$factorType: ", $H_factors->{ $factorType }, "\n";
+			if ($debug) { print "[DEBUG]\t\t$factorType: ", $H_factors->{ $factorType }, "\n"; }
 
 			#If >= 2 factor type, exclude the ones containing "*Time*"			
 			unless ( keys %{$H_factors} >= 2 && $factorType =~ /Time/) { $factorTypeString .= $factorType ; }
 		}
 
 		$factorValueString =~ s/\s+?$// ; #remove trailing space
-		print "\t\tfactorType string: $factorValueString\n";
+		if ($debug) { print "\t\tfactorType string: $factorValueString\n"; }
 
 		# Get array design for a microarray assay.
 		my $arrayDesign = 0 ;
-		if($magetab4atlas->get_experiment_type =~ /array/) {
+		if($expType =~ /array/) {
 			if($assay4atlas->has_array_design) {
 				$arrayDesign = $assay4atlas->get_array_design() ;
-				print "\tArray design:\n\t\t", $assay4atlas->get_array_design, " ($arrayDesign) \n" ;
+				if ($debug) { print "\tArray design:\n\t\t", $assay4atlas->get_array_design, " ($arrayDesign) \n" ; }
 			}
 		}
 
@@ -453,9 +500,9 @@ sub readMagetab {
 		}
 	}
 
-	#Return values
-	#Return the factor value types (e.g. "genotype" - if multiple array: same F.V. types because it's the same SDRF file)
+	#Return values:
+	# experiment type, factor value types (e.g. "genotype" - if multiple array: same F.V. types because it's the same SDRF file)
 	# and the reference to a hash of mappings between factor values and run accessions
-	return($factorTypeString, $efvs2runAccessions) ;
+	return($expType, $factorTypeString, $efvs2runAccessions) ;
 
 }
