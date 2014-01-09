@@ -11,7 +11,7 @@
 
 =head1 SYNOPSIS
 
-	Generate thecontrast file (XML) from a IDF/SDRF file (ArrayExpress format)
+	Generate the contrast file (XML) from a IDF/SDRF file (ArrayExpress format)
 
 =head1 DESCRIPTION
 
@@ -53,7 +53,6 @@
 use strict ;
 use Getopt::Long qw(:config no_ignore_case) ;
 use Magetab4Atlas ;
-
 
 ## Initialise global $, @ and %
 my ($experiment, $conf, $referenceArg, $killFactorValue, $help, $debug) ; #arguments
@@ -156,7 +155,7 @@ close CONF ;
 
 
 ## Collect experiment_type, FactorValues & ENA IDs
-# from SDRF file. Use magetab2atlas module
+# from SDRF file. Use Magetab4atlas module
 #################################
 # Using readMagetab
 if ($debug) { print "[DEBUG] Reading Magetab files\n" ; }
@@ -188,9 +187,12 @@ if ($expmtType =~ /two-colour array/) { $color = "2colour_" ;}
 my $RNA = "mrna";
 if (exists $H_miRnaList{$experiment}) { $RNA = "microrna" ;}
 
-#Make sure I've got all the bits
-if ($type ne '' && $color ne '' && $RNA ne '') {
+#For each experiment type,  make sure I've got the appropritate bits
+if ($type =~ /rnaseq/ && $RNA ne '') {
 	$experimentType = "${type}_${color}${RNA}_differential" ;
+	if ($debug) { print "Exepriment (Atlas) type is $experimentType (from \"$expmtType\")\n" ;}
+} elsif ($type =~ /microarray/ && $RNA ne '' && $color ne '') {
+    $experimentType = "${type}_${color}${RNA}_differential" ;
 	if ($debug) { print "Exepriment (Atlas) type is $experimentType (from \"$expmtType\")\n" ;}
 } else { die "[ERROR] $experiment - Cannot get the experiment type: type:$type color:$color RNA:$RNA [from $expmtType]\n" ; } 
 
