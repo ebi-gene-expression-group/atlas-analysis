@@ -372,13 +372,11 @@ sub printAssayGroup {
 sub printContrast {
 	my $subArray = $_[0] ;
 
-	$factorType = lc($factorType) ;
-
 	&tabulationXML(2) ; print XML "<contrasts>\n" ;
 	foreach my $i (2..$#A_assayGroups) { #starting at 2 because we have g1 (reference) vs. the rest
 		
 		&tabulationXML(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
-		&tabulationXML(4) ; print XML "<name>$factorType:'$A_assayGroups[$i]' vs '$A_assayGroups[1]'" ;
+		&tabulationXML(4) ; print XML "<name>'$A_assayGroups[$i]' vs '$A_assayGroups[-]'" ;
 		if ($subArray != 0) { print XML " on $subArray" ; } 
 		print XML "</name>\n" ;
 		&tabulationXML(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
