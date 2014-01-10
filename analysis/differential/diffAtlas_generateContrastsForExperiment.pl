@@ -377,7 +377,7 @@ sub printContrast {
 		
 		&tabulationXML(3) ; print XML "<contrast id=\"g1_g".$i."\">\n" ;
 		&tabulationXML(3) ; print XML "<name>'$A_assayGroups[$i]' vs '$A_assayGroups[1]'" ;
-		if ($subArray != 0) { print XML " on $subArray" ; } 
+		if ($subArray ne '') { print XML " on $subArray" ; } 
 		print XML "</name>\n" ;
 		&tabulationXML(4) ; print XML "<reference_assay_group>g1</reference_assay_group>\n" ;
 		&tabulationXML(4) ; print XML "<test_assay_group>g".$i."</test_assay_group>\n" ;
@@ -441,6 +441,7 @@ sub readMagetab {
 		# .... empty value!!
 		# .... although $magetab4atlas->... returns something 
 		#####
+
 		if ($debug) { print "[DEBUG] Assays found!\n" ; }
 
 		# Get the organism
