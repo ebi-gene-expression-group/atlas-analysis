@@ -205,7 +205,7 @@ if ($type =~ /rnaseq/ && $RNA ne '') {
 #	- forbidden Factor Values -- from the kill list generated from the config file, or passed as argument; delete Factor Value if true
 
 #Open the output XML file
-open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
+####open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
 my $configurationTag = 0 ;
 $noReferenceError = "Candidate reference values for $factorType: ";
 if ($debug) { print "[DEBUG] Parsing values collected in Magetab module\n" ; }
@@ -273,9 +273,10 @@ foreach my $species (keys %H_eFactorValues2runIDs) {
 			print "[INFO] Print XML contrast file $outfileXML\n" ;
 			##Format in XML
 			#Beginning XML
-			#If 1st one, print the 'configuration' tag
+			#If 1st one, print the 'configuration' tag ... and open the output file!
 			if ($configurationTag == 0) { 
-				&XMLboundaries("start-conf", $experimentType) ;  ### [HERE] Add a argument about experiment_type!
+				open (XML, ">$outfileXML") || die ("Can't open output XML file $outfileXML\n") ;
+				&XMLboundaries("start-conf", $experimentType) ;
 				$configurationTag = 1 ; 
 			}
 
@@ -434,14 +435,10 @@ sub readMagetab {
 	my @A_magetabAssay = $magetab4atlas->get_assays ;
 	if ($debug) { print "[DEBUG] Assays: $A_magetabAssay[0]\n"; }
 
+	##Get the assay, or die
+	if (!@{ $magetab4atlas->get_assays }) { die "[ERROR] $experiment -- Cannot extract assay: no name or no factor values\n" }
+
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
-
-		#####
-		## Issue: for some of the experiments, this doesn't return anything!
-		# .... empty value!!
-		# .... although $magetab4atlas->... returns something 
-		#####
-
 		if ($debug) { print "[DEBUG] Assays found!\n" ; }
 
 		# Get the organism
