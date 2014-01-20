@@ -78,6 +78,7 @@ placebo 0
 placebo 0 milligrams
 placebo 0 moles per liter
 placebo treated
+pLKO.1 containing GFP
 Pre-miR-Control
 reference
 regular chow diet
