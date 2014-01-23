@@ -94,6 +94,7 @@ transfected with control siRNA
 unexposed
 uninfected
 uninfected control
+unmated
 unstimulated
 unstressed control
 untreated
