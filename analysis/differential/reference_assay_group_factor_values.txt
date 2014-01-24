@@ -88,11 +88,13 @@ scrambled control
 scrambled siRNA
 sham
 sham infection
+sham-preconditioning followed by intra-amygdala vehicle
 stably transfected with empty vector
 transfected with control siRNA
 unexposed
 uninfected
 uninfected control
+unmated
 unstimulated
 unstressed control
 untreated
