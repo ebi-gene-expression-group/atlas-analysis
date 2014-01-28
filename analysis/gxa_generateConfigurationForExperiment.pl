@@ -54,6 +54,8 @@ use Getopt::Long qw(:config no_ignore_case) ;
 use Magetab4Atlas ;
 use XML::Writer ;
 use IO::File ;
+use EBI::FGPT::Resource::Database; #Atlas DB access
+
 
 ## Initialise global $, @ and %
 my ($experiment, $conf, $referenceArg, $killFactorValue, $help, $debug, $differential, $baseline, $noreplicate, $pese) ; #arguments
@@ -68,7 +70,7 @@ $A_assayGroups[0] = "none" ; #placeholder, we want assay_groups to start at 1, n
 my $flag ; #to parse config file
 my $noReferenceError ; # factor: candidate values - to output in log when reporting that no reference could be found     
 
-#to use the XML"writer module
+#to use the XML:writer module
 my $XML ;
 my $writer ;
 
@@ -118,6 +120,60 @@ foreach my $miRNA (@A_miRnaList) {
 	$arrayDesign =~ s/^A-/E-/ ;
 	$H_miRnaList{$arrayDesign} = 1 ;
 }
+
+
+## Get array names from Atlas database.
+## Extract array ID <-> array name
+#########################################################
+## Set up database connection
+my $dsn = "DBI:Oracle:host=ned.ebi.ac.uk;sid=ATLASPUB;port=1531";
+my $username = "atlasprd3";
+my $password = "atlas";
+
+# Create connection
+print "Connecting to Atlas database...\n";
+my $atlasDB = EBI::FGPT::Resource::Database->new(
+	'dsn' => $dsn,
+	'username' => $username,
+	'password' => $password,
+) or die "Could not connect to Atlas database: $DBI::errstr\n";
+
+print "Connected OK.\n";
+
+# Get database handle to connect
+my $atlasDBH = $atlasDB->get_dbh;
+
+# Create statement handle with query
+my $atlasSH = $atlasDBH->prepare("select ACCESSION,NAME from ARRAYDESIGN")
+or die "Could not prepare query: ", $atlasDBH->errstr, "\n";
+
+# Execute query
+print "Querying Atlas database...\n";
+$atlasSH->execute or die "Could not execute query: ", $atlasSH->errstr, "\n";
+print "Query successful.\n";
+
+# Build hash of results from DB
+my %H_arrayIDs2arrayNames ;
+
+# Get each row of results as an arrayref...
+while (my $row = $atlasSH->fetchrow_arrayref) {
+                                
+	# Get the array ID and name
+	my ($arrayID, $arrayName) = @{ $row };
+                                        
+	# And store - complain if already
+	if (!exists $H_arrayIDs2arrayNames{$arrayID}) {
+		$H_arrayIDs2arrayNames{$arrayID}  = $arrayName ;
+	} else {
+		die "[ERROR] More than one name for array $arrayID\n" ;
+	}
+}
+# Disconnect from Atlas DB.
+$atlasDBH->disconnect;
+
+##Print for a test
+#foreach my $k (sort keys %H_arrayIDs2arrayNames) {	print "$k\t$H_arrayIDs2arrayNames{$k}\n" ; }
+#exit ;
 
 ## For differential analysis only:
 ## Extract information from the config file
@@ -281,13 +337,13 @@ foreach my $array (keys %H_eFactorValues2runIDs) {
 			if ($differential) {
 				if ($replicateCount < 3) { 
 					delete $H_eFactorValues2runIDs{$array}{$organism}{$FV} ; 
-					if ($debug) { print "Delete H_eFactorValues2runIDs{$array}{$organism}{$FV} due to lack of replicates\n" ; }
+					if ($debug) { print "[DEBUG] Delete H_eFactorValues2runIDs{$array}{$organism}{$FV} due to lack of replicates\n" ; }
 				}
 			}
            	if ($baseline) {
 			   if (($replicateCount < 2) && !$noreplicate) { 
 				   delete $H_eFactorValues2runIDs{$array}{$organism}{$FV} ; 
-				   if ($debug) { print "Delete H_eFactorValues2runIDs{$array}{$organism}{$FV} due to lack of replicates\n" ; }	
+				   if ($debug) { print "[DEBUG] Delete H_eFactorValues2runIDs{$array}{$organism}{$FV} due to lack of replicates\n" ; }	
 			   }
 		   	}
 		}
@@ -404,7 +460,6 @@ foreach my $array (keys %H_eFactorValues2runIDs) {
 				}
 				$writer->endTag("assay_group") ;
 			}
-
         	$writer->endTag("assay_groups") ;
 
 			### Contrast element (differential only)
@@ -418,9 +473,17 @@ foreach my $array (keys %H_eFactorValues2runIDs) {
 
 					#if 1 array, or RNA_seq
 					if ($arrayNumber == 1) { $writer->dataElement("name" => "'$A_assayGroups[$i]' vs '$A_assayGroups[$referenceIndex]'") ; }
+	
 					#if > 1 array
-					else { $writer->dataElement("name" => "'$A_assayGroups[$i]' vs '$A_assayGroups[$referenceIndex]' on $array") ; }
-
+					# user friendly name for the array
+					#
+					# Note: if the next array is not suitable, and  number of array == 1, 
+					#       then, the user friendly name needs to be removed
+					else {
+						if ($H_arrayIDs2arrayNames{$array} ne '') {		
+							$writer->dataElement("name" => "'$A_assayGroups[$i]' vs '$A_assayGroups[$referenceIndex]' on '$H_arrayIDs2arrayNames{$array}'") ;
+						} else { die "[ERROR] $experiment - No user-friendly name for array $array\n" ; } 
+					}
 					$writer->dataElement("reference_assay_group" => "g$referenceIndex") ;
 					$writer->dataElement("test_assay_group" => "g$i") ; 
 					$writer->endTag("contrast") ;
@@ -501,7 +564,7 @@ sub readMagetab {
 	if ($debug) { print "[DEBUG] Assays: $A_magetabAssay[0]\n"; }
 
 	##Get the assay, or die
-	if (!@{ $magetab4atlas->get_assays }) { die "[ERROR] $experiment -- Cannot extract assay: no name or no factor values\n" }
+	if (!@{ $magetab4atlas->get_assays }) { die "[ERROR] $experiment - Cannot extract assay: no name or no factor values\n" }
 
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
 		if ($debug) { print "[DEBUG] Assays found !\n" ; }
