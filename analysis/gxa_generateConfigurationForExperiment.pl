@@ -80,11 +80,11 @@ GetOptions(
 	'help|Help|h|H' => \$help,
 	'exp=s'	 		=> \$experiment,
 	'conf=s' 		=> \$conf,
-    'differential'	=> \$differential,
+	'differential'	=> \$differential,
 	'baseline'		=> \$baseline,
 	'noreplicate'	=> \$noreplicate,
 	'pese=s'		=> \$pese,
-	'ref=s'  		=> \$referenceArg,
+	'ref=s' 		=> \$referenceArg,
 	'kill=s' 		=> \$killFactorValue,
 	'outdir=s'  	=> \$outdir,
 	'debug'			=> \$debug,
@@ -287,16 +287,17 @@ my $configurationTag = 0 ;
 $noReferenceError = "Candidate reference values for $factorType: ";
 if ($debug) { print "[DEBUG] Parsing values collected in Magetab module\n" ; }
 
-
 #Number of arrays
-##Needed later as print if > 1
 # - RNA_seq experiment: always one
 # - microarray experiment: possibly more than one
 my $arrayNumber = scalar keys %H_eFactorValues2runIDs ;
-if ($debug) { print "[DEBUG] Number of arrays in that experiment: $arrayNumber\n" ; }
+if ($debug) { print "[DEBUG] Number of arrays in that experiment (initially): $arrayNumber\n" ; }
 
 my %H_arrayInAnalyticsElement ; #store arrays that are in an analystics block 
-foreach my $array (keys %H_eFactorValues2runIDs) {
+my %H_referenceArray ; #store reference for each couple array/organism
+
+if ($debug) { print "\n[DEBUG] ===== PARSING the DATA =====\n" ; }
+foreach my $array (sort keys %H_eFactorValues2runIDs) {
 	if ($debug) { print "[DEBUG] Array is $array ($factorType)\n" ; }
 
 	#reference Factor Value(s) to calculate D.E. against
@@ -321,11 +322,12 @@ foreach my $array (keys %H_eFactorValues2runIDs) {
 				#Test for reference - if already one, die loudly
 				#(case insensitive: lc only)
 				if (exists $H_config{"REFERENCE"}{lc($FV)}) { 
-					if ($reference eq "") { $reference = $FV ; }
+					if (!exists $H_referenceArray{$array.$organism}) { $H_referenceArray{$array.$organism} = $FV ; }
 					else { 
 						$errorCode = 1 ;
-						$errorMessage .= "More than one reference: $reference and $FV. " ;
-					} ;
+						$H_referenceArray{$array.$organism} = "ERROR" ; #this record a reference error for that array/organism
+						$errorMessage .= "More than one reference: $H_referenceArray{$array.$organism} and $FV. " ;
+					}
 				}
 			}
 
@@ -348,14 +350,12 @@ foreach my $array (keys %H_eFactorValues2runIDs) {
 		   	}
 		}
 
-		#Anything left afterwards
-		print "[INFO] Checking Factor Values suitability\n" ;
-
 		#For differential only 
 		#Test is reference Factor Value found 
 		if ($differential) {
 			if (!defined $reference) { 
 				$errorCode = 1 ;
+				$H_referenceArray{$array.$organism} = "ERROR" ; #this record a reference error for that array/organism
 				$errorMessage .= "No reference: $noReferenceError. " ;
 			}
 			
@@ -367,154 +367,175 @@ foreach my $array (keys %H_eFactorValues2runIDs) {
 			}
 		}
 
-		#If no error reported, then FactorValue test passed!
-		if($errorCode == 0) { 
-			print "[INFO] Factor Value test passed!\n" ;
-
-			#If it's the first time, open the XML file
-			if ($configurationTag == 0) {
-				$configurationTag = 1 ;
-
-				#Open file to write to
-				$XML = IO::File->new(">$outfileXML");
-				
-				##Use the XML::Writer module to print
-				$writer = XML::Writer->new(OUTPUT => $XML, DATA_MODE => 1, DATA_INDENT => 4);
-				
-				## Begin configuration XML, add experiment type.
-				$writer->startTag("configuration", "experimentType" => $experimentType);
-			}
-
-    		
-			#If not already done, open the <analytics> element for this array
-			if (!exists $H_arrayInAnalyticsElement{$array}) {
-				$writer->startTag("analytics");
-				$H_arrayInAnalyticsElement{$array} = 1 ;
-			}
-
-           ### Array_design element - only if experiment has an array
-		   if ($array ne "0") { $writer->dataElement("array_design" => $array) ; } 
-
-			### Assay_groups element, for each assay
-			$writer->startTag("assay_groups");
-			
-			##Make groups
-			#Easier than making them on the fly when generating the XML
-
-			#For differential only
-			#In a given <assay_groups> element, the lowest index will always be the reference and the rest assigned at random
-			my $index = 1 ;
-			my $groupCounter = scalar(@A_assayGroups) ; #don't want reset for every organism or array
-			my $referenceIndex = 0 ;  #index of the reference Factor Value in @A_assayGroups
-
-			if ($differential) {
-				$A_assayGroups[$groupCounter] = $reference ;
-				$referenceIndex = $groupCounter ;
-				$index = $groupCounter + 1 ;
-				foreach my $FV (keys %{$H_eFactorValues2runIDs{$array}{$organism}}) {
-					if ($FV ne $reference) {
-						$groupCounter++ ;
-						$A_assayGroups[$groupCounter] = $FV ;
-					}			
-				}
-			}
-
-			#For baseline only
-			#Group order is at random
-			if ($baseline) {
-				$index = $groupCounter + 1 ;
-				foreach my $FV (keys %{$H_eFactorValues2runIDs{$array}{$organism}}) {
-					$groupCounter++ ;
-					$A_assayGroups[$groupCounter] = $FV ;
-				}
-			}	
-
-			print "[INFO] Print XML contrast file $outfileXML\n" ;
-
-			### Assay_group element
-			foreach my $i ($referenceIndex..$#A_assayGroups) { 
-				my $factVal = $A_assayGroups[$i] ;
-
-				if ($debug) { print "[DEBUG] Organism is $organism and array is $array\n"}
-				if ($debug) { print "[DEBUG] [$i] F.V. is $factVal\n"}
-
-				##Label
-				my $label ;
-				foreach my $ft (keys %{$H_factorValue2factorType{$factVal}}) {
-					$label .= "$ft: $H_factorValue2factorType{$factVal}{$ft}; " ;
-				}
-
-				#Remove the trailing
-				$label =~ s/; $// ;
-
-				##Write element
-				$writer->startTag("assay_group", "id" => "g$i", "label" => $label) ;
-				foreach my $names (@{$H_eFactorValues2runIDs{$array}{$organism}{$factVal}}) {
-					if ($names ne '') {
-			
-						#Technical replicates, if any
-						my $tech_rep ;
-						if ($H_TechRepsGroup{$names}) { $writer->dataElement("assay" => $names, "technical_replicateid" => $H_TechRepsGroup{$names}) ; }
-						else { $writer->dataElement("assay" => $names) ; }
-					}
-				}
-				$writer->endTag("assay_group") ;
-			}
-        	$writer->endTag("assay_groups") ;
-
-			### Contrast element (differential only)
-			#Reference can have any ID but: 
-			#  - in the contrast ID the reference ID comes first
-			#  - in the contrast name the reference name comes last
-			if ($differential) {
-				$writer->startTag("contrasts") ;
-                foreach my $i ($index..$#A_assayGroups) { #starting at 2 because we have g1 (reference) vs. the rest
-					$writer->startTag("contrast", "id" => "g${referenceIndex}_g$i") ;
-
-					#if 1 array, or RNA_seq
-					if ($arrayNumber == 1) { $writer->dataElement("name" => "'$A_assayGroups[$i]' vs '$A_assayGroups[$referenceIndex]'") ; }
-	
-					#if > 1 array
-					# user friendly name for the array
-					#
-					# Note: if the next array is not suitable, and  number of array == 1, 
-					#       then, the user friendly name needs to be removed
-					else {
-						if ($H_arrayIDs2arrayNames{$array} ne '') {		
-							$writer->dataElement("name" => "'$A_assayGroups[$i]' vs '$A_assayGroups[$referenceIndex]' on '$H_arrayIDs2arrayNames{$array}'") ;
-						} else { die "[ERROR] $experiment - No user-friendly name for array $array\n" ; } 
-					}
-					$writer->dataElement("reference_assay_group" => "g$referenceIndex") ;
-					$writer->dataElement("test_assay_group" => "g$i") ; 
-					$writer->endTag("contrast") ;
-				}
-				$writer->endTag("contrasts") ;
-			}
-
 		#Cannot generate contrast file
 		#Warn, dont die
-		} else {  
-			print "\n[WARNING] XML configuration file cannot be generated for $experiment :: $organism :: $array: $errorMessage\n" ; 
+		if($errorCode == 1) { 
+			print "\n[WARNING] XML configuration file cannot be generated for $experiment :: $organism :: $array: $errorMessage\n" ;
+			if ($debug) { print "[DEBUG] Delete $array ; $organism ...\n" ; }
+			delete $H_eFactorValues2runIDs{$array}{$organism} ; 
 		}
-	}
-
-    #If analytics element open for this array, 
-	#Close it.
-	if ( ($configurationTag == 1) && (exists $H_arrayInAnalyticsElement{$array}) ) {
-		$writer->endTag("analytics");
 	}
 }
 if ($debug) { print "[DEBUG] Finish reading Magetab files\n" ; }
 
 
+############################
+### Now go through the hash again, and print
+if ($debug) { print "[DEBUG] Printing XML file\n" ; }
+
+### In the hash, delete any array with no organism left
+#this because I need the number of arrays to decided what to print
+foreach my $arrCheck (keys %H_eFactorValues2runIDs) {
+	if (scalar keys %{$H_eFactorValues2runIDs{$arrCheck}} == 0) {
+		delete $H_eFactorValues2runIDs{$arrCheck} ;
+	}
+}
+
+##Number of arrays
+#required later for printing, or not. 
+my $arrayNumber = scalar keys %H_eFactorValues2runIDs ;
+if ($debug) { print "[DEBUG] Number of arrays in that experiment (after parsing): $arrayNumber\n" ; }
+my %H_arrayInAnalyticsElement ; #store arrays that are in an analytics block 
+
+if ($debug) { print "\n[DEBUG] ===== PRINTING the XML =====\n" ; }
+foreach my $array (sort keys %H_eFactorValues2runIDs) {
+	foreach my $organism (keys %{$H_eFactorValues2runIDs{$array}}) {
+		if ($debug) { print "[DEBUG]\tSpecies is $organism\n" ; }
+
+		#If it's the first time, open the XML file
+		if ($configurationTag == 0) {
+			$configurationTag = 1 ;
+			
+			#Open file to write to
+			$XML = IO::File->new(">$outfileXML");
+				
+			#Use the XML::Writer module to print
+			$writer = XML::Writer->new(OUTPUT => $XML, DATA_MODE => 1, DATA_INDENT => 4);
+				
+			#Begin configuration XML, add experiment type.
+			$writer->startTag("configuration", "experimentType" => $experimentType);
+		}
+
+		#If not already done, open the <analytics> element for this array
+		if (!exists $H_arrayInAnalyticsElement{$array}) {
+			$writer->startTag("analytics");
+			$H_arrayInAnalyticsElement{$array} = 1 ;
+		}
+
+		### Array_design element - only if experiment has an array
+		if ($array ne "0") { $writer->dataElement("array_design" => $array) ; } 
+
+		### Assay_groups element, for each assay
+		$writer->startTag("assay_groups");
+		   									
+		##Make groups
+		#Easier than making them on the fly when generating the XML
+		#
+		#For differential only
+		#In a given <assay_groups> element, the lowest index will always be the reference and the rest assigned at random
+		my $index = 1 ;
+		my $groupCounter = scalar(@A_assayGroups) ; #don't want reset for every organism or array
+		my $referenceIndex = 0 ;  #index of the reference Factor Value in @A_assayGroups
+			
+		if ($differential) {
+  			$A_assayGroups[$groupCounter] = $H_referenceArray{$array.$organism} ;
+			$referenceIndex = $groupCounter ;
+			$index = $groupCounter + 1 ; #because reference is already 1st one
+			foreach my $FV (keys %{$H_eFactorValues2runIDs{$array}{$organism}}) {
+				if ($FV ne $H_referenceArray{$array.$organism}) {
+					$groupCounter++ ;
+					$A_assayGroups[$groupCounter] = $FV ;
+				}
+			}
+		}
+
+		#For baseline only
+		#No reference, so Group order is at random
+		if ($baseline) {
+			$index = $groupCounter + 1 ;
+			$referenceIndex = $groupCounter ; #this is needed later, for printing
+			if ($debug) { print "[DEBUG] Baseline - starting index at $index and groupCounter is $groupCounter\n" ; }
+			foreach my $FV (keys %{$H_eFactorValues2runIDs{$array}{$organism}}) {
+				$A_assayGroups[$groupCounter] = $FV ;
+				$groupCounter++ ;
+			}
+		}
+		print "[INFO] Print XML contrast file $outfileXML\n" ;
+
+		##Assay_group element
+		foreach my $i ($referenceIndex..$#A_assayGroups) { 
+			my $factVal = $A_assayGroups[$i] ;
+			if ($debug) { print "[DEBUG] Organism is $organism and array is $array\n"}
+			if ($debug) { print "[DEBUG] [$i] F.V. is $factVal\n"}
+			
+			##Label
+			my $label ;
+			foreach my $ft (keys %{$H_factorValue2factorType{$factVal}}) {
+				$label .= "$ft: $H_factorValue2factorType{$factVal}{$ft}; " ;	
+			}
+			
+			##Remove the trailing
+			$label =~ s/; $// ;
+			
+			##Write element
+			$writer->startTag("assay_group", "id" => "g$i", "label" => $label) ;
+			foreach my $names (@{$H_eFactorValues2runIDs{$array}{$organism}{$factVal}}) {
+				if ($names ne '') {
+			
+					##Technical replicates, if any
+					my $tech_rep ;
+					if ($H_TechRepsGroup{$names}) { $writer->dataElement("assay" => $names, "technical_replicateid" => $H_TechRepsGroup{$names}) ; }
+					else { $writer->dataElement("assay" => $names) ; }
+				}
+			}
+			$writer->endTag("assay_group") ;
+		}
+		$writer->endTag("assay_groups") ;
+
+		### Contrast element (differential only)
+		##Reference can have any ID but: 
+		##  - in the contrast ID the reference ID comes first
+		##  - in the contrast name the reference name comes last
+		if ($differential) {
+		$writer->startTag("contrasts") ;
+			
+			foreach my $i ($index..$#A_assayGroups) { #starting at 2 because we have g1 (reference) vs. the rest
+				$writer->startTag("contrast", "id" => "g${referenceIndex}_g$i") ;
+
+				##if 1 array, or RNA_seq
+				if ($arrayNumber == 1) { $writer->dataElement("name" => "'$A_assayGroups[$i]' vs '$A_assayGroups[$referenceIndex]'") ; }
+
+				##if > 1 array
+				##user friendly name for the array
+				else {
+					if ($H_arrayIDs2arrayNames{$array} ne '') {	
+						$writer->dataElement("name" => "'$A_assayGroups[$i]' vs '$A_assayGroups[$referenceIndex]' on '$H_arrayIDs2arrayNames{$array}'") ;
+					} else { die "[ERROR] $experiment - No user-friendly name for array $array\n" ; } 
+				}
+				$writer->dataElement("reference_assay_group" => "g$referenceIndex") ;
+				$writer->dataElement("test_assay_group" => "g$i") ; 
+				$writer->endTag("contrast") ;
+			}
+			$writer->endTag("contrasts") ;
+		}
+	}
+
+	##If analytics element open for this array, 
+	##Close it.
+	if ( ($configurationTag == 1) && (exists $H_arrayInAnalyticsElement{$array}) ) {
+		$writer->endTag("analytics");
+	}
+}
+
 if ($configurationTag == 1) {
-	#Close the <configuration> tag, and the file
+	##Close the <configuration> tag, and the file
 	$writer->endTag("configuration") ;
 	$writer->end ;
 
-	#Close file
+	##Close file
 	$XML->close ;
 }
+
 
 
 ## Subroutine
@@ -546,8 +567,7 @@ sub readMagetab {
 	my $factorTypeString = "" ;
     my %H_technicalReplicateGroup ;
 
-    if ($debug) { print "[DEBUG] readMagetab module\n" ; }
-
+	if ($debug) { print "\n[DEBUG] ===== READING MAGETAB (readMagetab module) =====\n" ; }
 	# Create a Magetab4Atlas object. This reads the MAGETAB documents (via the
 	# IDF filename provided) to get Atlas-relevant information for each assay in
 	# the experiment.
