@@ -300,9 +300,6 @@ if ($debug) { print "\n[DEBUG] ===== PARSING the DATA =====\n" ; }
 foreach my $array (sort keys %H_eFactorValues2runIDs) {
 	if ($debug) { print "[DEBUG] Array is $array ($factorType)\n" ; }
 
-	#reference Factor Value(s) to calculate D.E. against
-	my $reference = "" ;
-
 	#report error & message when testing the replicates, reference etc. 
 	my $errorCode = 0 ;
 	my $errorMessage ;
@@ -321,11 +318,11 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 
 				#Test for reference - if already one, die loudly
 				#(case insensitive: lc only)
-				if (exists $H_config{"REFERENCE"}{lc($FV)}) { 
-					if (!exists $H_referenceArray{$array.$organism}) { $H_referenceArray{$array.$organism} = $FV ; }
+				if (exists $H_config{"REFERENCE"}{lc($FV)}) {
+					if (!exists $H_referenceArray{$array.$organism}) { $H_referenceArray{$array.$organism} = $FV ;}
 					else { 
 						$errorCode = 1 ;
-						$H_referenceArray{$array.$organism} = "ERROR" ; #this record a reference error for that array/organism
+						$H_referenceArray{$array.$organism} = "ERROR-MULTIREF" ; #this record a reference error for that array/organism
 						$errorMessage .= "More than one reference: $H_referenceArray{$array.$organism} and $FV. " ;
 					}
 				}
@@ -353,9 +350,9 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 		#For differential only 
 		#Test is reference Factor Value found 
 		if ($differential) {
-			if (!defined $reference) { 
+			if (!exists $H_referenceArray{$array.$organism}) {
 				$errorCode = 1 ;
-				$H_referenceArray{$array.$organism} = "ERROR" ; #this record a reference error for that array/organism
+				$H_referenceArray{$array.$organism} = "ERROR-NOREF" ; #this record a reference error for that array/organism
 				$errorMessage .= "No reference: $noReferenceError. " ;
 			}
 			
@@ -551,8 +548,8 @@ sub usage {
 		"\t-conf: generic configuration file for that program. It should be in the same directory, and possible named reference_assay_group_factor_values.txt\n".
         "\t-baseline/-differential: type of analysis to be performed for Atlas\n".
 		"Optional parameters:\n".
-		"\t-noreplicate: for baseline analysis, allow Factor Values with less than 2 replicates".
-		"\t-pese: to restrict to pair end (PE) or single end (SE) libraries. Default: no restriction".
+		"\t-noreplicate: for baseline analysis, allow Factor Values with less than 2 replicates\n".
+		"\t-pese: to restrict to pair end (PE) or single end (SE) libraries. Default: no restriction\n".
 		"\t-ref: list of possible reference terms to search for. In double quotes and comma separated if multiple. Take precedence over the config file.\n".
 		"\t-kill: list of FactorValue terms to discard (to kill). In double quotes and comma separated if multiple. Take precedence over the config file.\n".
 		"\t-outdir: output directory. Default is the current directory.\n".
