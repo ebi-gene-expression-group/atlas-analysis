@@ -576,7 +576,7 @@ sub readMagetab {
 	eval { $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idf );  }; 
 	if ($@)  { 
 		my @A_moduleErrorMessage = split("\n", $@) ;
-		die "[ERROR] $experiment -- $A_moduleErrorMessage[0]\n" ;
+		die "[ERROR] $experiment -- Error in the Magetab files. $A_moduleErrorMessage[0]\n" ;
 	}
 
 	# Test if we find any assays.
