@@ -136,14 +136,13 @@ my $username = "atlasprd3";
 my $password = "atlas";
 
 # Create connection
-if ($debug) { print "Connecting to Atlas database...\n" } ;
+if ($debug) { print "[DEBUG] Connecting to Atlas database...\n" } ;
 my $atlasDB = EBI::FGPT::Resource::Database->new(
 	'dsn' => $dsn,
 	'username' => $username,
 	'password' => $password,
 ) or die "Could not connect to Atlas database: $DBI::errstr\n";
-
-if ($debug) { print "Connected OK.\n"; }
+if ($debug) { print "[DEBUG] Connected OK.\n"; }
 
 # Get database handle to connect
 my $atlasDBH = $atlasDB->get_dbh;
@@ -153,9 +152,9 @@ my $atlasSH = $atlasDBH->prepare("select ACCESSION,NAME from ARRAYDESIGN")
 or die "Could not prepare query: ", $atlasDBH->errstr, "\n";
 
 # Execute query
-if ($debug) { print "Querying Atlas database...\n"; }
+if ($debug) { print "[DEBUG] Querying Atlas database...\n"; }
 $atlasSH->execute or die "Could not execute query: ", $atlasSH->errstr, "\n";
-if ($debug) { print "Query successful.\n"; }
+if ($debug) { print "[DEBUG] Query successful.\n"; }
 
 # Build hash of results from DB
 my %H_arrayIDs2arrayNames ;
@@ -226,7 +225,6 @@ close CONF ;
 # from SDRF file. Use Magetab4atlas module
 #################################
 # Using readMagetab
-if ($debug) { print "[DEBUG] Reading Magetab files\n" ; }
 my ($expmtType, $factorType, $Href_efvs2runAccessions, $Href_factorValue2factorType, $Href_TechRepsGroup) = &readMagetab($idf) ;
 
 # Dereference hashes
@@ -569,9 +567,17 @@ sub readMagetab {
 
 	if ($debug) { print "\n[DEBUG] ===== READING MAGETAB (readMagetab module) =====\n" ; }
 	# Create a Magetab4Atlas object. This reads the MAGETAB documents (via the
-	# IDF filename provided) to get Atlas-relevant information for each assay in
+	# IDF filename pro vided) to get Atlas-relevant information for each assay in
 	# the experiment.
-	my $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idf ); 
+	#
+	# Catch the error from the magetab4atlas module
+	# ... and only print the 1st line
+	my $magetab4atlas ;
+	eval { $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idf );  }; 
+	if ($@)  { 
+		my @A_moduleErrorMessage = split("\n", $@) ;
+		die "[ERROR] $experiment -- $A_moduleErrorMessage[0]\n" ;
+	}
 
 	# Test if we find any assays.
 	if(!$magetab4atlas->has_assays) { print "[DEBUG] No assay found!\n" ; } #die "No assay for this experiment!\n"; }
