@@ -74,6 +74,7 @@ my $noReferenceError ; # factor: candidate values - to output in log when report
 my $XML ;
 my $writer ;
 
+
 ## Get arguments
 ################
 GetOptions( 
@@ -91,6 +92,10 @@ GetOptions(
 ) ;
 
 $commandLine = join(' ',@ARGV); 
+
+#Print experiment
+##Target error messages when running lots of experiments 
+print "[INFO] Generating XML config file for $experiment\n" ;
 
 if (!$experiment || (!$differential && !$baseline) ) { print "[WARNING] Missing experiment (-exp $experiment) or analysis type (-differential or -baseline)\n" ; $help  = 1 ; }
 if ($differential && !$conf) { print "[WARNING] Missing configuration files (-conf $conf) for differential analysis\n" ; $help  = 1 ; }
@@ -131,14 +136,14 @@ my $username = "atlasprd3";
 my $password = "atlas";
 
 # Create connection
-print "Connecting to Atlas database...\n";
+if ($debug) { print "Connecting to Atlas database...\n" } ;
 my $atlasDB = EBI::FGPT::Resource::Database->new(
 	'dsn' => $dsn,
 	'username' => $username,
 	'password' => $password,
 ) or die "Could not connect to Atlas database: $DBI::errstr\n";
 
-print "Connected OK.\n";
+if ($debug) { print "Connected OK.\n"; }
 
 # Get database handle to connect
 my $atlasDBH = $atlasDB->get_dbh;
@@ -148,9 +153,9 @@ my $atlasSH = $atlasDBH->prepare("select ACCESSION,NAME from ARRAYDESIGN")
 or die "Could not prepare query: ", $atlasDBH->errstr, "\n";
 
 # Execute query
-print "Querying Atlas database...\n";
+if ($debug) { print "Querying Atlas database...\n"; }
 $atlasSH->execute or die "Could not execute query: ", $atlasSH->errstr, "\n";
-print "Query successful.\n";
+if ($debug) { print "Query successful.\n"; }
 
 # Build hash of results from DB
 my %H_arrayIDs2arrayNames ;
@@ -171,9 +176,6 @@ while (my $row = $atlasSH->fetchrow_arrayref) {
 # Disconnect from Atlas DB.
 $atlasDBH->disconnect;
 
-##Print for a test
-#foreach my $k (sort keys %H_arrayIDs2arrayNames) {	print "$k\t$H_arrayIDs2arrayNames{$k}\n" ; }
-#exit ;
 
 ## For differential analysis only:
 ## Extract information from the config file
@@ -468,7 +470,8 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 			##Label
 			my $label ;
 			foreach my $ft (keys %{$H_factorValue2factorType{$factVal}}) {
-				$label .= "$ft: $H_factorValue2factorType{$factVal}{$ft}; " ;	
+				#$label .= "$ft: $H_factorValue2factorType{$factVal}{$ft}; " ;	#label="genotype: stwl bam double mutant"
+                $label .= "$H_factorValue2factorType{$factVal}{$ft}; " ;  #label="stwl bam double mutant"
 			}
 			
 			##Remove the trailing
