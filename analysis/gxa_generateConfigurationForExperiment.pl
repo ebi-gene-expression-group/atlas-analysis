@@ -300,9 +300,8 @@ if ($debug) { print "\n[DEBUG] ===== PARSING the DATA =====\n" ; }
 foreach my $array (sort keys %H_eFactorValues2runIDs) {
 	if ($debug) { print "[DEBUG] Array is $array ($factorType)\n" ; }
 
-	#report error & message when testing the replicates, reference etc. 
-	my $errorCode = 0 ;
-	my $errorMessage ;
+	#report error when testing the replicates, reference etc. 
+	my $warningMessage = "" ;
 
 	foreach my $organism (keys %{$H_eFactorValues2runIDs{$array}}) {
 		if ($debug) { print "[DEBUG]\tSpecies is $organism\n" ; }
@@ -321,9 +320,8 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 				if (exists $H_config{"REFERENCE"}{lc($FV)}) {
 					if (!exists $H_referenceArray{$array.$organism}) { $H_referenceArray{$array.$organism} = $FV ;}
 					else { 
-						$errorCode = 1 ;
 						$H_referenceArray{$array.$organism} = "ERROR-MULTIREF" ; #this record a reference error for that array/organism
-						$errorMessage .= "More than one reference: $H_referenceArray{$array.$organism} and $FV. " ;
+						$warningMessage .= "More than one reference: $H_referenceArray{$array.$organism} and $FV. " ;
 					}
 				}
 			}
@@ -351,23 +349,21 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 		#Test is reference Factor Value found 
 		if ($differential) {
 			if (!exists $H_referenceArray{$array.$organism}) {
-				$errorCode = 1 ;
 				$H_referenceArray{$array.$organism} = "ERROR-NOREF" ; #this record a reference error for that array/organism
-				$errorMessage .= "No reference: $noReferenceError. " ;
+				$warningMessage .= "No reference: $noReferenceError. Add it manually with -ref \"new reference word\"" ;
 			}
 			
 			#Any Factor Value left (>= 3 replicates)?
 			#Need at least 2 of them!		
 			if (keys %{$H_eFactorValues2runIDs{$array}{$organism}} < 2) {
-				$errorCode = 1 ;
-				$errorMessage .= "Less than 2 values with at least 3 replicates. " ; 
+				$warningMessage .= "Less than 2 values with at least 3 replicates. " ; 
 			}
 		}
 
 		#Cannot generate contrast file
 		#Warn, dont die
-		if($errorCode == 1) { 
-			print "\n[WARNING] XML configuration file cannot be generated for $experiment :: $organism :: $array: $errorMessage\n" ;
+		if($warningMessage ne "") { 
+			print "\n[WARNING] XML configuration file cannot be generated for $experiment :: $organism :: $array: $warningMessage\n" ;
 			if ($debug) { print "[DEBUG] Delete $array ; $organism ...\n" ; }
 			delete $H_eFactorValues2runIDs{$array}{$organism} ; 
 		}
