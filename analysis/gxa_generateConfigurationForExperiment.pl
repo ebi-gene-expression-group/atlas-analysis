@@ -58,9 +58,8 @@ use EBI::FGPT::Resource::Database; #Atlas DB access
 
 
 ## Initialise global $, @ and %
-my ($experiment, $conf, $referenceArg, $killFactorValue, $help, $debug, $differential, $baseline, $noreplicate, $pese) ; #arguments
+my ($experiment, $conf, $referenceArg, $killFactorValue, $differential, $baseline, $noreplicate, $pese, $outdir, $help, $debug) ; #arguments
 my ($subDirectory, $commandLine) ; #values infered from command line
-my $outdir = "." ; #default output directory
 my $experimentType ; #experiment (atlas) type
 my %H_config ; #contains info. from the config file 
 my @A_assayGroups ; #store assay groups
@@ -100,7 +99,6 @@ print "[INFO] Generating XML config file for $experiment\n" ;
 
 if (!$experiment || (!$differential && !$baseline) ) { print "[WARNING] Missing experiment (-exp $experiment) or analysis type (-differential or -baseline)\n" ; $help  = 1 ; }
 if ($differential && !$conf) { print "[WARNING] Missing configuration files (-conf $conf) for differential analysis\n" ; $help  = 1 ; }
-if (!$outdir) { print "[WARNING] No output directory provided (-out $outdir). Default is current directory.\n" } ;
 $pese = uc($pese) ;
 if ($pese && ($pese ne "PE" && $pese ne "SE")) { print "[WARNING] Value for -pese whould be PE (to restrict to pair end libraries) or SE (to restrict to single end libraries).Value entered: $pese.\n" ; $help = 1 ; }
 if ($help) { usage($commandLine) ; die ; }
@@ -127,11 +125,12 @@ foreach my $miRNA (@A_miRnaList) {
 	$H_miRnaList{$arrayDesign} = 1 ;
 }
 
-## If output directory passed in argument, check for its existance
-# warn, and die, if it doesn't exist
-# later: create it automtically?
+## Output directory is the experiment one, by default
+# Check if exists, warn, and die, if it doesn't
+my $outdir = $experiment ;
+
 unless (-d $outdir) {
-	die "[ERROR] Output directory passed in argument ($outdir) doesn't exist. Command: mkdir $outdir\n" ;
+	die "[ERROR] Output directory ($outdir) doesn't exist. Create it (mkdir $outdir) or give directory name in argument (-out/-outdir).\n" ;
 }
 
 ## Get array names from Atlas database.
@@ -561,8 +560,8 @@ sub usage {
 		"\t-pese: to restrict to pair end (PE) or single end (SE) libraries. Default: no restriction\n".
 		"\t-ref: list of possible reference terms to search for. In double quotes and comma separated if multiple. Take precedence over the config file.\n".
 		"\t-kill: list of FactorValue terms to discard (to kill). In double quotes and comma separated if multiple. Take precedence over the config file.\n".
-		"\t-outdir: output directory. Default is the current directory.\n".
-        "\t-outdir: same as -outdir.\n".
+		"\t-outdir: output directory. Default is the experiment directory.\n".
+        "\t-out: same as -outdir.\n".
 		"\t-debug: debug mode.\n" ;
 }
 
