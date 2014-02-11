@@ -58,8 +58,9 @@ use EBI::FGPT::Resource::Database; #Atlas DB access
 
 
 ## Initialise global $, @ and %
-my ($experiment, $conf, $referenceArg, $killFactorValue, $differential, $baseline, $noreplicate, $pese, $outdir, $help, $debug) ; #arguments
+my ($experiment, $conf, $referenceArg, $killFactorValue, $differential, $baseline, $noreplicate, $pese, $help, $debug) ; #arguments
 my ($subDirectory, $commandLine) ; #values infered from command line
+my $outdir = $experiment ; #output directory - default is experiment
 my $experimentType ; #experiment (atlas) type
 my %H_config ; #contains info. from the config file 
 my @A_assayGroups ; #store assay groups
@@ -127,8 +128,6 @@ foreach my $miRNA (@A_miRnaList) {
 
 ## Output directory is the experiment one, by default
 # Check if exists, warn, and die, if it doesn't
-my $outdir = $experiment ;
-
 unless (-d $outdir) {
 	die "[ERROR] Output directory ($outdir) doesn't exist. Create it (mkdir $outdir) or give directory name in argument (-out/-outdir).\n" ;
 }
