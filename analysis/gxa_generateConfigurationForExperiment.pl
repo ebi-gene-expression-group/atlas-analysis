@@ -39,7 +39,7 @@
 
 =head1 EXAMPLES
 
-	gxa_generateConfigurationForExperiment.pl -exp experiment_name -conf config_file.txt -out path/to/output/XML/dir  -differential|-baseline
+	gxa_generateConfigurationForExperiment.pl -exp experiment_name -conf config_file.txt -outdir path/to/output/XML/dir  -differential|-baseline
 
 	E.g. 
 	   gxa_generateConfigurationForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt -differential -pese PE
@@ -87,6 +87,7 @@ GetOptions(
 	'pese=s'		=> \$pese,
 	'ref=s' 		=> \$referenceArg,
 	'kill=s' 		=> \$killFactorValue,
+    'out=s'			=> \$outdir,
 	'outdir=s'  	=> \$outdir,
 	'debug'			=> \$debug,
 ) ;
@@ -126,6 +127,12 @@ foreach my $miRNA (@A_miRnaList) {
 	$H_miRnaList{$arrayDesign} = 1 ;
 }
 
+## If output directory passed in argument, check for its existance
+# warn, and die, if it doesn't exist
+# later: create it automtically?
+unless (-d $outdir) {
+	die "[ERROR] Output directory passed in argument ($outdir) doesn't exist. Command: mkdir $outdir\n" ;
+}
 
 ## Get array names from Atlas database.
 ## Extract array ID <-> array name
@@ -419,6 +426,8 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 		if ($array ne "0") { $writer->dataElement("array_design" => $array) ; } 
 
 		### Assay_groups element, for each assay
+		#This will create <assay_groups> for each organisms, for exemple
+		#... but this is incorrect!!
 		$writer->startTag("assay_groups");
 		   									
 		##Make groups
@@ -484,6 +493,9 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 			}
 			$writer->endTag("assay_group") ;
 		}
+	
+        #This will create <assay_groups> for each organisms, for exemple
+		#.. incorrect, but keeping this in was it break somethign else
 		$writer->endTag("assay_groups") ;
 
 		### Contrast element (differential only)
@@ -550,6 +562,7 @@ sub usage {
 		"\t-ref: list of possible reference terms to search for. In double quotes and comma separated if multiple. Take precedence over the config file.\n".
 		"\t-kill: list of FactorValue terms to discard (to kill). In double quotes and comma separated if multiple. Take precedence over the config file.\n".
 		"\t-outdir: output directory. Default is the current directory.\n".
+        "\t-outdir: same as -outdir.\n".
 		"\t-debug: debug mode.\n" ;
 }
 
@@ -622,6 +635,7 @@ sub readMagetab {
 			my $technicalReplicateGroup = $assay4atlas->get_technical_replicate_group ;
 			foreach my $run (keys %H_runAccession) {
 				$technicalReplicateGroup =~ s/group/t/ ;
+				$technicalReplicateGroup =~ s/\s//g ;
 				$H_technicalReplicateGroup{$run} = $technicalReplicateGroup ;
 				if ($debug) { print "[DEBUG] $run storing technical replicate group $technicalReplicateGroup\n" ; }
 			}
