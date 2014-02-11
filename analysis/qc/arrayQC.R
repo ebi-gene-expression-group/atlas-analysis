@@ -150,7 +150,7 @@ atlasArrayQC <- function(annotationFile, exptType, exptAcc, arrayDesign, outDir,
 	# vector. Any that are in three times and were thus classified as outliers
 	# by all three methods should be rejected.
 	# This part uses sapply() to go through the unique assay names found in the
-	# outlierNames vector, and use length() and grep() to count how many times each
+	# outlierNames vector, and use length() and which() to count how many times each
 	# one appears.
 	counts <- sapply(unique(outlierNames), function(x) {
 		# len is the number of times the assay name (x) appears in the outlierNames
