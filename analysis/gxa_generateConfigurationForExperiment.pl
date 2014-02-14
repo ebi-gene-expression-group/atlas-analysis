@@ -7,7 +7,7 @@
 
 	Karyn Megy - 18-June-13
 	kmegy@ebi.ac.uk
-	diffAtlas_generateContrastsForExperiment.pl
+	gxa_generateConfigurationForExperiment.pl
 
 =head1 SYNOPSIS
 
@@ -39,7 +39,7 @@
 
 =head1 EXAMPLES
 
-	gxa_generateConfigurationForExperiment.pl -exp experiment_name -conf config_file.txt -outdir path/to/output/XML/dir  -differential|-baseline
+	gxa_generateConfigurationForExperiment.pl -exp expAcc -conf config_file.txt -outdir path/to/output/XML/dir  -differential|-baseline
 
 	E.g. 
 	   gxa_generateConfigurationForExperiment.pl -exp E-MTAB-1066  -conf analysis/differential/reference_assay_group_factor_values.txt -differential -pese PE
@@ -58,9 +58,9 @@ use EBI::FGPT::Resource::Database; #Atlas DB access
 
 
 ## Initialise global $, @ and %
-my ($experiment, $conf, $referenceArg, $killFactorValue, $differential, $baseline, $noreplicate, $pese, $help, $debug) ; #arguments
+my ($expAcc, $conf, $referenceArg, $killFactorValue, $differential, $baseline, $noreplicate, $pese, $help, $debug) ; #arguments
 my ($subDirectory, $commandLine) ; #values infered from command line
-my $outdir = $experiment ; #output directory - default is experiment
+my $outdir = $expAcc ; #output directory - default is experiment
 my $experimentType ; #experiment (atlas) type
 my %H_config ; #contains info. from the config file 
 my @A_assayGroups ; #store assay groups
@@ -79,7 +79,7 @@ my $writer ;
 ################
 GetOptions( 
 	'help|Help|h|H' => \$help,
-	'exp=s'	 		=> \$experiment,
+	'exp=s'	 		=> \$expAcc,
 	'conf=s' 		=> \$conf,
 	'differential'	=> \$differential,
 	'baseline'		=> \$baseline,
@@ -96,9 +96,9 @@ $commandLine = join(' ',@ARGV);
 
 #Print experiment
 ##Target error messages when running lots of experiments 
-print "[INFO] Generating XML config file for $experiment\n" ;
+print "[INFO] Generating XML config file for $expAcc\n" ;
 
-if (!$experiment || (!$differential && !$baseline) ) { print "[WARNING] Missing experiment (-exp $experiment) or analysis type (-differential or -baseline)\n" ; $help  = 1 ; }
+if (!$expAcc || (!$differential && !$baseline) ) { print "[WARNING] Missing experiment (-exp $expAcc) or analysis type (-differential or -baseline)\n" ; $help  = 1 ; }
 if ($differential && !$conf) { print "[WARNING] Missing configuration files (-conf $conf) for differential analysis\n" ; $help  = 1 ; }
 $pese = uc($pese) ;
 if ($pese && ($pese ne "PE" && $pese ne "SE")) { print "[WARNING] Value for -pese whould be PE (to restrict to pair end libraries) or SE (to restrict to single end libraries).Value entered: $pese.\n" ; $help = 1 ; }
@@ -106,15 +106,15 @@ if ($help) { usage($commandLine) ; die ; }
 
 
 ## Experiment sub-directory
-if ($experiment =~ /E-(\w+?)-\d+?/) { $subDirectory = $1 ; }
-else { die "[ERROR] Experiment $experiment: name not formatted as expected. Expecting format E-xxx-0123\n" ; }
+if ($expAcc =~ /E-(\w+?)-\d+?/) { $subDirectory = $1 ; }
+else { die "[ERROR] Experiment $expAcc: name not formatted as expected. Expecting format E-xxx-0123\n" ; }
 
 ## Directory with SDRF file
 my $experimentDirectory = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/" ;
 
 ## IDF & SDRF files (input) and XML file (output)
-my $idf = "$experimentDirectory/$subDirectory/$experiment/$experiment.idf.txt" ;
-my $outfileXML = "$outdir/$experiment-configuration.xml.auto" ;
+my $idf = "$experimentDirectory/$subDirectory/$expAcc/$expAcc.idf.txt" ;
+my $outfileXML = "$outdir/$expAcc-configuration.xml.auto" ;
 
 ## Get list of miRNA
 my @A_miRnaList = glob("/ebi/microarray/home/atlas3-production/bioentity_properties/mirbase/*.A-*.tsv") ;
@@ -260,14 +260,14 @@ if ($expmtType =~ /one-colour array/) { $color = "1colour_" ;}
 if ($expmtType =~ /two-colour array/) { $color = "2colour_" ;} 
 
 my $RNA = "mrna";
-if (exists $H_miRnaList{$experiment}) { $RNA = "microrna" ;}
+if (exists $H_miRnaList{$expAcc}) { $RNA = "microrna" ;}
 
 my $analysisType ;
 if ($differential) { $analysisType = "differential" ;} 
 if ($baseline) { $analysisType = "baseline" ;}
 
 #At the moment, we exclude microarray baseline experiments, so die if we have one of those
-if ( $type eq "microarray" && $baseline) { die "[ERROR] $experiment - $type experiment cannot be analysed as baseline. Refused for now." ;}
+if ( $type eq "microarray" && $baseline) { die "[ERROR] $expAcc - $type experiment cannot be analysed as baseline. Refused for now." ;}
 
 #For each experiment type, make sure I've got the appropritate bits
 if ($type =~ /rnaseq/ && $RNA ne '' && $analysisType ne '') {
@@ -276,7 +276,7 @@ if ($type =~ /rnaseq/ && $RNA ne '' && $analysisType ne '') {
 } elsif ($type =~ /microarray/ && $RNA ne '' && $color ne '') {
     $experimentType = "${type}_${color}${RNA}_${analysisType}" ;
 	if ($debug) { print "Exepriment (Atlas) type is $experimentType (from \"$expmtType\")\n" ;}
-} else { die "[ERROR] $experiment - Cannot get the experiment type: type:$type color:$color RNA:$RNA [from $expmtType]\n" ; } 
+} else { die "[ERROR] $expAcc - Cannot get the experiment type: type:$type color:$color RNA:$RNA [from $expmtType]\n" ; } 
 
 
 
@@ -368,7 +368,7 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 		#Cannot generate contrast file
 		#Warn, dont die
 		if($warningMessage ne "") { 
-			print "\n[WARNING] XML configuration file cannot be generated for $experiment :: $organism :: $array: $warningMessage\n" ;
+			print "\n[WARNING] XML configuration file cannot be generated for $expAcc :: $organism :: $array: $warningMessage\n" ;
 			if ($debug) { print "[DEBUG] Delete $array ; $organism ...\n" ; }
 			delete $H_eFactorValues2runIDs{$array}{$organism} ; 
 		}
@@ -514,7 +514,7 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 				else {
 					if ($H_arrayIDs2arrayNames{$array} ne '') {	
 						$writer->dataElement("name" => "'$A_assayGroups[$i]' vs '$A_assayGroups[$referenceIndex]' on '$H_arrayIDs2arrayNames{$array}'") ;
-					} else { die "[ERROR] $experiment - No user-friendly name for array $array\n" ; } 
+					} else { die "[ERROR] $expAcc - No user-friendly name for array $array\n" ; } 
 				}
 				$writer->dataElement("reference_assay_group" => "g$referenceIndex") ;
 				$writer->dataElement("test_assay_group" => "g$i") ; 
@@ -583,7 +583,7 @@ sub readMagetab {
 	eval { $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idf );  }; 
 	if ($@)  { 
 		my @A_moduleErrorMessage = split("\n", $@) ;
-		die "[ERROR] $experiment -- Error in the Magetab files. $A_moduleErrorMessage[0]\n" ;
+		die "[ERROR] $expAcc -- Error in the Magetab files. $A_moduleErrorMessage[0]\n" ;
 	}
 
 	# Test if we find any assays.
@@ -597,7 +597,7 @@ sub readMagetab {
 	if ($debug) { print "[DEBUG] Assays: $A_magetabAssay[0]\n"; }
 
 	##Get the assay, or die
-	if (!@{ $magetab4atlas->get_assays }) { die "[ERROR] $experiment - Cannot extract assay: no name or no factor values\n" }
+	if (!@{ $magetab4atlas->get_assays }) { die "[ERROR] $expAcc - Cannot extract assay: no name or no factor values\n" }
 
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
 		if ($debug) { print "[DEBUG] Assays found !\n" ; }
