@@ -94,20 +94,27 @@ GetOptions(
 
 $commandLine = join(' ',@ARGV); 
 
-#Print experiment
-##Target error messages when running lots of experiments 
-print "[INFO] Generating XML config file for $expAcc\n" ;
+if (!$expAcc) {
+  die "[ERROR] Missing experiment (-exp $expAcc);
+}
 
-if (!$expAcc || (!$differential && !$baseline) ) { print "[WARNING] Missing experiment (-exp $expAcc) or analysis type (-differential or -baseline)\n" ; $help  = 1 ; }
-if ($differential && !$conf) { print "[WARNING] Missing configuration files (-conf $conf) for differential analysis\n" ; $help  = 1 ; }
+my $logfile = "$expAcc/atlas_configuration_generation_$expAcc.idf.txt.log"
+open(my $logFileHandle, ">", $logfile) or log($logFileHandle, "[ERROR] Can't create log file: $!"); die ;
+
+if (!$differential && !$baseline)  { 
+  log($logFileHandle, "[ERROR] analysis type (-differential or -baseline)") ; $help  = 1 ; }
+if ($differential && !$conf) { 
+  log($logFileHandle, "[ERROR] Missing configuration files (-conf $conf) for differential analysis") ; $help  = 1 ; }
 $pese = uc($pese) ;
-if ($pese && ($pese ne "PE" && $pese ne "SE")) { print "[WARNING] Value for -pese whould be PE (to restrict to pair end libraries) or SE (to restrict to single end libraries).Value entered: $pese.\n" ; $help = 1 ; }
+if ($pese && ($pese ne "PE" && $pese ne "SE")) { 
+  log($logFileHandle, "[ERROR] Value for -pese whould be PE (to restrict to pair end libraries) or SE (to restrict to single end libraries).Value entered: $pese.") ; $help = 1 ; }
 if ($help) { usage($commandLine) ; die ; }
 
+log($logFileHandle, "[INFO] Generating XML config file for $expAcc"); 
 
 ## Experiment sub-directory
 if ($expAcc =~ /E-(\w+?)-\d+?/) { $subDirectory = $1 ; }
-else { die "[ERROR] Experiment $expAcc: name not formatted as expected. Expecting format E-xxx-0123\n" ; }
+else { log($logFileHandle, "[ERROR] Experiment $expAcc: name not formatted as expected. Expecting format E-xxx-0123"); die ; }
 
 ## Directory with SDRF file
 my $experimentDirectory = "/nfs/ma/home/arrayexpress/ae2_production/data/EXPERIMENT/" ;
@@ -129,7 +136,7 @@ foreach my $miRNA (@A_miRnaList) {
 ## Output directory is the experiment one, by default
 # Check if exists, warn, and die, if it doesn't
 unless (-d $outdir) {
-	die "[ERROR] Output directory ($outdir) doesn't exist. Create it (mkdir $outdir) or give directory name in argument (-out/-outdir).\n" ;
+	log($logFileHandle, "[ERROR] Output directory ($outdir) doesn't exist. Create it (mkdir $outdir) or give directory name in argument (-out/-outdir)."); die ;
 }
 
 ## Get array names from Atlas database.
@@ -141,25 +148,25 @@ my $username = "atlasprd3";
 my $password = "atlas";
 
 # Create connection
-if ($debug) { print "[DEBUG] Connecting to Atlas database...\n" } ;
+if ($debug) { log($logFileHandle, "[DEBUG] Connecting to Atlas database...") ; } ;
 my $atlasDB = EBI::FGPT::Resource::Database->new(
 	'dsn' => $dsn,
 	'username' => $username,
 	'password' => $password,
-) or die "Could not connect to Atlas database: $DBI::errstr\n";
-if ($debug) { print "[DEBUG] Connected OK.\n"; }
+) or log($logFileHandle, "[ERROR] Could not connect to Atlas database: $DBI::errstr"); die ;
+if ($debug) { log($logFileHandle, "[DEBUG] Connected OK.") ; }
 
 # Get database handle to connect
 my $atlasDBH = $atlasDB->get_dbh;
 
 # Create statement handle with query
 my $atlasSH = $atlasDBH->prepare("select ACCESSION,NAME from ARRAYDESIGN")
-or die "Could not prepare query: ", $atlasDBH->errstr, "\n";
+or log($logFileHandle, "[ERROR] Could not prepare query: ".$atlasDBH->errstr); die ;
 
 # Execute query
-if ($debug) { print "[DEBUG] Querying Atlas database...\n"; }
-$atlasSH->execute or die "Could not execute query: ", $atlasSH->errstr, "\n";
-if ($debug) { print "[DEBUG] Query successful.\n"; }
+if ($debug) { log($logFileHandle, "[DEBUG] Querying Atlas database...") ; }
+$atlasSH->execute or log($logFileHandle, "Could not execute query: ".$atlasSH->errstr); die ;
+if ($debug) { log($logFileHandle, "[DEBUG] Query successful.") ; }
 
 # Build hash of results from DB
 my %H_arrayIDs2arrayNames ;
@@ -174,7 +181,7 @@ while (my $row = $atlasSH->fetchrow_arrayref) {
 	if (!exists $H_arrayIDs2arrayNames{$arrayID}) {
 		$H_arrayIDs2arrayNames{$arrayID}  = $arrayName ;
 	} else {
-		die "[ERROR] More than one name for array $arrayID\n" ;
+		log($logFileHandle, "[ERROR] More than one name for array $arrayID"); die ;
 	}
 }
 # Disconnect from Atlas DB.
@@ -185,7 +192,7 @@ $atlasDBH->disconnect;
 ## Extract information from the config file
 ###########################################
 if ($differential) {
-	open (CONF, $conf) || die "Can't open the configuration file $conf!\n" ;
+	open (CONF, $conf) || log($logFileHandle, "[ERROR] Can't open the configuration file $conf!"); die ;
 	while (my $line=<CONF>) {
 		chomp $line ; 
 
@@ -266,17 +273,18 @@ my $analysisType ;
 if ($differential) { $analysisType = "differential" ;} 
 if ($baseline) { $analysisType = "baseline" ;}
 
-#At the moment, we exclude microarray baseline experiments, so die if we have one of those
-if ( $type eq "microarray" && $baseline) { die "[ERROR] $expAcc - $type experiment cannot be analysed as baseline. Refused for now." ;}
+#At the moment, we exclude microarray baseline experiments, so die, if we have one of those
+if ( $type eq "microarray" && $baseline) { 
+  log($logFileHandle, "[ERROR] $expAcc - $type experiment cannot be analysed as baseline. Refused for now."); die ; }
 
 #For each experiment type, make sure I've got the appropritate bits
 if ($type =~ /rnaseq/ && $RNA ne '' && $analysisType ne '') {
 	$experimentType = "${type}_${color}${RNA}_${analysisType}" ;
-	if ($debug) { print "Exepriment (Atlas) type is $experimentType (from \"$expmtType\")\n" ;}
+	if ($debug) { log($logFileHandle, "Exepriment (Atlas) type is $experimentType (from \"$expmtType\")") ;}
 } elsif ($type =~ /microarray/ && $RNA ne '' && $color ne '') {
     $experimentType = "${type}_${color}${RNA}_${analysisType}" ;
-	if ($debug) { print "Exepriment (Atlas) type is $experimentType (from \"$expmtType\")\n" ;}
-} else { die "[ERROR] $expAcc - Cannot get the experiment type: type:$type color:$color RNA:$RNA [from $expmtType]\n" ; } 
+	if ($debug) { log($logFileHandle, "Exepriment (Atlas) type is $experimentType (from \"$expmtType\")") ;}
+} else { log($logFileHandle, "[ERROR] $expAcc - Cannot get the experiment type: type:$type color:$color RNA:$RNA [from $expmtType]"); die ; } 
 
 
 
@@ -290,29 +298,29 @@ if ($type =~ /rnaseq/ && $RNA ne '' && $analysisType ne '') {
 
 my $configurationTag = 0 ;
 $noReferenceError = "Candidate reference values for $factorType: ";
-if ($debug) { print "[DEBUG] Parsing values collected in Magetab module\n" ; }
+if ($debug) { log($logFileHandle, "[DEBUG] Parsing values collected in Magetab module") ; }
 
 #Number of arrays
 # - RNA_seq experiment: always one
 # - microarray experiment: possibly more than one
 my $arrayNumber = scalar keys %H_eFactorValues2runIDs ;
-if ($debug) { print "[DEBUG] Number of arrays in that experiment (initially): $arrayNumber\n" ; }
+if ($debug) { log($logFileHandle, "[DEBUG] Number of arrays in that experiment (initially): $arrayNumber") ; }
 
 my %H_arrayInAnalyticsElement ; #store arrays that are in an analystics block 
 my %H_referenceArray ; #store reference for each couple array/organism
 
-if ($debug) { print "\n[DEBUG] ===== PARSING the DATA =====\n" ; }
+if ($debug) { log($logFileHandle, "\n[DEBUG] ===== PARSING the DATA =====") ; }
 foreach my $array (sort keys %H_eFactorValues2runIDs) {
-	if ($debug) { print "[DEBUG] Array is $array ($factorType)\n" ; }
+	if ($debug) { log($logFileHandle, "[DEBUG] Array is $array ($factorType)") ; }
 
 	#report error when testing the replicates, reference etc. 
 	my $warningMessage = "" ;
 
 	foreach my $organism (keys %{$H_eFactorValues2runIDs{$array}}) {
-		if ($debug) { print "[DEBUG]\tSpecies is $organism\n" ; }
+		if ($debug) { log($logFileHandle, "[DEBUG]\tSpecies is $organism") ; }
 
 		foreach my $FV (keys %{$H_eFactorValues2runIDs{$array}{$organism}}) {
-			if ($debug) { print "[DEBUG] Testing '$FV' -- @{$H_eFactorValues2runIDs{$array}{$organism}{$FV}}\n" ; }
+			if ($debug) { log($logFileHandle, "[DEBUG] Testing '$FV' -- @{$H_eFactorValues2runIDs{$array}{$organism}{$FV}}") ; }
 		
 			#Differential analysis only
 			if ($differential) {
@@ -335,17 +343,17 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 			#Differential: at least 3
 			#Baseline: at least 2, unless -noreplicate tag (for specific experiments we really want in Atlas)
 			my $replicateCount = scalar @{$H_eFactorValues2runIDs{$array}{$organism}{$FV}} ;
-			if ($debug) { print "[DEBUG] Replicate number: $replicateCount\n" ; }
+			if ($debug) { log($logFileHandle, "[DEBUG] Replicate number: $replicateCount") ; }
 			if ($differential) {
 				if ($replicateCount < 3) { 
 					delete $H_eFactorValues2runIDs{$array}{$organism}{$FV} ; 
-					if ($debug) { print "[DEBUG] Delete H_eFactorValues2runIDs{$array}{$organism}{$FV} due to lack of replicates\n" ; }
+					if ($debug) { log($logFileHandle, "[DEBUG] Delete H_eFactorValues2runIDs{$array}{$organism}{$FV} due to lack of replicates") ; }
 				}
 			}
            	if ($baseline) {
 			   if (($replicateCount < 2) && !$noreplicate) { 
 				   delete $H_eFactorValues2runIDs{$array}{$organism}{$FV} ; 
-				   if ($debug) { print "[DEBUG] Delete H_eFactorValues2runIDs{$array}{$organism}{$FV} due to lack of replicates\n" ; }	
+				   if ($debug) { log($logFileHandle, "[DEBUG] Delete H_eFactorValues2runIDs{$array}{$organism}{$FV} due to lack of replicates") ; }	
 			   }
 		   	}
 		}
@@ -368,18 +376,18 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 		#Cannot generate contrast file
 		#Warn, dont die
 		if($warningMessage ne "") { 
-			print "\n[WARNING] XML configuration file cannot be generated for $expAcc :: $organism :: $array: $warningMessage\n" ;
-			if ($debug) { print "[DEBUG] Delete $array ; $organism ...\n" ; }
+			log($logFileHandle, "\n[WARNING] XML configuration file cannot be generated for $expAcc :: $organism :: $array: $warningMessage") ;
+			if ($debug) { log($logFileHandle, "[DEBUG] Delete $array ; $organism ...") ; }
 			delete $H_eFactorValues2runIDs{$array}{$organism} ; 
 		}
 	}
 }
-if ($debug) { print "[DEBUG] Finish reading Magetab files\n" ; }
+if ($debug) { log($logFileHandle, "[DEBUG] Finish reading Magetab files") ; }
 
 
 ############################
 ### Now go through the hash again, and print
-if ($debug) { print "[DEBUG] Printing XML file\n" ; }
+if ($debug) { log($logFileHandle, "[DEBUG] Printing XML file") ; }
 
 ### In the hash, delete any array with no organism left
 #this because I need the number of arrays to decided what to print
@@ -392,13 +400,13 @@ foreach my $arrCheck (keys %H_eFactorValues2runIDs) {
 ##Number of arrays
 #required later for printing, or not. 
 my $arrayNumber = scalar keys %H_eFactorValues2runIDs ;
-if ($debug) { print "[DEBUG] Number of arrays in that experiment (after parsing): $arrayNumber\n" ; }
+if ($debug) { log($logFileHandle, "[DEBUG] Number of arrays in that experiment (after parsing): $arrayNumber") ; }
 my %H_arrayInAnalyticsElement ; #store arrays that are in an analytics block 
 
-if ($debug) { print "\n[DEBUG] ===== PRINTING the XML =====\n" ; }
+if ($debug) { log($logFileHandle, "\n[DEBUG] ===== PRINTING the XML =====") ; }
 foreach my $array (sort keys %H_eFactorValues2runIDs) {
 	foreach my $organism (keys %{$H_eFactorValues2runIDs{$array}}) {
-		if ($debug) { print "[DEBUG]\tSpecies is $organism\n" ; }
+		if ($debug) { log($logFileHandle, "[DEBUG]\tSpecies is $organism") ; }
 
 		#If it's the first time, open the XML file
 		if ($configurationTag == 0) {
@@ -454,19 +462,19 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 		if ($baseline) {
 			$index = $groupCounter + 1 ;
 			$referenceIndex = $groupCounter ; #this is needed later, for printing
-			if ($debug) { print "[DEBUG] Baseline - starting index at $index and groupCounter is $groupCounter\n" ; }
+			if ($debug) { log($logFileHandle, "[DEBUG] Baseline - starting index at $index and groupCounter is $groupCounter") ; }
 			foreach my $FV (keys %{$H_eFactorValues2runIDs{$array}{$organism}}) {
 				$A_assayGroups[$groupCounter] = $FV ;
 				$groupCounter++ ;
 			}
 		}
-		print "[INFO] Print XML contrast file $outfileXML\n" ;
+		log($logFileHandle, "[INFO] Print XML contrast file $outfileXML") ;
 
 		##Assay_group element
 		foreach my $i ($referenceIndex..$#A_assayGroups) { 
 			my $factVal = $A_assayGroups[$i] ;
-			if ($debug) { print "[DEBUG] Organism is $organism and array is $array\n"}
-			if ($debug) { print "[DEBUG] [$i] F.V. is $factVal\n"}
+			if ($debug) { log($logFileHandle, "[DEBUG] Organism is $organism and array is $array"); }
+			if ($debug) { log($logFileHandle, "[DEBUG] [$i] F.V. is $factVal"); }
 			
 			##Label
 			my $label ;
@@ -514,7 +522,7 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 				else {
 					if ($H_arrayIDs2arrayNames{$array} ne '') {	
 						$writer->dataElement("name" => "'$A_assayGroups[$i]' vs '$A_assayGroups[$referenceIndex]' on '$H_arrayIDs2arrayNames{$array}'") ;
-					} else { die "[ERROR] $expAcc - No user-friendly name for array $array\n" ; } 
+					} else { log($logFileHandle, "[ERROR] $expAcc - No user-friendly name for array $array"); die ; } 
 				}
 				$writer->dataElement("reference_assay_group" => "g$referenceIndex") ;
 				$writer->dataElement("test_assay_group" => "g$i") ; 
@@ -540,6 +548,7 @@ if ($configurationTag == 1) {
 	$XML->close ;
 }
 
+close($logfileHandle);
 
 
 ## Subroutine
@@ -548,7 +557,7 @@ if ($configurationTag == 1) {
 sub usage {
 	my ($command_line) = @_;
 	
-	print "Your command line was:\t".
+	log($logFileHandle, "Your command line was:\t".
 		"$0 $command_line\n".
 		"Compulsory parameters:\n".
 		"\t-exp: experiment name. E.g. E-MTAB-123\n".
@@ -561,7 +570,7 @@ sub usage {
 		"\t-kill: list of FactorValue terms to discard (to kill). In double quotes and comma separated if multiple. Take precedence over the config file.\n".
 		"\t-outdir: output directory. Default is the experiment directory.\n".
         "\t-out: same as -outdir.\n".
-		"\t-debug: debug mode.\n" ;
+		"\t-debug: debug mode.") ;
 }
 
 
@@ -572,7 +581,7 @@ sub readMagetab {
 	my $factorTypeString = "" ;
     my %H_technicalReplicateGroup ;
 
-	if ($debug) { print "\n[DEBUG] ===== READING MAGETAB (readMagetab module) =====\n" ; }
+	if ($debug) { log($logFileHandle, "\n[DEBUG] ===== READING MAGETAB (readMagetab module) =====") ; }
 	# Create a Magetab4Atlas object. This reads the MAGETAB documents (via the
 	# IDF filename pro vided) to get Atlas-relevant information for each assay in
 	# the experiment.
@@ -583,42 +592,42 @@ sub readMagetab {
 	eval { $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idf );  }; 
 	if ($@)  { 
 		my @A_moduleErrorMessage = split("\n", $@) ;
-		die "[ERROR] $expAcc -- Error in the Magetab files. $A_moduleErrorMessage[0]\n" ;
+		log($logFileHandle, "[ERROR] $expAcc -- Error in the Magetab files. $A_moduleErrorMessage[0]"); die ;
 	}
 
 	# Test if we find any assays.
-	if(!$magetab4atlas->has_assays) { print "[DEBUG] No assay found!\n" ; } #die "No assay for this experiment!\n"; }
+	if(!$magetab4atlas->has_assays) { log($logFileHandle, "[DEBUG] No assay found!") ; }
 	 
 	##Experiment type
-	if ($debug) { print "[DEBUG] Experiment type: ".$magetab4atlas->get_experiment_type."\n"; }		
+	if ($debug) { log($logFileHandle, "[DEBUG] Experiment type: ".$magetab4atlas->get_experiment_type.""); }		
 	my $expType = $magetab4atlas->get_experiment_type ; 
 	
 	my @A_magetabAssay = $magetab4atlas->get_assays ;
-	if ($debug) { print "[DEBUG] Assays: $A_magetabAssay[0]\n"; }
+	if ($debug) { log($logFileHandle, "[DEBUG] Assays: $A_magetabAssay[0]"); }
 
 	##Get the assay, or die
-	if (!@{ $magetab4atlas->get_assays }) { die "[ERROR] $expAcc - Cannot extract assay: no name or no factor values\n" }
+	if (!@{ $magetab4atlas->get_assays }) { log($logFileHandle, "[ERROR] $expAcc - Cannot extract assay: no name or no factor values"); die ; }
 
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
-		if ($debug) { print "[DEBUG] Assays found !\n" ; }
+		if ($debug) { log($logFileHandle, "[DEBUG] Assays found !") ; }
 
 		# Get the organism
 		my $organism = $assay4atlas->get_organism() ; 
-        if ($debug) { print "[DEBUG]\tOrganism:\n\t\t", $assay4atlas->get_organism, " ($organism) \n" ; }
+        if ($debug) { log($logFileHandle, "[DEBUG]\tOrganism:\n\t\t", $assay4atlas->get_organism, " ($organism) ") ; }
 
 		# Get the assay name
 		# Old SDRF: should be ENA_run (RNA-seq) or hybridisation name (microarray)
 		# Newer SDRF: assay name field
 		#For RNA-seq, also get the number of fastqURI - should be 1 (SE) or 2 (PE)
 		my %H_runAccession ;
-		if ($debug) { print "[DEBUG] Assay: ", $assay4atlas->get_name, " (",$assay4atlas->get_name(),")\n" ; }	
+		if ($debug) { log($logFileHandle, "[DEBUG] Assay: ", $assay4atlas->get_name, " (",$assay4atlas->get_name(),")") ; }	
 		if ($expType eq "RNA-seq") {
 			if($assay4atlas->has_fastq_uri_set) {
 				foreach my $ENArun (keys %{ $assay4atlas->get_fastq_uri_set }) {
 					foreach my $fastqUri (@{ $assay4atlas->get_fastq_uri_set->{ $ENArun } }) {
 						$H_runAccession{$ENArun}++ ; #this is to record PE (2) or SE (1)
 					}
-					if ($debug) { print "[DEBUG]\tENA run: $ENArun ($H_runAccession{$ENArun})\n" ; } 
+					if ($debug) { log($logFileHandle, "[DEBUG]\tENA run: $ENArun ($H_runAccession{$ENArun})") ; } 
 				}
 			}
 		} else {
@@ -635,19 +644,19 @@ sub readMagetab {
 				$technicalReplicateGroup =~ s/group/t/ ;
 				$technicalReplicateGroup =~ s/\s//g ;
 				$H_technicalReplicateGroup{$run} = $technicalReplicateGroup ;
-				if ($debug) { print "[DEBUG] $run storing technical replicate group $technicalReplicateGroup\n" ; }
+				if ($debug) { log($logFileHandle, "[DEBUG] $run storing technical replicate group $technicalReplicateGroup") ; }
 			}
 		}
 
 		# Get the Factor type(s) and values for this assay
-		if ($debug) { print "[DEBUG]\tFactors:\n"; }
+		if ($debug) { log($logFileHandle, "[DEBUG]\tFactors:"); }
 		my $H_factors = $assay4atlas->get_factors;
 		my $factorValueString = "" ; 
 		my $factorTypeString = "" ;
 		foreach my $factorType (keys %{ $H_factors }) {
 
             $factorValueString .= $H_factors->{ $factorType }." " ;
-			if ($debug) { print "[DEBUG]\t\t$factorType: ", $H_factors->{ $factorType }, "\n"; }
+			if ($debug) { log($logFileHandle, "[DEBUG]\t\t$factorType: ", $H_factors->{ $factorType }, ""); }
 
 			#If >= 2 factor type, exclude the ones containing "*Time*"		
 			unless (keys %{$H_factors} >= 2 && $factorType =~ /Time/) { $factorTypeString .= "$factorType " ; }
@@ -655,8 +664,8 @@ sub readMagetab {
 
 		$factorValueString =~ s/\s+?$// ; #remove trailing space
 		$factorTypeString =~ s/\s+?$// ; #remove trailing space
-		if ($debug) { print "\t\tfactorValue string: $factorValueString\n"; }
-        if ($debug) { print "\t\tfactorType string: $factorTypeString\n"; }
+		if ($debug) { log($logFileHandle, "\t\tfactorValue string: $factorValueString"); }
+        if ($debug) { log($logFileHandle, "\t\tfactorType string: $factorTypeString"); }
 
 		# For each factorValueString, store the factor types and their value
 		# key is factorValueString because it needs to link to another hash which key is also factorValueString
@@ -667,7 +676,7 @@ sub readMagetab {
 		if($expType =~ /array/) {
 			if($assay4atlas->has_array_design) {
 				$arrayDesign = $assay4atlas->get_array_design() ;
-				if ($debug) { print "\tArray design:\n\t\t", $assay4atlas->get_array_design, " ($arrayDesign) \n" ; }
+				if ($debug) { log($logFileHandle, "\tArray design:\n\t\t", $assay4atlas->get_array_design, " ($arrayDesign) ") ; }
 			}
 		}
 
@@ -690,3 +699,13 @@ sub readMagetab {
 	# and the reference to a hash of mappings between factor values and run accession
 	return($expType, $factorTypeString, $efvs2runAccessions, \%H_fv2fvType, \%H_technicalReplicateGroup) ;
 }
+
+# Dual log to STDOUT and $logFileHandle. The latter will be reported by Conan in the interface; the former will 
+# be reported in the LSF output file (and via an email from Conan) in the case of failure of this script.
+sub log() {
+  my $logFileHandle = shift;
+  my $msg = $shift
+  print STDOUT "$msg\n";
+  printf($logFileHandle "$msg\n"n);
+}
+
