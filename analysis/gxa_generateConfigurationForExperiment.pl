@@ -152,8 +152,9 @@ if ($debug) { &log($logFileHandle, "[DEBUG] Connecting to Atlas database...") ; 
 my $atlasDB = EBI::FGPT::Resource::Database->new(
 	'dsn' => $dsn,
 	'username' => $username,
-	'password' => $password,
-) or { &log($logFileHandle, "[ERROR] Could not connect to Atlas database: $DBI::errstr"); die ; } ;
+	'password' => $password
+);
+if (!$atlasDB) { &log($logFileHandle, "[ERROR] Could not connect to Atlas database: $DBI::errstr"); die ; } ;
 if ($debug) { &log($logFileHandle, "[DEBUG] Connected OK.") ; }
 
 # Get database handle to connect
