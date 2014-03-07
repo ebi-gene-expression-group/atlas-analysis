@@ -99,7 +99,7 @@ if (!$expAcc) {
 }
 
 my $logfile = $expAcc."/atlas_configuration_generation_".$expAcc.".idf.txt.log" ;
-open(my $logFileHandle, ">", $logfile) or die "[ERROR] Can't create log file: $!"; 
+open(my $logFileHandle, ">", $logfile) or die "[ERROR] Can't create log file: $logFile ($!)"; 
 
 if (!$differential && !$baseline)  { 
   &log($logFileHandle, "[ERROR] analysis type (-differential or -baseline)") ; $help  = 1 ; }
