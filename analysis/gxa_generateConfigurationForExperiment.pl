@@ -55,6 +55,7 @@ use Magetab4Atlas ;
 use XML::Writer ;
 use IO::File ;
 use EBI::FGPT::Resource::Database; #Atlas DB access
+use Cwd;
 
 
 ## Initialise global $, @ and %
@@ -98,7 +99,8 @@ if (!$expAcc) {
   die "[ERROR] Missing experiment (-exp $expAcc)";
 }
 
-my $logfile = $expAcc."/atlas_configuration_generation_".$expAcc.".idf.txt.log" ;
+my $dir = getcwd;
+my $logfile = "$dir/atlas_configuration_generation_$expAcc.idf.txt.log" ;
 open(my $logFileHandle, ">", $logfile) or die "[ERROR] Can't create log file: $logfile ($!)"; 
 
 if (!$differential && !$baseline)  { 
