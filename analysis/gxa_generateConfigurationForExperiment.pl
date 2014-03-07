@@ -98,7 +98,7 @@ if (!$expAcc) {
   die "[ERROR] Missing experiment (-exp $expAcc)";
 }
 
-my $logfile = $expAcc."/atlas_configuration_generation_".$expAcc."idf.txt.log" ;
+my $logfile = $expAcc."/atlas_configuration_generation_".$expAcc.".idf.txt.log" ;
 open(my $logFileHandle, ">", $logfile) or die "[ERROR] Can't create log file: $!"; 
 
 if (!$differential && !$baseline)  { 
