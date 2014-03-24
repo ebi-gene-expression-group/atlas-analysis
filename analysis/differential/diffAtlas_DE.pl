@@ -45,11 +45,11 @@ print "Experiment accession: $exptAcc\n";
 #                              				  ->{ "test" } = [ "mutX1", "mutX2", "mutX3" ]
 #              ->{ "rnaseq" }->{ "g3_g4" }->{ "atlasName" } = "genotype: 'mutant Y' vs. 'wild type'"
 #                            			  ->{ "deseqFile" } = "./deSeqResults.genes_de.tsv"
-my $contrastHash = readAtlasXML($atlasXML);
+my $contrastHash = &readAtlasXML($atlasXML);
 
 # If we have an RNA-Seq experiment, get DESeq results filenames.
 if($irapConfig) { 
-	$contrastHash = readIrapConf($contrastHash, $irapConfig, $exptAcc); 
+	$contrastHash = &readIrapConf($contrastHash, $irapConfig, $exptAcc); 
 }
 
 
@@ -65,7 +65,7 @@ if($irapConfig) {
 # 	the results from that and get the p-values and log2 fold-changes. We don't
 # 	have t-statistics for RNA-seq obviously and for now we're not interested in
 # 	the likelihood ratio.
-getDEresults($contrastHash, $exptAcc, $mvaScript, $limmaScript);
+&getDEresults($contrastHash, $exptAcc, $mvaScript, $limmaScript);
 
 # end
 #####
@@ -202,9 +202,7 @@ sub readAtlasXML {
 # readIrapConf
 #  - read iRAP config file to get filename for DESeq results for each contrast.
 #  - check experiment accession in iRAP config matches that of Atlas contrasts XML.
-#  - die if we find an extra contrast in the iRAP config that was not in Atlas contrasts XML.
-#  - die if we couldn't find a contrast from the Atlas contrasts XML in the iRAP config.
-#  - match contrasts between the two files based on "assay group pairs" e.g. "g1_g2".
+#  - add filename for DESeq results file for each contrast to $contrastHash.
 sub readIrapConf {
 
 	$_ = shift for my ($contrastHash, $irapConfig, $exptAcc);
@@ -238,56 +236,22 @@ sub readIrapConf {
 		elsif($line =~ /^mapper=(.*)/) { $mapper = $1; }
 		elsif($line =~ /^quant_method=(.*)/) { $qMethod = $1; }
 		elsif($line =~ /^de_method=(.*)/) { $deMethod = $1; }
-		elsif($line =~ /^#\s*Contrasts/) { $inContrasts++; }
-		elsif($inContrasts && $line !~ /^contrasts/) {
-
-			$numContrasts++;
-			
-			my $assayGroups = (split "=", $line)[1];
-
-			# join assay group numbers with an underscore.
-			my $agPair = join "_", (split " ", $assayGroups);
-			# use assay group string as key in hash, add iRAP's contrast name
-			# under "irap" key.
-			my $contrastName = (split "=", $line)[0];
-			
-			# Get the filename of DESeq results for this contrast.
-			my $deseqFile = $deseqDir."$exptAcc/$mapper/$qMethod/$deMethod/$contrastName.genes_de.tsv";
-			unless(-e $deseqFile) {
-				die("\nCan't find DESeq results file for contrast \"$contrastName\".\nLooking for \"$deseqFile\"\n");
-			}
-			
-			# Add DESeq filename to hash, as long as already have an entry for
-			# this contrast. If not, die.
-			if(exists($contrastHash->{ "rnaseq" }->{ $agPair })) {
-				$contrastHash->{ "rnaseq" }->{ $agPair }->{ "deseqFile" } = $deseqFile;
-			} else {
-				die "\nDidn't have contrast \"$contrastName\" ($agPair) in Atlas XML.\n";
-			}
-
-		}
-		elsif($line =~ /^contrasts/) { last; }
 	}
 	close(CONF);
 
-	# Log what we've found.
-	# Die if we have a contrast in the Atlas XML file for which we did not find
-	# a corresponding contrast in the iRAP config.
-	print "$numContrasts contrast";
-	unless($numContrasts == 1) { print "s"; }
-	print " found in iRAP config:\n";
-	
-	foreach my $agPair (keys %{ $contrastHash->{ "rnaseq"} }) {
-		if(exists($contrastHash->{ "rnaseq" }->{ $agPair }->{ "deseqFile" })) {
-
-			my $contrastName = basename($contrastHash->{ "rnaseq" }->{ $agPair }->{ "deseqFile" });
-			$contrastName =~ s/\.genes_de\.tsv//;
-			print "\t$contrastName\n";
-		} else {
-			die "Contrast \"", $contrastHash->{ "rnaseq" }->{ $agPair }->{ "atlasName "}, "\" ($agPair) was not found in iRAP config.\n";
+	# Go through the assay group pairs (i.e. contrast IDs e.g. g1_g2) and add
+	# the path to the DESeq results file names to $contrastHash.
+	foreach my $agPair (keys %{ $contrastHash->{ "rnaseq" } }) {
+		# Get the filename of DESeq results for this contrast.
+		my $deseqFile = $deseqDir."$exptAcc/$mapper/$qMethod/$deMethod/$agPair.genes_de.tsv";
+		unless(-e $deseqFile) {
+			die("\nCan't find DESeq results file for contrast \"$agPair\".\nLooking for \"$deseqFile\"\n");
 		}
+		
+		# Add DESeq filename to hash. Any contrasts in iRAP config and not in
+		# XML will be ignored.
+		$contrastHash->{ "rnaseq" }->{ $agPair }->{ "deseqFile" } = $deseqFile;
 	}
-	print "\n";
 
 	return ($contrastHash);
 }
