@@ -107,6 +107,7 @@ vehicle control
 water
 wildtype
 wild type
+wild type genotype
 wild type HDAC3
 wild_type
 wild-type
