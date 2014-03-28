@@ -72,7 +72,7 @@ use Getopt::Long qw(:config no_ignore_case) ;
 use Magetab4Atlas ;
 use XML::Writer ;
 use IO::File ;
-use EBI::FGPT::Resource::Database; #Atlas DB access
+use EBI::FGPT::Resource::Database::GXA; #Atlas DB access
 use Data::Dumper ;
 use Cwd;
 
@@ -180,17 +180,25 @@ unless (-d $outdir) {
 ## Extract array ID <-> array name
 #########################################################
 ## Set up database connection
+<<<<<<< HEAD
+###my $dsn = "DBI:Oracle:host=ned.ebi.ac.uk;sid=ATLASPUB;port=1530";
+###my $username = "atlasprd3";
+###my $password = "atlas";
+=======
 my $dsn = "DBI:Oracle:host=ora-vm-025.ebi.ac.uk;sid=ATLASREL;port=1531";
 my $username = "atlasprd3";
 my $password = "atlas";
+>>>>>>> e885464df4ef4b3ee0b0f765db6048f6bbef44cb
 
 ## Create connection
 if ($debug) { &log($logFileHandle, "[DEBUG] Connecting to Atlas database...\n") ; } 
-my $atlasDB = EBI::FGPT::Resource::Database->new(
-	'dsn' => $dsn,
-	'username' => $username,
-	'password' => $password,
-) ;
+my $atlasDB = EBI::FGPT::Resource::Database::GXA->new();
+
+###my $atlasDB = EBI::FGPT::Resource::Database->new(
+###	'dsn' => $dsn,
+###	'username' => $username,
+###	'password' => $password,
+###) ;
 if (!$atlasDB) { &log($logFileHandle, "[ERROR] Could not connect to Atlas database: $DBI::errstr") ; die ; }
 if ($debug) { &log($logFileHandle, "[DEBUG] Connected OK.") ; }
 
@@ -1353,7 +1361,7 @@ sub readMagetab {
 				# ... store the factor types, IN ORDER!
 				# ... and the factor values in the same order
 				## If not 1st time, 
-				# ... store the factor values in the same order as the factor types 
+				# ... store the factor values in the same order as the factor types
 				if (!exists $H_factorList{$factorType}) {
 
 					## Check if ok to do it that way
@@ -1363,7 +1371,7 @@ sub readMagetab {
 
 					## ...and store
 					$A_factorValueInOrder[$i] = $H_factors->{ $factorType } ;
-					if ($debug) { &log($logFileHandle, "[DEBUG] Storing at position $i ".$H_factors->{ $factorType }."\n") ; }
+					if ($debug) { &log($logFileHandle, "[DEBUG] Storing at position $i -".$H_factors->{ $factorType }."-\n") ; }
 				} else {
 
 					## Position of that factor
@@ -1371,7 +1379,7 @@ sub readMagetab {
 					
 					## Store at that position
 					$A_factorValueInOrder[$pos] = $H_factors->{ $factorType } ;
-                	if ($debug) { &log($logFileHandle, "[DEBUG] (known factor) Storing at position $pos: ".$H_factors->{ $factorType }."\n") ; }
+                	if ($debug) { &log($logFileHandle, "[DEBUG] (known factor) Storing at position $pos: -".$H_factors->{ $factorType }."-\n") ; }
 				}
 
 			## If time factor, store it in a special variable
@@ -1419,7 +1427,7 @@ sub readMagetab {
 				if(exists($efvs2runAccessions->{ $arrayDesign }->{ $organism }->{ $factorTime }->{ $ListFactorValueInOrder })) {
 					push @{ $efvs2runAccessions->{ $arrayDesign }->{ $organism }->{ $factorTime }->{ $ListFactorValueInOrder } }, $runAcc ;
 				} else {
-					$efvs2runAccessions->{ $arrayDesign }->{ $organism }->{ $factorTime }->{ $ListFactorValueInOrder } = [ $runAcc ] ;	
+					$efvs2runAccessions->{ $arrayDesign }->{ $organism }->{ $factorTime }->{ $ListFactorValueInOrder } = [ $runAcc ] ;
 				}
 			}	
 		}
