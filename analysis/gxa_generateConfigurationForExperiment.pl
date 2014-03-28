@@ -145,12 +145,6 @@ unless (-d $outdir) {
 ## Extract array ID <-> array name
 #########################################################
 ## Set up database connection
-<<<<<<< HEAD
-=======
-my $dsn = "DBI:Oracle:host=ora-vm-025.ebi.ac.uk;sid=ATLASREL;port=1531";
-my $username = "atlasprd3";
-my $password = "atlas";
->>>>>>> e885464df4ef4b3ee0b0f765db6048f6bbef44cb
 
 # Create connection
 if ($debug) { &log($logFileHandle, "[DEBUG] Connecting to Atlas database...") ; } ;
