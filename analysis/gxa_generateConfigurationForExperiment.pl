@@ -54,7 +54,7 @@ use Getopt::Long qw(:config no_ignore_case) ;
 use Magetab4Atlas ;
 use XML::Writer ;
 use IO::File ;
-use EBI::FGPT::Resource::Database; #Atlas DB access
+use EBI::FGPT::Resource::Database::GXA; #Atlas DB access
 use Cwd;
 
 
@@ -145,17 +145,16 @@ unless (-d $outdir) {
 ## Extract array ID <-> array name
 #########################################################
 ## Set up database connection
+<<<<<<< HEAD
+=======
 my $dsn = "DBI:Oracle:host=ora-vm-025.ebi.ac.uk;sid=ATLASREL;port=1531";
 my $username = "atlasprd3";
 my $password = "atlas";
+>>>>>>> e885464df4ef4b3ee0b0f765db6048f6bbef44cb
 
 # Create connection
 if ($debug) { &log($logFileHandle, "[DEBUG] Connecting to Atlas database...") ; } ;
-my $atlasDB = EBI::FGPT::Resource::Database->new(
-	'dsn' => $dsn,
-	'username' => $username,
-	'password' => $password
-);
+my $atlasDB = EBI::FGPT::Resource::Database::GXA->new();
 if (!$atlasDB) { &log($logFileHandle, "[ERROR] Could not connect to Atlas database: $DBI::errstr"); die ; } ;
 if ($debug) { &log($logFileHandle, "[DEBUG] Connected OK.") ; }
 
