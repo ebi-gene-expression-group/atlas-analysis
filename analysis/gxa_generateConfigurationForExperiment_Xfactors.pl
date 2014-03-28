@@ -180,25 +180,11 @@ unless (-d $outdir) {
 ## Extract array ID <-> array name
 #########################################################
 ## Set up database connection
-<<<<<<< HEAD
-###my $dsn = "DBI:Oracle:host=ned.ebi.ac.uk;sid=ATLASPUB;port=1530";
-###my $username = "atlasprd3";
-###my $password = "atlas";
-=======
-my $dsn = "DBI:Oracle:host=ora-vm-025.ebi.ac.uk;sid=ATLASREL;port=1531";
-my $username = "atlasprd3";
-my $password = "atlas";
->>>>>>> e885464df4ef4b3ee0b0f765db6048f6bbef44cb
 
 ## Create connection
 if ($debug) { &log($logFileHandle, "[DEBUG] Connecting to Atlas database...\n") ; } 
 my $atlasDB = EBI::FGPT::Resource::Database::GXA->new();
 
-###my $atlasDB = EBI::FGPT::Resource::Database->new(
-###	'dsn' => $dsn,
-###	'username' => $username,
-###	'password' => $password,
-###) ;
 if (!$atlasDB) { &log($logFileHandle, "[ERROR] Could not connect to Atlas database: $DBI::errstr") ; die ; }
 if ($debug) { &log($logFileHandle, "[DEBUG] Connected OK.") ; }
 
