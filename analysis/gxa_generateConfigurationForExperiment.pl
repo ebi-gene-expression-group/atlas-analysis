@@ -145,7 +145,7 @@ unless (-d $outdir) {
 ## Extract array ID <-> array name
 #########################################################
 ## Set up database connection
-my $dsn = "DBI:Oracle:host=ned.ebi.ac.uk;sid=ATLASPUB;port=1531";
+my $dsn = "DBI:Oracle:host=ora-vm-025.ebi.ac.uk;sid=ATLASREL;port=1531";
 my $username = "atlasprd3";
 my $password = "atlas";
 
