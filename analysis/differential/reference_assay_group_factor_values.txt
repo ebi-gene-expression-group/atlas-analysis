@@ -15,6 +15,7 @@ Col-0
 Col 0(wild type)
 Col 0
 Columbia-0
+complete medium
 control
 control diet
 control diet (uncontaminated) for 23 days ad libitum
