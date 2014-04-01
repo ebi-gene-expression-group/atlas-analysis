@@ -69,6 +69,7 @@ non-tumor
 normal
 normal conditions
 normal diet (10%) for 18 wks
+normoxia
 normoxic
 not specified Control knockdown (Control siRNA)
 no treatment
