@@ -489,7 +489,7 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 			
 					##Technical replicates, if any
 					my $tech_rep ;
-					if ($H_TechRepsGroup{$names}) { $writer->dataElement("assay" => $names, "technical_replicateid" => $H_TechRepsGroup{$names}) ; }
+					if ($H_TechRepsGroup{$names}) { $writer->dataElement("assay" => $names, "technical_replicate_id" => $H_TechRepsGroup{$names}) ; }
 					else { $writer->dataElement("assay" => $names) ; }
 				}
 			}
