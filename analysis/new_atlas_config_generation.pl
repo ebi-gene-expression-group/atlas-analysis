@@ -13,9 +13,9 @@ use AtlasConfig::Setup qw(
 	create_magetab4atlas
 	create_atlas_experiment_type
 );
-use AtlasConfig::ConfigComponentCreator qw( create_assay_groups );
+use AtlasConfig::ExperimentConfigFactory qw( create_experiment_config );
 use Getopt::Long;
-use Cwd qw//;
+use Cwd qw();
 use Log::Log4perl qw(:easy);
 
 Log::Log4perl->easy_init( { level => $INFO, layout => '%-5p - %m%n' } );
@@ -26,6 +26,12 @@ $| = 1;
 # Parse command line arguments.
 my $args = &parse_args();
 
+# Hardcoding path to references/ignore file but FIXME.
+# FIXME: Change back to $ATLAS_PROD one for production.
+my $referencesIgnoreFile = "/ebi/microarray/home/mkeays/Atlas/jira/GRAMENE/gramene-62/reference_assay_group_factor_values.txt";
+
+
+
 # Get a Magetab4Atlas object containing the appropriate assays.
 my $magetab4atlas = create_magetab4atlas($args);
 
@@ -33,17 +39,10 @@ my $magetab4atlas = create_magetab4atlas($args);
 my $atlasExperimentType = create_atlas_experiment_type($magetab4atlas, $args->{ "analysis_type" });
 INFO "Experiment type is $atlasExperimentType\n";
 
-# Create array of AtlasConfig::AssayGroup objects from MAGE-TAB assays.
-INFO "Inferring assay groups...";
-my $assayGroups = create_assay_groups($magetab4atlas->get_assays);
+# Create the AtlasConfig::ExperimentConfig
+my $experimentConfig = create_experiment_config($magetab4atlas, $atlasExperimentType, $args->{ "experiment_accession" });
 
-unless(@{ $assayGroups }) { LOGDIE "No assay groups found!"; }
-
-# Log how many we found. Die if we didn't find any.
-my $numAssayGroups = @{ $assayGroups };
-INFO "$numAssayGroups assay groups inferred.";
-
-
+$experimentConfig->write_xml($args->{ "output_directory" });
 
 
 ###############
@@ -59,15 +58,15 @@ sub parse_args {
 	my $want_help;
 	
 	# Possible analysis types.
-	my @allowed_analysis_types = qw/
+	my @allowed_analysis_types = qw(
 		baseline
 		differential
-	/;
+		);
 	# Possible library layouts.
-	my @allowed_library_layouts = qw/
+	my @allowed_library_layouts = qw(
 		single
 		paired
-	/;	
+		);	
 	
 	# A help message.
 	my $usage = "
