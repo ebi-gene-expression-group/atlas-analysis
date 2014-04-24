@@ -68,6 +68,9 @@
 
 
 use strict ;
+
+use warnings;
+
 use Getopt::Long qw(:config no_ignore_case) ;
 use Magetab4Atlas ;
 use XML::Writer ;
@@ -165,7 +168,6 @@ my %H_miRnaList ;
 
 foreach my $miRNA (@A_miRnaList) {
 	(my $arrayDesign = $miRNA) =~ s/.*(A-\w{4}-\d+)\.tsv/$1/ ;
-	$arrayDesign =~ s/^A-/E-/ ;
 	$H_miRnaList{$arrayDesign} = 1 ;
 }
 
