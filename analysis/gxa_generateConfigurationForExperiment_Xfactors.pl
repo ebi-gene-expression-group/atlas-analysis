@@ -351,7 +351,7 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 	foreach my $organism (sort keys %{$H_eFactorValues2runIDs{$array}}) {
 		if ($debug) { &log($logFileHandle, "[DEBUG]\tSpecies is $organism\n") ; }
 
-		foreach my $time (sort {$a<=>$b} keys %{$H_eFactorValues2runIDs{$array}{$organism}}) {
+		foreach my $time (sort keys %{$H_eFactorValues2runIDs{$array}{$organism}}) {
 			if ($debug) { &log($logFileHandle, "[DEBUG]\tTime is $time\n") ; }
 
 			my $arrayOrgTime = "$array;$organism;$time" ;
@@ -418,7 +418,7 @@ foreach my $array (sort keys %H_eFactorValues2runIDs) {
 					if ($H_referenceArray{$arrayOrgTime} && exists $H_referenceArray{$arrayOrgTime}{$FVlist}) { delete $H_referenceArray{$arrayOrgTime}{$FVlist} ; } 
 					foreach my $assay (keys %{$H_assayFactorValues{$arrayOrgTime}}) { 
 						if ($H_assayFactorValues{$arrayOrgTime}{$assay} eq $FVlist) { 
-							&log($logFileHandle, "[DEBUG] Deleting H_assayFactorValues{$arrayOrgTime}{$assay}: $H_assayFactorValues{$arrayOrgTime}{$assay}\n") ;
+							if ($debug) { &log($logFileHandle, "[DEBUG] Deleting H_assayFactorValues{$arrayOrgTime}{$assay}: $H_assayFactorValues{$arrayOrgTime}{$assay}\n") ;}
 							delete $H_assayFactorValues{$arrayOrgTime}{$assay} ;
 						}
 					}
