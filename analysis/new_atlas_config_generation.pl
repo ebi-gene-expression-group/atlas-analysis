@@ -10,6 +10,7 @@ use lib '/ebi/microarray/home/mkeays/Atlas/git/atlasprod/perl_modules';
 #######################################################################
 
 use AtlasConfig::Setup qw(
+	create_factor_configs
 	create_magetab4atlas
 	create_atlas_experiment_type
 );
@@ -26,21 +27,35 @@ $| = 1;
 # Parse command line arguments.
 my $args = &parse_args();
 
+# Turn on debugging if required.
+if($args->{ "debug" }) {
+	Log::Log4perl->easy_init( { level => $DEBUG, layout => '%-5p - %m%n' } );
+	DEBUG "Debugging mode ON";
+}
+
 # Hardcoding path to references/ignore file but FIXME.
 # FIXME: Change back to $ATLAS_PROD one for production.
-my $referencesIgnoreFile = "/ebi/microarray/home/mkeays/Atlas/jira/GRAMENE/gramene-62/reference_assay_group_factor_values.txt";
+my $referencesIgnoreFile = "/ebi/microarray/home/mkeays/Atlas/jira/GRAMENE/gramene-62/reference_assay_group_factor_values.xml";
 
-
+# Create hashes for reference factor values to use in contrasts, and factor
+# types to ignore when creating assay groups.
+INFO "Reading config for reference factor values and factor types to ignore from $referencesIgnoreFile";
+my ($referenceFactorValues, $ignoreFactorTypes) = create_factor_configs($referencesIgnoreFile);
 
 # Get a Magetab4Atlas object containing the appropriate assays.
-my $magetab4atlas = create_magetab4atlas($args);
+my $magetab4atlas = create_magetab4atlas($args, $ignoreFactorTypes);
 
 # Create the XML config experiment type.
 my $atlasExperimentType = create_atlas_experiment_type($magetab4atlas, $args->{ "analysis_type" });
 INFO "Experiment type is $atlasExperimentType\n";
 
 # Create the AtlasConfig::ExperimentConfig
-my $experimentConfig = create_experiment_config($magetab4atlas, $atlasExperimentType, $args->{ "experiment_accession" });
+my $experimentConfig = create_experiment_config(
+	$magetab4atlas, 
+	$atlasExperimentType, 
+	$args->{ "experiment_accession" }, 
+	$referenceFactorValues
+);
 
 $experimentConfig->write_xml($args->{ "output_directory" });
 
@@ -61,12 +76,12 @@ sub parse_args {
 	my @allowed_analysis_types = qw(
 		baseline
 		differential
-		);
+	);
 	# Possible library layouts.
 	my @allowed_library_layouts = qw(
 		single
 		paired
-		);	
+	);	
 	
 	# A help message.
 	my $usage = "
@@ -101,6 +116,10 @@ Options:
 	-x \"noreplicates\"
 		Force configuration generation for experiments with no replicates.
 		Don't do this unless you have to!
+	
+	-d \"debug\"
+		Print debugging messages.
+
 ";
 
 	GetOptions(
@@ -112,6 +131,7 @@ Options:
 		"i|ignore=s"		=> \$args{ "ignore_factor" },	# factor type to ignore
 		"o|outdir=s"		=> \$args{ "output_directory" },	# dir for XML file
 		"x|noreplicates"	=> \$args{ "no_replicates" },	# force allow no replicates
+		"d|debug"			=> \$args{ "debug" },
 	);
 
 	if($want_help) {
