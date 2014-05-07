@@ -49,7 +49,7 @@ my $magetab4atlas = create_magetab4atlas($args, $ignoreFactorTypes);
 my $atlasExperimentType = create_atlas_experiment_type($magetab4atlas, $args->{ "analysis_type" });
 INFO "Experiment type is $atlasExperimentType\n";
 
-# Create the AtlasConfig::ExperimentConfig
+# Create the experiment config.
 my $experimentConfig = create_experiment_config(
 	$magetab4atlas, 
 	$atlasExperimentType, 
@@ -57,7 +57,8 @@ my $experimentConfig = create_experiment_config(
 	$referenceFactorValues
 );
 
-$experimentConfig->write_xml($args->{ "output_directory" });
+$experimentConfig->write_xml( $args->{ "output_directory" } );
+
 
 
 ###############
@@ -171,6 +172,10 @@ Options:
 	unless($args{ "output_directory" }) {
 		WARN "No output directory specifed, will write XML configuration in ", Cwd::cwd();
 		$args{ "output_directory" } = Cwd::cwd();
+	}
+	# If one was specified, check that it's writable and die if not.
+	unless(-w $args{ "output_directory" }) {
+		LOGDIE $args{ "output_directory" }, " is not writable or does not exist.";
 	}
 
 	# If "noreplicates" is turned on, warn.
