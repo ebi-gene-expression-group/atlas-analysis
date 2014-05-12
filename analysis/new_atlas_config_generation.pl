@@ -42,6 +42,13 @@ my $referencesIgnoreFile = "/ebi/microarray/home/mkeays/Atlas/jira/GRAMENE/grame
 INFO "Reading config for reference factor values and factor types to ignore from $referencesIgnoreFile";
 my ($referenceFactorValues, $ignoreFactorTypes) = create_factor_configs($referencesIgnoreFile);
 
+if($args->{ "reference_value" }) {
+	
+	INFO "Using temporary reference value \"", $args->{ "reference_value" }, "\"";
+
+	$referenceFactorValues->{ $args->{ "reference_value" } } = 1;
+}
+
 # Get a Magetab4Atlas object containing the appropriate assays.
 my $magetab4atlas = create_magetab4atlas($args, $ignoreFactorTypes);
 
