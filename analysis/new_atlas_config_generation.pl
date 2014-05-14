@@ -9,76 +9,50 @@ use warnings;
 use lib '/ebi/microarray/home/mkeays/Atlas/git/atlasprod/perl_modules';
 #######################################################################
 
+use Getopt::Long;
+use Cwd qw();
+use DateTime;
+use Log::Log4perl;
+use Log::Log4perl::Level;
+
 use AtlasConfig::Setup qw(
 	create_factor_configs
 	create_magetab4atlas
 	create_atlas_experiment_type
 );
 use AtlasConfig::ExperimentConfigFactory qw( create_experiment_config );
-use Getopt::Long;
-use Cwd qw();
-use Log::Log4perl;
-use Log::Log4perl::Level;
+
 
 # Auto flush buffer.
 $| = 1;
 
+
+# Parse command line arguments.
+my $args = &parse_args();
+
 # Log4perl config.
-# We need to have two separate loggers because the info coming from commandline
-# includes accession, which we want to use in the log file name, but we can't
-# write to the file if e.g. no accession is provided, so we need to send that
-# to the screen instead.
-# Config for screen logger to print to screen...
-my $screen_logger_config = q(
-	log4perl.category.ATLASCONFIG_SCREEN = INFO, SCREEN
+my $logger_config = q(
+	log4perl.category.ATLASCONFIG_LOGGER          = INFO, LOG1, SCREEN
 	log4perl.appender.SCREEN             = Log::Log4perl::Appender::Screen
 	log4perl.appender.SCREEN.stderr      = 0
 	log4perl.appender.SCREEN.layout      = Log::Log4perl::Layout::PatternLayout
 	log4perl.appender.SCREEN.layout.ConversionPattern = %-5p - %m%n
-);
-
-# Config for file logger to print to a file.
-my $file_logger_config = q(
-	log4perl.category.ATLASCONFIG_FILE = INFO, LOG1
 	log4perl.appender.LOG1             = Log::Log4perl::Appender::File
 	log4perl.appender.LOG1.filename    = sub { get_log_file_name }
+	log4perl.appender.LOG1.header_text = sub { get_log_file_header }
 	log4perl.appender.LOG1.mode        = append
 	log4perl.appender.LOG1.layout      = Log::Log4perl::Layout::PatternLayout
 	log4perl.appender.LOG1.layout.ConversionPattern = %-5p - %m%n
 );
 
-# Initialise screen logger.
-Log::Log4perl::init(\$screen_logger_config);
-my $screen_logger = Log::Log4perl::get_logger("ATLASCONFIG_SCREEN");
-
-
-#--------------------------------------------------
-# use Log::Log4perl qw(:easy);
-#-------------------------------------------------- 
-
-#--------------------------------------------------
-# Log::Log4perl->easy_init( { level => $INFO, layout => '%-5p - %m%n' } );
-#-------------------------------------------------- 
-
-# Parse command line arguments.
-my $args = &parse_args();
-
-# Now we have commandline args containing accession, initialise file logger as
-# well.
-#--------------------------------------------------
-# Log::Log4perl::init(\$file_logger_config);
-# my $file_logger = Log::Log4perl::get_logger("ATLASCONFIG_FILE");
-#-------------------------------------------------- 
+# Initialise logger.
+Log::Log4perl::init(\$logger_config);
+my $logger = Log::Log4perl::get_logger("ATLASCONFIG_LOGGER");
 
 # Turn on debugging if required.
 if($args->{ "debug" }) {
-	#--------------------------------------------------
-	# Log::Log4perl->easy_init( { level => $DEBUG, layout => '%-5p - %m%n' } );
-	#-------------------------------------------------- 
-	
-	$screen_logger->level($DEBUG);
-
-	$screen_logger->debug("Debugging mode ON");
+	$logger->level($DEBUG);
+	$logger->debug("Debugging mode ON");
 }
 
 # Hardcoding path to references/ignore file but FIXME.
@@ -87,14 +61,19 @@ my $referencesIgnoreFile = "/ebi/microarray/home/mkeays/Atlas/jira/GRAMENE/grame
 
 # Create hashes for reference factor values to use in contrasts, and factor
 # types to ignore when creating assay groups.
-$screen_logger->info("Reading config for reference factor values and factor types to ignore from $referencesIgnoreFile");
+$logger->info("Reading config for reference factor values and factor types to ignore from $referencesIgnoreFile");
 my ($referenceFactorValues, $ignoreFactorTypes) = create_factor_configs($referencesIgnoreFile);
 
+# If a manual reference factor value was specified, add it to the references hash.
 if($args->{ "reference_value" }) {
-	
-	$screen_logger->info("Using temporary reference value \"", $args->{ "reference_value" }, "\"");
-
+	$logger->info("Using temporary reference value \"", $args->{ "reference_value" }, "\"");
 	$referenceFactorValues->{ $args->{ "reference_value" } } = 1;
+}
+
+# If a manual factor type to ignore was specified, add it to the ignore hash.
+if($args->{ "ignore_factor" }) {
+	$logger->info("Temporarily ignoring factor type \"", $args->{ "ignore_factor" }, "\"");
+	$ignoreFactorTypes->{ $args->{ "ignore_factor" } } = 1;
 }
 
 # Get a Magetab4Atlas object containing the appropriate assays.
@@ -102,7 +81,7 @@ my $magetab4atlas = create_magetab4atlas($args, $ignoreFactorTypes);
 
 # Create the XML config experiment type.
 my $atlasExperimentType = create_atlas_experiment_type($magetab4atlas, $args->{ "analysis_type" });
-$screen_logger->info("Experiment type is $atlasExperimentType\n");
+$logger->info("Experiment type is $atlasExperimentType\n");
 
 # Create the experiment config.
 my $experimentConfig = create_experiment_config(
@@ -168,10 +147,6 @@ Options:
 	-o \"outdir\"
 		Specify the directory to write the XML configuration to. Default is
 		current working directory.
-
-	-x \"noreplicates\"
-		Force configuration generation for experiments with no replicates.
-		Don't do this unless you have to!
 	
 	-d \"debug\"
 		Print debugging messages.
@@ -186,7 +161,6 @@ Options:
 		"r|reference=s"		=> \$args{ "reference_value" },	# new reference factor value
 		"i|ignore=s"		=> \$args{ "ignore_factor" },	# factor type to ignore
 		"o|outdir=s"		=> \$args{ "output_directory" },	# dir for XML file
-		"x|noreplicates"	=> \$args{ "no_replicates" },	# force allow no replicates
 		"d|debug"			=> \$args{ "debug" },
 	);
 
@@ -197,61 +171,71 @@ Options:
 
 	# We must have experiment accession and type in order to do anything.
 	unless($args{ "experiment_accession" } && $args{ "analysis_type" }) { 
-		$screen_logger->error("Please specify \"-e <experiment accession> -t <baseline | differential>\""); 
+		die "Please specify \"-e <experiment accession> -t <baseline | differential>\"\n"; 
 	}
 
 	# Check that accession is in the right format.
 	unless($args{ "experiment_accession" } =~ /^E-\w{4}-\d+$/) {
-		$screen_logger->logdie("\"", $args{ "experiment_accession" }, "\" does not look like an ArrayExpress experiment accession.");
+		die "\"", $args{ "experiment_accession" }, "\" does not look like an ArrayExpress experiment accession.\n";
 	}
 
 	# Check that type is one of "baseline" or "differential".
 	unless(grep $_ eq $args{ "analysis_type" }, @allowed_analysis_types) {
-		$screen_logger->logdie("\"", $args{ "analysis_type" }, "\" is not an allowed experiment type.");
+		die "\"", $args{ "analysis_type" }, "\" is not an allowed experiment type.\n";
 	}
 
 	# If we've been passed a library layout, check it's either "paired" or "single".
 	if($args{ "library_layout" }) {
 		unless(grep $_ eq $args{ "library_layout" }, @allowed_library_layouts) {
-			$screen_logger->logdie("\"", $args{ "library_layout" }, "\" is not an allowed library layout.");
+			die "\"", $args{ "library_layout" }, "\" is not an allowed library layout.\n";
 		}
 	}
 	
 	# If both "-t baseline" and "-r <value>" were passed, this doesn't make
 	# sense -- don't need a reference for a baseline experiment. Die.
 	if($args{ "analysis_type" } eq "baseline" && $args{ "reference_value" }) {
-		$screen_logger->logdie("Cannot use reference factor values in baseline experiments.");
+		die "Cannot use reference factor values in baseline experiments.\n";
 	}
 
 	# If no output directory was specified, log that we will print to current working directory.
 	unless($args{ "output_directory" }) {
-		$screen_logger->warn("No output directory specifed, will write XML configuration in ", Cwd::cwd() );
+		print "WARN  - No output directory specifed, will write XML configuration in ", Cwd::cwd(), "\n";
 		$args{ "output_directory" } = Cwd::cwd();
 	}
 	# If one was specified, check that it's writable and die if not.
 	unless(-w $args{ "output_directory" }) {
-		$screen_logger->logdie($args{ "output_directory" }, " is not writable or does not exist.");
+		die $args{ "output_directory" }, " is not writable or does not exist.\n";
 	}
 
-	# If "noreplicates" is turned on, warn.
-	if($args{ "no_replicates" }) {
-		$screen_logger->warn("Allowing factor values with no biological replicates.");
-	}
-	
 	return \%args;
 }
 
 
 sub get_log_file_name {
-	my ($exptAccession) = @_;
 	
-	my $logFileName = "atlas_configuration_generation_".$exptAccession.".log";
+	my $logFileName = $args->{ "output_directory" } . "atlas_configuration_generation_" . $args->{ "experiment_accession" } . ".log";
+
+	# Delete the old one if it's there.
+	if(-e $logFileName) {
+		`rm $logFileName`;
+	}
+
 
 	return $logFileName;
 }
 
 
+sub get_log_file_header {
 
+	my $headerText = "Atlas config generation log for " 
+		. $args->{ "experiment_accession" } 
+		. " created at " 
+		. DateTime->now;
+	
+	$headerText .= "\n" . ("-" x 80) . "\n\n";
+	
+	return $headerText;
+}
 
 
 
