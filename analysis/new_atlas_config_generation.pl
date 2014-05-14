@@ -1,5 +1,67 @@
 #!/usr/bin/perl
 #
+=pod
+
+=head1 NAME
+
+new_atlas_config_generation.pl - create an XML config file for an Expression Atlas experiment.
+
+=head1 SYNOPSIS
+
+perl new_atlas_config_generation.pl -e E-MTAB-1066 -t differential
+
+perl new_atlas_config_generation.pl -e E-MTAB-513 -t baseline -l paired
+
+=head1 DESCRIPTION
+
+This script takes an ArrayExpress experiment accession and an analysis type
+(baseline or differential), and creates an XML config file for Expression
+Atlas.
+
+=head1 OPTIONS
+
+=over 2
+
+=item -e --experiment
+
+Requred. ArrayExpress accession of experiment.
+
+=item -t --type
+
+Required. Type of analysis. Must be one of "baseline" or "differential".
+
+=item -l --library
+
+Optional. Specify the type of RNA-seq libraries to retrive from MAGE-TAB. Must
+be one of "paired" or "single".
+
+=item -r --reference
+
+Optional. Differential experiments only. Specify a value to use as the
+reference factor value in contrasts. Put multi-word terms in quotes.
+
+=item -i --ignore
+
+Optional. Specify a factor type to ignore when creating assay groups.
+
+=item -o --outdir
+
+Optional. Specify a directory to write the XML configuration file. Default is
+current working directory.
+
+=item -d --debug
+
+Optional. Log debugging messages.
+
+=item -h --help
+
+Print a helpful message. 
+
+=back
+
+=cut
+
+
 
 use strict;
 use warnings;
@@ -9,6 +71,7 @@ use warnings;
 use lib '/ebi/microarray/home/mkeays/Atlas/git/atlasprod/perl_modules';
 #######################################################################
 
+use Pod::Usage;
 use Getopt::Long;
 use Cwd qw();
 use DateTime;
@@ -165,36 +228,65 @@ Options:
 	);
 
 	if($want_help) {
-		print $usage;
-		exit;
+		pod2usage(
+			-exitval => 255,
+			-output => \*STDOUT,
+			-verbose => 1
+		);
 	}
 
 	# We must have experiment accession and type in order to do anything.
 	unless($args{ "experiment_accession" } && $args{ "analysis_type" }) { 
-		die "Please specify \"-e <experiment accession> -t <baseline | differential>\"\n"; 
+		pod2usage(
+			-message => "You must specify an experiment accession and an analysis type.\n",
+			-exitval => 255,
+			-output => \*STDOUT,
+			-verbose => 1,
+		);
 	}
 
 	# Check that accession is in the right format.
 	unless($args{ "experiment_accession" } =~ /^E-\w{4}-\d+$/) {
-		die "\"", $args{ "experiment_accession" }, "\" does not look like an ArrayExpress experiment accession.\n";
+		pod2usage(
+			-message => "\"". $args{ "experiment_accession" }. "\" does not look like an ArrayExpress experiment accession.\n",
+			-exitval => 255,
+			-output => \*STDOUT,
+			-verbose => 1,
+		);
+
 	}
 
 	# Check that type is one of "baseline" or "differential".
 	unless(grep $_ eq $args{ "analysis_type" }, @allowed_analysis_types) {
-		die "\"", $args{ "analysis_type" }, "\" is not an allowed experiment type.\n";
+		pod2usage(
+			-message => "\"". $args{ "analysis_type" }. "\" is not an allowed analysis type.\n",
+			-exitval => 255,
+			-output => \*STDOUT,
+			-verbose => 1,
+		);
 	}
 
 	# If we've been passed a library layout, check it's either "paired" or "single".
 	if($args{ "library_layout" }) {
 		unless(grep $_ eq $args{ "library_layout" }, @allowed_library_layouts) {
-			die "\"", $args{ "library_layout" }, "\" is not an allowed library layout.\n";
+			pod2usage(
+				-message => "\"". $args{ "library_layout" }. "\" is not an allowed library layout.\n",
+				-exitval => 255,
+				-output => \*STDOUT,
+				-verbose => 1,
+			);
 		}
 	}
 	
 	# If both "-t baseline" and "-r <value>" were passed, this doesn't make
 	# sense -- don't need a reference for a baseline experiment. Die.
 	if($args{ "analysis_type" } eq "baseline" && $args{ "reference_value" }) {
-		die "Cannot use reference factor values in baseline experiments.\n";
+		pod2usage(
+			-message => "Cannot use reference factor values in baseline experiments.\n",
+			-exitval => 255,
+			-output => \*STDOUT,
+			-verbose => 1,
+		);
 	}
 
 	# If no output directory was specified, log that we will print to current working directory.
@@ -202,9 +294,15 @@ Options:
 		print "WARN  - No output directory specifed, will write XML configuration in ", Cwd::cwd(), "\n";
 		$args{ "output_directory" } = Cwd::cwd();
 	}
+
 	# If one was specified, check that it's writable and die if not.
 	unless(-w $args{ "output_directory" }) {
-		die $args{ "output_directory" }, " is not writable or does not exist.\n";
+		pod2usage(
+			-message => $args{ "output_directory" }. " is not writable or does not exist.\n",
+			-exitval => 255,
+			-output => \*STDOUT,
+			-verbose => 1,
+		);
 	}
 
 	return \%args;
