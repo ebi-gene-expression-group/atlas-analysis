@@ -70,11 +70,6 @@ Expression Atlas team <arrayexpress-atlas@ebi.ac.uk>
 use strict;
 use warnings;
 
-#######################################################################
-# This here for testing.
-use lib '/ebi/microarray/home/mkeays/Atlas/git/atlasprod/perl_modules';
-#######################################################################
-
 use Pod::Usage;
 use Getopt::Long;
 use Cwd qw();
@@ -82,6 +77,7 @@ use DateTime;
 use Log::Log4perl;
 use Log::Log4perl::Level;
 
+use AtlasSiteConfig;
 use AtlasConfig::Setup qw(
 	create_factor_configs
 	create_magetab4atlas
@@ -93,6 +89,7 @@ use AtlasConfig::ExperimentConfigFactory qw( create_experiment_config );
 # Auto flush buffer.
 $| = 1;
 
+my $atlasSiteConfig = AtlasSiteConfig->new->get_atlas_site_config;
 
 # Parse command line arguments.
 my $args = &parse_args();
@@ -122,9 +119,8 @@ if($args->{ "debug" }) {
 	$logger->debug("Debugging mode ON");
 }
 
-# Hardcoding path to references/ignore file but FIXME.
-# FIXME: Change back to $ATLAS_PROD one for production.
-my $referencesIgnoreFile = "/ebi/microarray/home/mkeays/Atlas/jira/GRAMENE/gramene-62/mapped_reference_assay_group_factor_values.xml";
+# Get name of file with reference factor values and factor types to ignore.
+my $referencesIgnoreFile = $atlasSiteConfig->get_references_ignore_file;
 
 # Create hashes for reference factor values to use in contrasts, and factor
 # types to ignore when creating assay groups.
@@ -185,41 +181,6 @@ sub parse_args {
 		paired
 	);	
 	
-	# A help message.
-	my $usage = "
-Usage:\n
-	gxa_generateConfigurationForExperiment.pl -e <experiment accession> -t <baseline | differential> 
-
-Options:
-	-h \"help\"
-		Print this help message.
-
-	-e \"experiment\"
-		ArrayExpress experiment accession e.g. \'E-MTAB-1066\'.
-
-	-t \"type\"
-		Type of analysis -- one of \'baseline\' or \'differential\'.
-
-	-l \"library\"
-		Specify the type of RNA-seq libraries to retrieve. One of
-		\'paired\' or \'single\'.
-
-	-r \"reference\"
-		Differential experiments only. Specify a value to use as the
-		reference factor value. E.g. \'-r \"untreated cells\"\'.
-
-	-i \"ignore\"
-		Specify a factor type to ignore. E.g. \'-i individual\'.
-
-	-o \"outdir\"
-		Specify the directory to write the XML configuration to. Default is
-		current working directory.
-	
-	-d \"debug\"
-		Print debugging messages.
-
-";
-
 	GetOptions(
 		"h|help"			=> \$want_help,
 		"e|experiment=s"	=> \$args{ "experiment_accession" },
