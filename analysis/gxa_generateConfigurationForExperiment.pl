@@ -615,15 +615,16 @@ sub readMagetab {
 		# Newer SDRF: assay name field
 		#For RNA-seq, also get the number of fastqURI - should be 1 (SE) or 2 (PE)
 		my %H_runAccession ;
+	
+		my $ENArun = $assay4atlas->get_name;
+
 		if ($debug) { &log($logFileHandle, "[DEBUG] Assay: ", $assay4atlas->get_name, " (",$assay4atlas->get_name(),")") ; }	
 		if ($expType eq "RNA-seq") {
 			if($assay4atlas->has_fastq_uri_set) {
-				foreach my $ENArun (keys %{ $assay4atlas->get_fastq_uri_set }) {
-					foreach my $fastqUri (@{ $assay4atlas->get_fastq_uri_set->{ $ENArun } }) {
-						$H_runAccession{$ENArun}++ ; #this is to record PE (2) or SE (1)
-					}
-					if ($debug) { &log($logFileHandle, "[DEBUG]\tENA run: $ENArun ($H_runAccession{$ENArun})") ; } 
+				foreach my $fastqUri (@{ $assay4atlas->get_fastq_uri_set }) {
+					$H_runAccession{$ENArun}++ ; #this is to record PE (2) or SE (1)
 				}
+				if ($debug) { &log($logFileHandle, "[DEBUG]\tENA run: $ENArun ($H_runAccession{$ENArun})") ; } 
 			}
 		} else {
         	$H_runAccession{$assay4atlas->get_name()} = 1 ;
