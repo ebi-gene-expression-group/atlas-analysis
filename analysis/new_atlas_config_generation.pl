@@ -76,6 +76,7 @@ use Cwd qw();
 use DateTime;
 use Log::Log4perl;
 use Log::Log4perl::Level;
+use File::Spec;
 
 use AtlasSiteConfig;
 use AtlasConfig::Setup qw(
@@ -276,7 +277,9 @@ sub parse_args {
 
 sub get_log_file_name {
 	
-	my $logFileName = $args->{ "output_directory" } . "atlas_configuration_generation_" . $args->{ "experiment_accession" } . ".log";
+	my $logFileBaseName = "atlas_configuration_generation_" . $args->{ "experiment_accession" } . ".log";
+
+	my $logFileName = File::Spec->catdir( $args->{ "output_directory" }, $logFileBaseName );
 
 	# Delete the old one if it's there.
 	if(-e $logFileName) {
@@ -299,11 +302,4 @@ sub get_log_file_header {
 	
 	return $headerText;
 }
-
-
-
-
-
-
-
 
