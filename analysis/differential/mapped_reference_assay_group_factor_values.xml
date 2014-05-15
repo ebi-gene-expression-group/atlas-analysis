@@ -1,0 +1,166 @@
+<atlas_factor_config>
+    <reference_factor_values>
+        <value>0</value>
+        <value>0 hours</value>
+        <value>0 hours after puparium formation</value>
+        <value>0nM rotenone</value>
+        <value>0 no peptide</value>
+        <value>0 uGray', time</value>
+        <value>0 uM phosphate</value>
+        <value>albumin control</value>
+        <value>beta-lactamase control</value>
+        <value>casein diet control (CAS)</value>
+        <value>Col 0(wild type)</value>
+        <value>Col 0</value>
+        <value>complete medium</value>
+        <value>control diet</value>
+        <value>control diet (uncontaminated) for 23 days ad libitum</value>
+        <value>control nutrient solution</value>
+        <value>control pregnancy</value>
+        <value>control no relaxation response</value>
+        <value>control shRNA</value>
+        <value>control siRNA</value>
+        <value>control (ethanol vehicle)</value>
+        <value>control (non-isoflavone)</value>
+        <value>benign prostate tumor</value>
+        <value>day 0</value>
+        <value>DMSO 0.05 percent</value>
+        <value>DMSO 1 micromolar</value>
+        <value>DMSO 1 volume percent</value>
+        <value>DMSO control</value>
+        <value>empty vector</value>
+        <value>empty vector control</value>
+        <value>empty vector control RNAi</value>
+        <value>empty-vector</value>
+        <value>empty-vector control pCaMBIA 1302</value>
+        <value>firefly luciferase</value>
+        <value>healthy</value>
+        <value>healthy control</value>
+        <value>KRAS wildtype</value>
+        <value>luciferase</value>
+        <value>mock</value>
+        <value>mock control</value>
+        <value>mock infected</value>
+        <value>mock infection</value>
+        <value>monolayer control</value>
+        <value>negative control siRNA</value>
+        <value>never smoked</value>
+        <value>no exercise</value>
+        <value>no treatment 0</value>
+        <value> none</value>
+        <value>none</value>
+        <value>none 0</value>
+        <value>none 0 micrograms per kilogram</value>
+        <value>none 0 micromolar</value>
+        <value>none 0 milligrams per kilogram</value>
+        <value>none 0 milligrams per kilogram per day</value>
+        <value>none 0 milligrams per milliliter</value>
+        <value>none 0 millimolar</value>
+        <value>none 0 nanograms per milliliter</value>
+        <value>none 0 nanomolar</value>
+        <value>none (input)</value>
+        <value>non-targeting siRNA</value>
+        <value>non-transgenic</value>
+        <value>non-tumor</value>
+        <value>normal conditions</value>
+        <value>normal diet (10%) for 18 wks</value>
+        <value>normoxia</value>
+        <value>normoxic</value>
+        <value>not specified Control knockdown (Control siRNA)</value>
+        <value>no treatment</value>
+        <value>PBS</value>
+        <value>placebo 0</value>
+        <value>placebo 0 milligrams</value>
+        <value>placebo 0 moles per liter</value>
+        <value>placebo treated</value>
+        <value>pLKO.1 containing GFP</value>
+        <value>Pre-miR-Control</value>
+        <value>reference</value>
+        <value>regular chow diet</value>
+        <value>retrovirus expressing control vector</value>
+        <value>saline control</value>
+        <value>scramble siRNA</value>
+        <value>scrambled control</value>
+        <value>scrambled siRNA</value>
+        <value>sham</value>
+        <value>sham infection</value>
+        <value>sham-preconditioning followed by intra-amygdala vehicle</value>
+        <value>stably transfected with empty vector</value>
+        <value>transfected with control siRNA</value>
+        <value>unexposed</value>
+        <value>uninfected control</value>
+        <value>unmated</value>
+        <value>unstimulated</value>
+        <value>unstressed control</value>
+        <value>untreated</value>
+        <value>untreated control</value>
+        <value>unwounded control</value>
+        <value>vector</value>
+        <value>vehicle</value>
+        <value>vehicle - control</value>
+        <value>vehicle control</value>
+        <value>wildtype</value>
+        <value>wild type</value>
+        <value>wild type HDAC3</value>
+        <value>wild_type</value>
+        <value>wild-type</value>
+        <value>wildtype</value>
+        <value>WT</value>
+        <value>W303 wild-type</value>
+        <value>Col-0</value>
+        <value>Columbia-0</value>
+        <value>control</value>
+        <value>Controlled</value>
+        <value>Controlling</value>
+        <value>reference sample</value>
+        <value>dimethyl sulfoxide</value>
+        <value>(CH3)2SO</value>
+        <value>(methanesulfinyl)methane</value>
+        <value>C2H6OS</value>
+        <value>DIMETHYL SULFOXIDE</value>
+        <value>DMSO</value>
+        <value>Dimethyl sulfoxide</value>
+        <value>Dimethylsulfoxid</value>
+        <value>S(O)Me2</value>
+        <value>dimethyl sulfur oxide</value>
+        <value>dimethyl sulphoxide</value>
+        <value>dimethyli sulfoxidum</value>
+        <value>dimethylsulfoxyde</value>
+        <value>dimetil sulfoxido</value>
+        <value>dmso</value>
+        <value>methylsulfinylmethane</value>
+        <value>sulfinylbis(methane)</value>
+        <value>normal</value>
+        <value>Health</value>
+        <value>Normalcy</value>
+        <value>Normalities</value>
+        <value>Normality</value>
+        <value>placebo</value>
+        <value>PLCB</value>
+        <value>placebo therapy</value>
+        <value>sham therapy</value>
+        <value>uninfected</value>
+        <value>water</value>
+        <value>BOUND WATER</value>
+        <value>H2O</value>
+        <value>HOH</value>
+        <value>InChI=1/H2O/h1H2</value>
+        <value>InChIKey=XLYOFNOQVPJJNP-UHFFFAOYAF</value>
+        <value>Wasser</value>
+        <value>[H]O[H]</value>
+        <value>[OH2]</value>
+        <value>acqua</value>
+        <value>agua</value>
+        <value>aqua</value>
+        <value>dihydridooxygen</value>
+        <value>dihydrogen oxide</value>
+        <value>eau</value>
+        <value>http://mged.sourceforge.net/ontologies/MGEDOntology.owl#water</value>
+        <value>hydrogen hydroxide</value>
+        <value>oxidane</value>
+        <value>wild type genotype</value>
+    </reference_factor_values>
+    <ignore_factor_types>
+        <type>individual</type>
+    </ignore_factor_types>
+</atlas_factor_config>
