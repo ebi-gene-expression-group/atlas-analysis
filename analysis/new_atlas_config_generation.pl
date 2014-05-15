@@ -59,6 +59,10 @@ Print a helpful message.
 
 =back
 
+=head1 AUTHOR
+
+Expression Atlas team <arrayexpress-atlas@ebi.ac.uk>
+
 =cut
 
 
@@ -120,7 +124,7 @@ if($args->{ "debug" }) {
 
 # Hardcoding path to references/ignore file but FIXME.
 # FIXME: Change back to $ATLAS_PROD one for production.
-my $referencesIgnoreFile = "/ebi/microarray/home/mkeays/Atlas/jira/GRAMENE/gramene-62/reference_assay_group_factor_values.xml";
+my $referencesIgnoreFile = "/ebi/microarray/home/mkeays/Atlas/jira/GRAMENE/gramene-62/mapped_reference_assay_group_factor_values.xml";
 
 # Create hashes for reference factor values to use in contrasts, and factor
 # types to ignore when creating assay groups.
