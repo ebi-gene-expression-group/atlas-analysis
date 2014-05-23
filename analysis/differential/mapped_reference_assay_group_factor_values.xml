@@ -63,7 +63,8 @@
         <value>non-transgenic</value>
         <value>non-tumor</value>
         <value>normal conditions</value>
-        <value>normal diet (10%) for 18 wks</value>
+		<value>normal diet (10%) for 18 wks</value>
+		<value>normal watering</value>
         <value>normoxia</value>
         <value>normoxic</value>
         <value>not specified Control knockdown (Control siRNA)</value>
