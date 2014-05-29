@@ -1,3 +1,5 @@
+source("/ebi/microarray/home/mkeays/Atlas/git/atlasprod/analysis/atlasExperimentInR/AssayGroup.R")
+
 # Analytics class
 setClass( "Analytics", slots = c( platform = "character", assay_groups = "list" ) )
 
@@ -11,6 +13,8 @@ setGeneric( "platform", function( object ) standardGeneric( "platform" ) )
 # assay_groups getter
 setGeneric( "assay_groups", function( object ) standardGeneric( "assay_groups" ) )
 
+# getAllAssays
+setGeneric( "getAllAssays", function( object ) standardGeneric( "getAllAssays" ) )
 
 ###################
 # Analytics Methods
@@ -66,3 +70,24 @@ setMethod( "platform", "Analytics", function( object ) object@platform )
 
 # assay_groups getter
 setMethod( "assay_groups", "Analytics", function( object ) object@assay_groups )
+
+# getAllAssays
+setMethod( "getAllAssays", "Analytics", function( object ) {
+	
+	assayGroups <- assay_groups( object )
+
+	assays <- as.vector(
+		unlist(
+			sapply( assayGroups, 
+				function( assayGroup ) {
+					assays( assayGroup )
+				}
+			)
+		)
+	)
+
+	names( assays ) <- NULL
+
+	return( assays )
+})
+
