@@ -123,6 +123,9 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 	newColNames <- gsub( "Unit\\s?\\[", "", newColNames )
 	newColNames <- gsub( "\\s?\\]", "", newColNames )
 	newColNames[ 1 ] <- "AssayName"
+	
+	# Replace spaces with underscores.
+	newColNames <- gsub( " ", "_", newColNames )
 
 	# Now we've got the new names for the columns, check if any are the same
 	# (use "tolower" function to convert all to lower case).
@@ -143,9 +146,14 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 	if( grepl( "2colour", atlasExperimentType ) ) {
 
 		subsetSDRF$AssayName <- paste( subsetSDRF$AssayName, subsetSDRF$Label, sep="." )
+		
 		# Remove the Label column -- the second one.
 		subsetSDRF <- subsetSDRF[ , -2 ]
 	}
+	
+	# Remove duplicated rows, which occur e.g. if an assay has more than one file.
+	duplicateRowIndices <- which( duplicated( subsetSDRF ) )
+	subsetSDRF <- subsetSDRF[ -duplicateRowIndices, ]
 
 	# Return the subset SDRF.
 	return( subsetSDRF )
