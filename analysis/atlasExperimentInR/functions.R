@@ -133,27 +133,22 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 
 	# Remove the duplicated columns from the new column names and the subset
 	# SDRF.
-	subsetSDRF <- subsetSDRF[ , -duplicateColIndices ]
-	newColNames <- newColNames[ -duplicateColIndices ]
+	if( length( duplicateColIndices ) > 0 ) {
+		subsetSDRF <- subsetSDRF[ , -duplicateColIndices ]
+		newColNames <- newColNames[ -duplicateColIndices ]
+	}
 	
 	# Remove the first row of the SDRF (this is the old column headings)
 	subsetSDRF <- subsetSDRF[ -1, ]
 
 	# Add the new column names as the column headings.
 	colnames( subsetSDRF ) <- newColNames
-
-	# For 2-colour experiments, merge the AssayName and Label columns.
-	if( grepl( "2colour", atlasExperimentType ) ) {
-
-		subsetSDRF$AssayName <- paste( subsetSDRF$AssayName, subsetSDRF$Label, sep="." )
-		
-		# Remove the Label column -- the second one.
-		subsetSDRF <- subsetSDRF[ , -2 ]
-	}
 	
 	# Remove duplicated rows, which occur e.g. if an assay has more than one file.
 	duplicateRowIndices <- which( duplicated( subsetSDRF ) )
-	subsetSDRF <- subsetSDRF[ -duplicateRowIndices, ]
+	if( length( duplicateRowIndices ) > 0 ) {
+		subsetSDRF <- subsetSDRF[ -duplicateRowIndices, ]
+	}
 
 	# Return the subset SDRF.
 	return( subsetSDRF )
