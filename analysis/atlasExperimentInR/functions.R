@@ -1,5 +1,80 @@
 source("/ebi/microarray/home/mkeays/Atlas/git/atlasprod/analysis/atlasExperimentInR/Analytics.R")
 
+# Required packages.
+library( XML )
+library( plyr )
+library( Biobase )
+library( GenomicRanges )
+
+# Some bits of config.
+# ArrayExpress load directories -- where SDRFs live.
+ae2experiments <- "/ebi/microarray/home/arrayexpress/ae2_production/data/EXPERIMENT";
+
+
+summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirectory ) {
+	
+	# Atlas XML config file name.
+	atlasExperimentXMLfile <- paste( experimentAccession, "-configuration.xml", sep="" )
+	atlasExperimentXMLfile <- file.path( atlasExperimentDirectory, atlasExperimentXMLfile )
+
+	# Parse the XML file.
+	experimentXMLlist <- parseAtlasXML( atlasExperimentXMLfile )
+
+	# Get the pipeline code from the experiment accession e.g. MTAB, MEXP
+	pipeline <- gsub( "E-", "", experimentAccession )
+	pipeline <- gsub( "-\\d+", "", pipeline )
+
+	# Filename for SDRF.
+	sdrfBasename <- paste( experimentAccession, ".sdrf.txt", sep="" )
+	
+	# Complete path to SDRF file.
+	sdrfPath <- file.path( ae2experiments, pipeline, sdrfBasename )
+
+	# Get the experiment type from the parsed XML.
+	atlasExperimentType <- experimentXMLlist$experimentType
+
+	# Parse the SDRF.
+	atlasSDRF <- parseSDRF( sdrfPath, atlasExperimentType )
+
+	# Get the list of Analytics objects.
+	allAnalytics <- experimentXMLlist$allAnalytics
+
+	# Next step is to go through the analytics objects created from the XML,
+	# pull out the right rows form the SDRF, get the right expressions matrix,
+	# the gene annotations, and make the Bioconductor object (ExpressionSet,
+	# MAList, or SummarizedExperiment).
+	atlasExperimentSummary <- lapply( allAnalytics, function( analytics ) {
+		
+		# Get the assay groups.
+		assayGroups <- assay_groups( analytics )
+
+		# Get the SDRF rows for these assay groups.
+		sdrfChunks <- lapply( assayGroups, function( assayGroup ) {
+			
+			# Get the assay names.
+			assayNames <- assays( assayGroup )
+
+			# TODO: string Cy* from 2-colour assay names? Check diffAtlas_DE_limma.R
+
+			# Get the SDRF rows for these assays.
+			atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ) ]
+		})
+
+		# Make a new data frame from the SDRF chunks list.
+		analyticsSDRF <- ldply( sdrfChunks, data.frame )
+
+		# Change the name of the first column.
+		colnames( analyticsSDRF )[1] <- "AtlasAssayGroup"
+
+		# Next: get the expressions and annotations, make BioC object!
+
+	})
+
+	
+
+}
+
+
 # parseAtlasXML
 # 	- Read Atlas XML config file and return a list of Analytics objects, as
 # 	well as the experiment type.
@@ -89,13 +164,12 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 		assayNameColIndex <- grep( "Assay\\s?Name", completeSDRF[ 1, ] )
 
 		if( length( assayNameColIndex ) != 1 ) {
-			print( "Did not find Assay Name column in SDRF. Looking for Hybridization Name instead ..." )
 
 			assayNameColIndex <- grep( "Hybridi[sz]ation\\s?Name", completeSDRF[ 1, ] )
 
 			# Check that we got something.
 			if( length( assayNameColIndex ) != 1 ) {
-				stop( "Did not find Hybridization Name column either, cannot continue." )
+				stop( "Did not find an Assay Name column or a Hybridization Name column, cannot continue." )
 			}
 		}
 
@@ -200,6 +274,3 @@ addUnitCols <- function( colIndices, SDRF ) {
 }
 
 
-summarizeAtlasExperiment <- function( sdrfDataFrame, allAnalytics ) {
-
-}
