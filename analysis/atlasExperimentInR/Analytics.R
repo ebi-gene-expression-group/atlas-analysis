@@ -33,6 +33,10 @@ setMethod( "initialize", "Analytics", function( .Object, atlasExperimentType, an
 
 		# Get the array design accession.
 		platform <- xmlValue( arrayDesignNode )
+
+		# Sometimes the array design has extra tabs and newlines that we don't
+		# want, so remove them.
+		platform <- gsub( "[\t\n]", "", platform )
 	}
 	else {
 		platform <- "rnaseq"

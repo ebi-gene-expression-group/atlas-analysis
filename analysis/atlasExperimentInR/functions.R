@@ -92,13 +92,31 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 			print( "Did not find Assay Name column in SDRF. Looking for Hybridization Name instead ..." )
 
 			assayNameColIndex <- grep( "Hybridi[sz]ation\\s?Name", completeSDRF[ 1, ] )
+
+			# Check that we got something.
+			if( length( assayNameColIndex ) != 1 ) {
+				stop( "Did not find Hybridization Name column either, cannot continue." )
+			}
+		}
+
+		# For two-colour array data, also want to get the label column.
+		if( grepl( "2colour", atlasExperimentType ) ) {
+
+			labelColIndex <- which( completeSDRF[ 1, ] == "Label" )
 		}
 	}
-
+	
 	# Now we should have everything we need to get the right columns and make a
 	# more friendly SDRF.
-	subsetSDRF <- completeSDRF[ , c( assayNameColIndex, charColIndices, factorColIndices ) ]
+	if( grepl( "2colour", atlasExperimentType ) ) {
 
+		subsetSDRF <- completeSDRF[ , c( assayNameColIndex, labelColIndex, charColIndices, factorColIndices ) ]
+	}
+	else {
+		
+		subsetSDRF <- completeSDRF[ , c( assayNameColIndex, charColIndices, factorColIndices ) ]
+	}
+	
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
 	newColNames <- gsub( "Factor\\s?Value\\s?\\[", "", newColNames )
@@ -120,6 +138,14 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 
 	# Add the new column names as the column headings.
 	colnames( subsetSDRF ) <- newColNames
+
+	# For 2-colour experiments, merge the AssayName and Label columns.
+	if( grepl( "2colour", atlasExperimentType ) ) {
+
+		subsetSDRF$AssayName <- paste( subsetSDRF$AssayName, subsetSDRF$Label, sep="." )
+		# Remove the Label column -- the second one.
+		subsetSDRF <- subsetSDRF[ , -2 ]
+	}
 
 	# Return the subset SDRF.
 	return( subsetSDRF )
