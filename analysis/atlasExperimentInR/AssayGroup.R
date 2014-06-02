@@ -25,6 +25,10 @@ setMethod( "initialize", "AssayGroup", function( .Object, assayGroupNode ) {
 	assayGroupAssays <- sapply( allAssays, function( assayNode ) {
 		xmlValue( assayNode )
 	})
+	
+	# Make assay names "R-safe" as they have to match ones in column headings
+	# later on.
+	assayGroupAssays <- make.names( assayGroupAssays )
 
 	# Remove the names from the vector of assay names.
 	names(assayGroupAssays) <- NULL

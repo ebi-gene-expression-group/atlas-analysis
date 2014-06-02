@@ -10,12 +10,23 @@ library( GenomicRanges )
 # ArrayExpress load directories -- where SDRFs live.
 ae2experiments <- "/ebi/microarray/home/arrayexpress/ae2_production/data/EXPERIMENT";
 
+# Directory with gene annotations.
+bioentityPropertiesEnsemblDir <- "/ebi/microarray/home/atlas3-production/bioentity_properties/ensembl";
 
+# summarizeAtlasExperiment
+# 	- Main function for the package. Takes an experiment accession and a
+# 	directory path where it can find Atlas XML config and expressions matrices.
+# 	- Returns a list of ExpressionSet and/or MAList and/or SummarizedExperiment objects.
 summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirectory ) {
 	
 	# Atlas XML config file name.
 	atlasExperimentXMLfile <- paste( experimentAccession, "-configuration.xml", sep="" )
 	atlasExperimentXMLfile <- file.path( atlasExperimentDirectory, atlasExperimentXMLfile )
+
+	# Die if we can't find the XML config file.
+	if( !file.exists( atlasExperimentXMLfile ) ) {
+		stop( paste( "XML config file", atlasExperimentXMLfile, "does not exist or is not readable." ) )
+	}
 
 	# Parse the XML file.
 	experimentXMLlist <- parseAtlasXML( atlasExperimentXMLfile )
@@ -28,7 +39,12 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	sdrfBasename <- paste( experimentAccession, ".sdrf.txt", sep="" )
 	
 	# Complete path to SDRF file.
-	sdrfPath <- file.path( ae2experiments, pipeline, sdrfBasename )
+	sdrfPath <- file.path( ae2experiments, pipeline, experimentAccession, sdrfBasename )
+
+	# Check SDRF exists, die if not.
+	if( !file.exists( sdrfPath ) ) {
+		stop( paste( "SDRF", sdrfPath, "does not exist or is not readable." ) )
+	}
 
 	# Get the experiment type from the parsed XML.
 	atlasExperimentType <- experimentXMLlist$experimentType
@@ -49,28 +65,76 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		assayGroups <- assay_groups( analytics )
 
 		# Get the SDRF rows for these assay groups.
-		sdrfChunks <- lapply( assayGroups, function( assayGroup ) {
+		assayGroupSDRFs <- lapply( assayGroups, function( assayGroup ) {
 			
 			# Get the assay names.
 			assayNames <- assays( assayGroup )
 
-			# TODO: string Cy* from 2-colour assay names? Check diffAtlas_DE_limma.R
+			# TODO: strip .Cy* from 2-colour assay names? Check diffAtlas_DE_limma.R
 
 			# Get the SDRF rows for these assays.
-			atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ) ]
+			atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ), ]
 		})
 
 		# Make a new data frame from the SDRF chunks list.
-		analyticsSDRF <- ldply( sdrfChunks, data.frame )
+		analyticsSDRF <- ldply( assayGroupSDRFs, data.frame )
 
 		# Change the name of the first column.
 		colnames( analyticsSDRF )[1] <- "AtlasAssayGroup"
 
-		# Next: get the expressions and annotations, make BioC object!
+		# Make the assay names the row names.
+		rownames( analyticsSDRF ) <- analyticsSDRF$AssayName
+		analyticsSDRF$AssayName <- NULL
 
+		# Sort the rows by assay name.
+		analyticsSDRF <- analyticsSDRF[ sort( rownames( analyticsSDRF ) ) , ]
+
+		# Next: get the expressions and annotations, make BioC object!
+		
+		# Get the expressions and associated annotations.
+		expressionsAndAnnotations <- getExpressionsMatrix( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory )
+		
+		# Get the expressions matrix from the list.
+		expressionsMatrix <- expressionsAndAnnotations$expressionsMatrix
+
+		# Only select columns with assay names in our SDRF -- these are the
+		# ones that passed QC and are still in the XML.
+		expressionsMatrix <- expressionsMatrix[ , rownames( analyticsSDRF ) ]
+
+		# If this is a one-colour microarray experiment, make an ExpressionSet.
+		if( grepl( "microarray_1colour", atlasExperimentType ) ) {
+			
+			# Turn data frame into matrix.
+			expressionsMatrix <- as.matrix( expressionsMatrix )
+			
+			# Create a new AssayData object
+			expressionData <- assayDataNew( storage.mode = "lockedEnvironment", exprs = expressionsMatrix )
+			
+			# Add feature names (probe set names).
+			featureNames( expressionData ) <- rownames( expressionsMatrix )
+			
+			# Add sample names (assay names).
+			sampleNames( expressionData ) <- colnames( expressionsMatrix )
+			
+			# Add the SDRF data.
+			phenoData <- new( "AnnotatedDataFrame", data = analyticsSDRF )
+			
+			# Add featureData -- this is Ensembl gene IDs and gene names, from
+			# annotations read in from the expressions matrix file.
+			featureData <- new( "AnnotatedDataFrame", data = expressionsAndAnnotations$annotations )
+			featureNames( featureData ) <- rownames( expressionsMatrix )
+
+			# Create new ExpressionSet.
+			return( new( "ExpressionSet", assayData = expressionData, phenoData = phenoData, featureData = featureData ) )
+		}
+
+		# If this is an RNA-seq experiment, make a SummarizedExperiment.
+		else if( grepl( "rnaseq", atlasExperimentType ) ) {
+		}
+			
 	})
 
-	
+	return( atlasExperimentSummary )
 
 }
 
@@ -224,6 +288,9 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 		subsetSDRF <- subsetSDRF[ -duplicateRowIndices, ]
 	}
 
+	# Make assay names "R-safe".
+	subsetSDRF$AssayName <- make.names( subsetSDRF$AssayName )
+
 	# Return the subset SDRF.
 	return( subsetSDRF )
 }
@@ -274,3 +341,83 @@ addUnitCols <- function( colIndices, SDRF ) {
 }
 
 
+# getExpressionsMatrix
+# 	- Takes an Analytics object, experiment type, experiment accession, and
+# 	path to directory containing expressions matrix file.
+# 	- Returns a data frame containing the expressions matrix.
+getExpressionsMatrix <- function( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory ) {
+	
+	expressionsAndAnnotations <- list()
+
+	# Is this a 1-colour microarray experiment?
+	if( grepl( "microarray_1colour", atlasExperimentType ) ) {
+		
+		# Need the array design as it makes up the file name.
+		arrayDesign <- platform( analytics )
+		
+		# Create the file name of the normalized expressions matrix.
+		expressionsMatrixFile <- paste( experimentAccession, "_", arrayDesign, "-normalized-expressions.tsv", sep="" )
+		
+		# Add the full path to the file.
+		expressionsMatrixFile <- file.path( atlasExperimentDirectory, expressionsMatrixFile )
+		
+		# Read the expressions matrix file.
+		expressionsMatrix <- read.delim( expressionsMatrixFile, header=TRUE, stringsAsFactors=FALSE )
+		
+		# Add design elements as row names.
+		rownames( expressionsMatrix ) <- expressionsMatrix$Design.Element
+
+		# Get the columns with gene annotations.
+		geneAnnotations <- expressionsMatrix[ , 1:2 ]
+		
+		# Add the gene annotations to the list to return.
+		expressionsAndAnnotations$annotations <- geneAnnotations
+		
+		# Remove now unwanted columns.
+		expressionsMatrix <- expressionsMatrix[ , -( 1:3 ) ]
+		
+		# Add expressions matrix to list to return
+		expressionsAndAnnotations$expressionsMatrix <- expressionsMatrix
+	}
+	# Is this an RNA-seq experiment?
+	else if( grepl( "rnaseq", atlasExperimentType ) ) {
+		
+		# Create the file name of the raw counts matrix.
+		expressionsMatrixFile <- paste( experimentAccession, "-raw-counts.tsv", sep="" )
+		
+		# Add the full path to the file.
+		expressionsMatrixFile <- file.path( atlasExperimentDirectory, expressionsMatrixFile )
+		
+		# Read the expressions matrix file.
+		expressionsMatrix <- read.delim( expressionsMatrixFile, header=TRUE, stringsAsFactors=FALSE )
+		
+		# Add gene IDs as row names.
+		rownames( expressionsMatrix ) <- expressionsMatrix$Gene.ID
+		
+		# Get the gene names (second column), drop=FALSE to keep it as a data
+		# frame and keep the row names.
+		geneAnnotations <- expressionsMatrix[, 2, drop = FALSE ]
+		
+		# Add annotations to list to return.
+		expressionsAndAnnotations$annotations <- geneAnnotations
+
+		# Remove now unwanted columns.
+		expressionsMatrix <- expressionsMatrix[ , -( 1:2 ) ]
+
+		# Add expressions matrix to list to return.
+		expressionsAndAnnotations$expressionsMatrix <- expressionsMatrix
+	}
+	# Otherwise, don't recognise this experiment type so die.
+	else {
+		stop( paste( "Don't know how handle experiment type \"", atlasExperimentType, "\". Cannot continue.", sep="" ) )
+	}
+	
+	# Check that the expressions matrix file exists, die if not.
+	if( !file.exists( expressionsMatrixFile ) ) {
+		stop( paste( "Expressions matrix file \"", expressionsMatrixFile, "\" does not exist. Cannot continue.", sep="" ) )
+	}
+	
+
+	# Return the matrix.
+	return( expressionsAndAnnotations )
+}
