@@ -63,22 +63,24 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	
 		analyticsSDRF <- createAnalyticsSDRF( analytics, atlasSDRF )
 
-		# Next: get the expressions and annotations, make BioC object!
-		
-		# Get the expressions and associated annotations.
-		expressionsAndAnnotations <- getExpressionsAndAnnotations( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory )
+		# Get the expressions.
+		expressionsDF <- getExpressions( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory )
 		
 		# If this is a one-colour microarray experiment, make an ExpressionSet.
 		if( grepl( "microarray_1colour", atlasExperimentType ) ) {
 			
 			# Create an ExpressionSet.
-			expressionSet <- createExpressionSet( expressionsAndAnnotations, analyticsSDRF )
-
+			expressionSet <- createExpressionSet( expressionsDF, analyticsSDRF )
+			
+			# Return it.
 			return( expressionSet )
 		}
 
 		# If this is an RNA-seq experiment, make a SummarizedExperiment.
 		else if( grepl( "rnaseq", atlasExperimentType ) ) {
+			
+			# Create a SummarizedExperiment.
+			summarizedExperiment <- createSummarizedExperiment( expressionsDF, analyticsSDRF )
 		}
 			
 	})
@@ -296,86 +298,69 @@ addUnitCols <- function( colIndices, SDRF ) {
 }
 
 
-# getExpressionsAndAnnotations
+# getExpressions
 # 	- Takes an Analytics object, experiment type, experiment accession, and
-# 	path to directory containing expressions matrix file.
-# 	- Returns a data frame containing the expressions matrix.
-getExpressionsAndAnnotations <- function( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory ) {
+# 	path to directory containing expressions file.
+# 	- Returns a data frame containing the expressions.
+getExpressions <- function( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory ) {
 	
-	expressionsAndAnnotations <- list()
-
+	
 	# Is this a 1-colour microarray experiment?
 	if( grepl( "microarray_1colour", atlasExperimentType ) ) {
 		
 		# Need the array design as it makes up the file name.
 		arrayDesign <- platform( analytics )
 		
-		# Create the file name of the normalized expressions matrix.
-		expressionsMatrixFile <- paste( experimentAccession, "_", arrayDesign, "-normalized-expressions.tsv", sep="" )
+		# Create the file name of the normalized expressions.
+		expressionsFile <- paste( experimentAccession, "_", arrayDesign, "-normalized-expressions.tsv.undecorated", sep="" )
 		
 		# Add the full path to the file.
-		expressionsMatrixFile <- file.path( atlasExperimentDirectory, expressionsMatrixFile )
+		expressionsFile <- file.path( atlasExperimentDirectory, expressionsFile )
+
+		# Check that the expressions file exists, die if not.
+		if( !file.exists( expressionsFile ) ) {
+			stop( paste( "Expressions file \"", expressionsFile, "\" does not exist. Cannot continue.", sep="" ) )
+		}
 		
-		# Read the expressions matrix file.
-		expressionsMatrix <- read.delim( expressionsMatrixFile, header=TRUE, stringsAsFactors=FALSE )
+		# Read the expressions file.
+		expressionsDF <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
 		
 		# Add design elements as row names.
-		rownames( expressionsMatrix ) <- expressionsMatrix$Design.Element
-
-		# Get the columns with gene annotations.
-		geneAnnotations <- expressionsMatrix[ , 1:2 ]
-		colnames( geneAnnotations ) <- c( "EnsemblGeneID", "GeneName" )
+		rownames( expressionsDF ) <- expressionsDF[,1]
 		
-		# Add the gene annotations to the list to return.
-		expressionsAndAnnotations$annotations <- geneAnnotations
-		
-		# Remove now unwanted columns.
-		expressionsMatrix <- expressionsMatrix[ , -( 1:3 ) ]
-		
-		# Add expressions matrix to list to return
-		expressionsAndAnnotations$expressionsMatrix <- expressionsMatrix
+		# Remove design elements column as not needed.
+		expressionsDF[,1] <- NULL
 	}
 	# Is this an RNA-seq experiment?
 	else if( grepl( "rnaseq", atlasExperimentType ) ) {
 		
-		# Create the file name of the raw counts matrix.
-		expressionsMatrixFile <- paste( experimentAccession, "-raw-counts.tsv", sep="" )
+		# Create the file name of the raw counts.
+		expressionsFile <- paste( experimentAccession, "-raw-counts.tsv.undecorated", sep="" )
 		
 		# Add the full path to the file.
-		expressionsMatrixFile <- file.path( atlasExperimentDirectory, expressionsMatrixFile )
+		expressionsFile <- file.path( atlasExperimentDirectory, expressionsFile )
 		
-		# Read the expressions matrix file.
-		expressionsMatrix <- read.delim( expressionsMatrixFile, header=TRUE, stringsAsFactors=FALSE )
+		# Check that the expressions file exists, die if not.
+		if( !file.exists( expressionsFile ) ) {
+			stop( paste( "Expressions file \"", expressionsFile, "\" does not exist. Cannot continue.", sep="" ) )
+		}
+		
+		# Read the expressions file.
+		expressionsDF <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
 		
 		# Add gene IDs as row names.
-		rownames( expressionsMatrix ) <- expressionsMatrix$Gene.ID
+		rownames( expressionsDF ) <- expressionsDF[,1]
 		
-		# Get the gene names (second column), drop=FALSE to keep it as a data
-		# frame and keep the row names.
-		geneAnnotations <- expressionsMatrix[, 2, drop = FALSE ]
-		colnames( geneAnnotations ) <- c( "GeneName" )
-		
-		# Add annotations to list to return.
-		expressionsAndAnnotations$annotations <- geneAnnotations
-
-		# Remove now unwanted columns.
-		expressionsMatrix <- expressionsMatrix[ , -( 1:2 ) ]
-
-		# Add expressions matrix to list to return.
-		expressionsAndAnnotations$expressionsMatrix <- expressionsMatrix
+		# Remove now unwanted column.
+		expressionsDF[,1] <- NULL
 	}
 	# Otherwise, don't recognise this experiment type so die.
 	else {
 		stop( paste( "Don't know how handle experiment type \"", atlasExperimentType, "\". Cannot continue.", sep="" ) )
 	}
 	
-	# Check that the expressions matrix file exists, die if not.
-	if( !file.exists( expressionsMatrixFile ) ) {
-		stop( paste( "Expressions matrix file \"", expressionsMatrixFile, "\" does not exist. Cannot continue.", sep="" ) )
-	}
-	
-	# Return the matrix.
-	return( expressionsAndAnnotations )
+	# Return the data frame with expressions.
+	return( expressionsDF )
 }
 
 
@@ -419,22 +404,16 @@ createAnalyticsSDRF <- function( analytics, atlasSDRF ) {
 
 
 # createExpressionSet
-# 	- Take a data frame of normalized expressions, some gene annotations, and a parsed SDRF.
+# 	- Take a data frame of normalized expressions and a parsed SDRF.
 # 	- Return an ExpressionSet object.
-createExpressionSet <- function( expressionsAndAnnotations, analyticsSDRF ) {
-
-	# Get the expressions matrix from the list.
-	expressionsMatrix <- expressionsAndAnnotations$expressionsMatrix
+createExpressionSet <- function( expressionsDF, analyticsSDRF ) {
 
 	# Only select columns with assay names in our SDRF -- these are the
 	# ones that passed QC and are still in the XML.
-	expressionsMatrix <- expressionsMatrix[ , rownames( analyticsSDRF ) ]
-
-	# Get the gene annotations
-	geneAnnotations <- expressionsAndAnnotations$annotations
+	expressionsDF <- expressionsDF[ , rownames( analyticsSDRF ) ]
 
 	# Turn data frame into matrix.
-	expressionsMatrix <- as.matrix( expressionsMatrix )
+	expressionsMatrix <- as.matrix( expressionsDF )
 	
 	# Create a new AssayData object
 	expressionData <- assayDataNew( storage.mode = "lockedEnvironment", exprs = expressionsMatrix )
@@ -448,11 +427,30 @@ createExpressionSet <- function( expressionsAndAnnotations, analyticsSDRF ) {
 	# Add the SDRF data.
 	phenoData <- new( "AnnotatedDataFrame", data = analyticsSDRF )
 	
-	# Add featureData -- this is Ensembl gene IDs and gene names, from
-	# annotations read in from the expressions matrix file.
-	featureData <- new( "AnnotatedDataFrame", data = geneAnnotations )
+	# Add featureData -- this is just the probe set names for now.
+	featureData <- new( "AnnotatedDataFrame", data = data.frame( probeSets = rownames( expressionsMatrix ) ) )
 	featureNames( featureData ) <- rownames( expressionsMatrix )
 
 	# Create new ExpressionSet.
 	return( new( "ExpressionSet", assayData = expressionData, phenoData = phenoData, featureData = featureData ) )
 }
+
+
+createSummarizedExperiment <- function( expressionsDF, analyticsSDRF ) {
+	
+	# Only select columns with assay names in our SDRF.
+	expressionsDF <- expressionsDF[ , rownames( analyticsSDRF ) ]
+
+	# Turn data frame into matrix.
+	expressionsMatrix <- as.matrix( expressionsDF )
+
+	# Turn SDRF into a DataFrame.
+	analyticsSDRF <- DataFrame( analyticsSDRF )
+
+	# Create SummarizedExperiment
+	summarizedExperiment <- SummarizedExperiment( assays = expressionsMatrix, colData = analyticsSDRF )
+
+	# Return it.
+	return( summarizedExperiment )
+}
+
