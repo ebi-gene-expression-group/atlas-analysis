@@ -60,72 +60,21 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# the gene annotations, and make the Bioconductor object (ExpressionSet,
 	# MAList, or SummarizedExperiment).
 	atlasExperimentSummary <- lapply( allAnalytics, function( analytics ) {
-		
-		# Get the assay groups.
-		assayGroups <- assay_groups( analytics )
-
-		# Get the SDRF rows for these assay groups.
-		assayGroupSDRFs <- lapply( assayGroups, function( assayGroup ) {
-			
-			# Get the assay names.
-			assayNames <- assays( assayGroup )
-
-			# TODO: strip .Cy* from 2-colour assay names? Check diffAtlas_DE_limma.R
-
-			# Get the SDRF rows for these assays.
-			atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ), ]
-		})
-
-		# Make a new data frame from the SDRF chunks list.
-		analyticsSDRF <- ldply( assayGroupSDRFs, data.frame )
-
-		# Change the name of the first column.
-		colnames( analyticsSDRF )[1] <- "AtlasAssayGroup"
-
-		# Make the assay names the row names.
-		rownames( analyticsSDRF ) <- analyticsSDRF$AssayName
-		analyticsSDRF$AssayName <- NULL
-
-		# Sort the rows by assay name.
-		analyticsSDRF <- analyticsSDRF[ sort( rownames( analyticsSDRF ) ) , ]
+	
+		analyticsSDRF <- createAnalyticsSDRF( analytics, atlasSDRF )
 
 		# Next: get the expressions and annotations, make BioC object!
 		
 		# Get the expressions and associated annotations.
-		expressionsAndAnnotations <- getExpressionsMatrix( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory )
+		expressionsAndAnnotations <- getExpressionsAndAnnotations( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory )
 		
-		# Get the expressions matrix from the list.
-		expressionsMatrix <- expressionsAndAnnotations$expressionsMatrix
-
-		# Only select columns with assay names in our SDRF -- these are the
-		# ones that passed QC and are still in the XML.
-		expressionsMatrix <- expressionsMatrix[ , rownames( analyticsSDRF ) ]
-
 		# If this is a one-colour microarray experiment, make an ExpressionSet.
 		if( grepl( "microarray_1colour", atlasExperimentType ) ) {
 			
-			# Turn data frame into matrix.
-			expressionsMatrix <- as.matrix( expressionsMatrix )
-			
-			# Create a new AssayData object
-			expressionData <- assayDataNew( storage.mode = "lockedEnvironment", exprs = expressionsMatrix )
-			
-			# Add feature names (probe set names).
-			featureNames( expressionData ) <- rownames( expressionsMatrix )
-			
-			# Add sample names (assay names).
-			sampleNames( expressionData ) <- colnames( expressionsMatrix )
-			
-			# Add the SDRF data.
-			phenoData <- new( "AnnotatedDataFrame", data = analyticsSDRF )
-			
-			# Add featureData -- this is Ensembl gene IDs and gene names, from
-			# annotations read in from the expressions matrix file.
-			featureData <- new( "AnnotatedDataFrame", data = expressionsAndAnnotations$annotations )
-			featureNames( featureData ) <- rownames( expressionsMatrix )
+			# Create an ExpressionSet.
+			expressionSet <- createExpressionSet( expressionsAndAnnotations, analyticsSDRF )
 
-			# Create new ExpressionSet.
-			return( new( "ExpressionSet", assayData = expressionData, phenoData = phenoData, featureData = featureData ) )
+			return( expressionSet )
 		}
 
 		# If this is an RNA-seq experiment, make a SummarizedExperiment.
@@ -161,6 +110,12 @@ parseAtlasXML <- function(filename) {
 	# Get the Atlas experiment type. We'll use this later to decide whether to
 	# create an ExpressionSet/MAList or SummarizedExperiment.
 	atlasExperimentType <- configNodeAttrs[[ "experimentType" ]]
+
+	# If this is a baseline RNA-seq experiment there won't be any raw counts,
+	# so can't create a BioC object.
+	if( grepl( "^rnaseq\\w*baseline$", atlasExperimentType ) ) {
+		stop( paste( "Cannot create R objects for experiment type \"", atlasExperimentType, "\".", sep="" ) )
+	}
 	
 	# Go through the analytics node(s).
 	# Get them from the configuration node.
@@ -341,11 +296,11 @@ addUnitCols <- function( colIndices, SDRF ) {
 }
 
 
-# getExpressionsMatrix
+# getExpressionsAndAnnotations
 # 	- Takes an Analytics object, experiment type, experiment accession, and
 # 	path to directory containing expressions matrix file.
 # 	- Returns a data frame containing the expressions matrix.
-getExpressionsMatrix <- function( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory ) {
+getExpressionsAndAnnotations <- function( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory ) {
 	
 	expressionsAndAnnotations <- list()
 
@@ -369,6 +324,7 @@ getExpressionsMatrix <- function( analytics, atlasExperimentType, experimentAcce
 
 		# Get the columns with gene annotations.
 		geneAnnotations <- expressionsMatrix[ , 1:2 ]
+		colnames( geneAnnotations ) <- c( "EnsemblGeneID", "GeneName" )
 		
 		# Add the gene annotations to the list to return.
 		expressionsAndAnnotations$annotations <- geneAnnotations
@@ -397,6 +353,7 @@ getExpressionsMatrix <- function( analytics, atlasExperimentType, experimentAcce
 		# Get the gene names (second column), drop=FALSE to keep it as a data
 		# frame and keep the row names.
 		geneAnnotations <- expressionsMatrix[, 2, drop = FALSE ]
+		colnames( geneAnnotations ) <- c( "GeneName" )
 		
 		# Add annotations to list to return.
 		expressionsAndAnnotations$annotations <- geneAnnotations
@@ -417,7 +374,85 @@ getExpressionsMatrix <- function( analytics, atlasExperimentType, experimentAcce
 		stop( paste( "Expressions matrix file \"", expressionsMatrixFile, "\" does not exist. Cannot continue.", sep="" ) )
 	}
 	
-
 	# Return the matrix.
 	return( expressionsAndAnnotations )
+}
+
+
+# createAnalyticsSDRF
+# 	- Take an Analytics object and a parsed SDRF.
+# 	- Return a new SDRF data frame with just the assays from the Analytics
+# 	object, as well as a column denoting which assay group each assay belongs
+# 	to.
+createAnalyticsSDRF <- function( analytics, atlasSDRF ) {
+
+	# Get the assay groups.
+	assayGroups <- assay_groups( analytics )
+
+	# Get the SDRF rows for these assay groups.
+	assayGroupSDRFs <- lapply( assayGroups, function( assayGroup ) {
+		
+		# Get the assay names.
+		assayNames <- assays( assayGroup )
+
+		# TODO: strip .Cy* from 2-colour assay names? Check diffAtlas_DE_limma.R
+
+		# Get the SDRF rows for these assays.
+		atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ), ]
+	})
+
+	# Make a new data frame from the SDRF chunks list.
+	analyticsSDRF <- ldply( assayGroupSDRFs, data.frame )
+
+	# Change the name of the first column.
+	colnames( analyticsSDRF )[1] <- "AtlasAssayGroup"
+
+	# Make the assay names the row names.
+	rownames( analyticsSDRF ) <- analyticsSDRF$AssayName
+	analyticsSDRF$AssayName <- NULL
+
+	# Sort the rows by assay name.
+	analyticsSDRF <- analyticsSDRF[ sort( rownames( analyticsSDRF ) ) , ]
+
+	return( analyticsSDRF )
+}
+
+
+# createExpressionSet
+# 	- Take a data frame of normalized expressions, some gene annotations, and a parsed SDRF.
+# 	- Return an ExpressionSet object.
+createExpressionSet <- function( expressionsAndAnnotations, analyticsSDRF ) {
+
+	# Get the expressions matrix from the list.
+	expressionsMatrix <- expressionsAndAnnotations$expressionsMatrix
+
+	# Only select columns with assay names in our SDRF -- these are the
+	# ones that passed QC and are still in the XML.
+	expressionsMatrix <- expressionsMatrix[ , rownames( analyticsSDRF ) ]
+
+	# Get the gene annotations
+	geneAnnotations <- expressionsAndAnnotations$annotations
+
+	# Turn data frame into matrix.
+	expressionsMatrix <- as.matrix( expressionsMatrix )
+	
+	# Create a new AssayData object
+	expressionData <- assayDataNew( storage.mode = "lockedEnvironment", exprs = expressionsMatrix )
+	
+	# Add feature names (probe set names).
+	featureNames( expressionData ) <- rownames( expressionsMatrix )
+	
+	# Add sample names (assay names).
+	sampleNames( expressionData ) <- colnames( expressionsMatrix )
+	
+	# Add the SDRF data.
+	phenoData <- new( "AnnotatedDataFrame", data = analyticsSDRF )
+	
+	# Add featureData -- this is Ensembl gene IDs and gene names, from
+	# annotations read in from the expressions matrix file.
+	featureData <- new( "AnnotatedDataFrame", data = geneAnnotations )
+	featureNames( featureData ) <- rownames( expressionsMatrix )
+
+	# Create new ExpressionSet.
+	return( new( "ExpressionSet", assayData = expressionData, phenoData = phenoData, featureData = featureData ) )
 }
