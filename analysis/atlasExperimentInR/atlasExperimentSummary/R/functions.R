@@ -1,10 +1,13 @@
-source("/ebi/microarray/home/mkeays/Atlas/git/atlasprod/analysis/atlasExperimentInR/Analytics.R")
+#--------------------------------------------------
+# source("/ebi/microarray/home/mkeays/Atlas/git/atlasprod/analysis/atlasExperimentInR/atlasExperimentSummary/R/Analytics.R")
+#-------------------------------------------------- 
 
 # Required packages.
 library( XML )
 library( plyr )
 library( Biobase )
 library( GenomicRanges )
+library( limma )
 
 # Some bits of config.
 # ArrayExpress load directories -- where SDRFs live.
@@ -29,7 +32,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	}
 
 	# Parse the XML file.
-	experimentXMLlist <- parseAtlasXML( atlasExperimentXMLfile )
+	experimentXMLlist <- .parseAtlasXML( atlasExperimentXMLfile )
 
 	# Get the pipeline code from the experiment accession e.g. MTAB, MEXP
 	pipeline <- gsub( "E-", "", experimentAccession )
@@ -50,7 +53,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	atlasExperimentType <- experimentXMLlist$experimentType
 
 	# Parse the SDRF.
-	atlasSDRF <- parseSDRF( sdrfPath, atlasExperimentType )
+	atlasSDRF <- .parseSDRF( sdrfPath, atlasExperimentType )
 
 	# Get the list of Analytics objects.
 	allAnalytics <- experimentXMLlist$allAnalytics
@@ -62,10 +65,10 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	atlasExperimentSummary <- lapply( allAnalytics, function( analytics ) {
 		
 		# Get the SDRF rows for this analytics object's assays.
-		analyticsSDRF <- createAnalyticsSDRF( analytics, atlasSDRF )
+		analyticsSDRF <- .createAnalyticsSDRF( analytics, atlasSDRF )
 
 		# Create Bioconductor object, either ExpressionSet, SummarizedExperiment, or MAList.
-		biocObject <- createBiocObject( 
+		biocObject <- .createBiocObject( 
 			analytics, 
 			analyticsSDRF, 
 			atlasExperimentType, 
@@ -74,17 +77,19 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		)
 	})
 
+	atlasExperimentSummary <- SimpleList( atlasExperimentSummary )
+
 	return( atlasExperimentSummary )
 
 }
 
 
-# parseAtlasXML
+# .parseAtlasXML
 # 	- Read Atlas XML config file and return a list of Analytics objects, as
 # 	well as the experiment type.
 # 	- The function returns a list with two elements: the list of Analytics
 # 	objects, and the experiment type from the XML.
-parseAtlasXML <- function(filename) {
+.parseAtlasXML <- function(filename) {
 	
 	# Load XML package.
 	library( XML )
@@ -134,7 +139,7 @@ parseAtlasXML <- function(filename) {
 }
 
 
-# parseSDRF
+# .parseSDRF
 # 	- Take an SDRF filename and the experiment type from the XML config, and
 # 	return a subset of the SDRF containing only the assay names (or ENA runs),
 # 	the Characteristics, and FactorValue columns. 
@@ -143,7 +148,7 @@ parseAtlasXML <- function(filename) {
 # 	- It removes duplicated columns, e.g. if genotype is a Characteristic and a
 # 	Factor.
 # 	- It returns the new "SDRF" as a data frame.
-parseSDRF <- function( filename, atlasExperimentType ) {
+.parseSDRF <- function( filename, atlasExperimentType ) {
 
 	# Read in the SDRF file. Set header=FALSE because we don't want the column
 	# headings to be made "R-safe" -- this confuses things when we're trying to
@@ -153,11 +158,11 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 
 	# Get the Characteristics column indices, and any unit columns next to them.
 	charColIndices <- grep( "Characteristics", completeSDRF[ 1, ] )
-	charColIndices <- addUnitCols( charColIndices, completeSDRF )
+	charColIndices <- .addUnitCols( charColIndices, completeSDRF )
 	
 	# Get the Factor column indices, an any unit columns next to them.
 	factorColIndices <- grep( "Factor\\s?Value", completeSDRF[ 1, ] )
-	factorColIndices <- addUnitCols( factorColIndices, completeSDRF )
+	factorColIndices <- .addUnitCols( factorColIndices, completeSDRF )
 	
 	# Get the column index for assay names. For microarray data, this is "Assay
 	# Name" or "Hybridization Name". For RNA-seq data, this is "Comment[ENA_RUN]"
@@ -242,11 +247,11 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 }
 
 
-# addUnitCols
+# .addUnitCols
 # 	- Given a vector of column indices and a data frame with the complete SDRF,
 # 	return a vector of column indices containing the original ones plus any
 # 	Unit[] columns that are next to them.
-addUnitCols <- function( colIndices, SDRF ) {
+.addUnitCols <- function( colIndices, SDRF ) {
 
 	# Get the indices of unit columns. 
 	unitCols <- unlist(
@@ -287,11 +292,11 @@ addUnitCols <- function( colIndices, SDRF ) {
 }
 
 
-# createBiocObject
+# .createBiocObject
 # 	- Takes an Analytics object, experiment type, experiment accession, and
 # 	path to directory containing expressions file.
 # 	- Returns either an ExpressionSet, MAList, or SummarizedExperiment.
-createBiocObject <- function( analytics, analyticsSDRF, atlasExperimentType, experimentAccession, atlasExperimentDirectory ) {
+.createBiocObject <- function( analytics, analyticsSDRF, atlasExperimentType, experimentAccession, atlasExperimentDirectory ) {
 	
 	# Create path to analysis methods file.
 	analysisMethodsFile <- paste( experimentAccession, "-analysis-methods.tsv", sep="" )
@@ -324,7 +329,7 @@ createBiocObject <- function( analytics, analyticsSDRF, atlasExperimentType, exp
 		expressions[,1] <- NULL
 		
 		# Create an ExpressionSet.
-		biocObject <- createExpressionSet( expressions, analyticsSDRF, analysisMethodsFile )
+		biocObject <- .createExpressionSet( expressions, analyticsSDRF, analysisMethodsFile )
 		
 		# Return it.
 		return( biocObject )
@@ -388,7 +393,7 @@ createBiocObject <- function( analytics, analyticsSDRF, atlasExperimentType, exp
 		expressions[,1] <- NULL
 		
 		# Create a SummarizedExperiment.
-		biocObject <- createSummarizedExperiment( expressions, analyticsSDRF, analysisMethodsFile )
+		biocObject <- .createSummarizedExperiment( expressions, analyticsSDRF, analysisMethodsFile )
 	}
 	# Otherwise, don't recognise this experiment type so die.
 	else {
@@ -400,12 +405,12 @@ createBiocObject <- function( analytics, analyticsSDRF, atlasExperimentType, exp
 }
 
 
-# createAnalyticsSDRF
+# .createAnalyticsSDRF
 # 	- Take an Analytics object and a parsed SDRF.
 # 	- Return a new SDRF data frame with just the assay_names from the Analytics
 # 	object, as well as a column denoting which assay group each assay belongs
 # 	to.
-createAnalyticsSDRF <- function( analytics, atlasSDRF ) {
+.createAnalyticsSDRF <- function( analytics, atlasSDRF ) {
 
 	# Get the assay groups.
 	assayGroups <- assay_groups( analytics )
@@ -439,10 +444,10 @@ createAnalyticsSDRF <- function( analytics, atlasSDRF ) {
 }
 
 
-# createExpressionSet
+# .createExpressionSet
 # 	- Take a data frame of normalized expressions and a parsed SDRF.
 # 	- Return an ExpressionSet object.
-createExpressionSet <- function( expressions, analyticsSDRF, analysisMethodsFile ) {
+.createExpressionSet <- function( expressions, analyticsSDRF, analysisMethodsFile ) {
 
 	# Only select columns with assay names in our SDRF -- these are the
 	# ones that passed QC and are still in the XML.
@@ -468,7 +473,7 @@ createExpressionSet <- function( expressions, analyticsSDRF, analysisMethodsFile
 	featureNames( featureData ) <- rownames( expressionsMatrix )
 	
 	# Add analysis methods.
-	analysisMethodsList <- readArrayAnalysisMethods( analysisMethodsFile )
+	analysisMethodsList <- .readArrayAnalysisMethods( analysisMethodsFile )
 	# Add this to a MIAME object.
 	exptData <- new( "MIAME", preprocessing = analysisMethodsList )
 
@@ -482,7 +487,7 @@ createExpressionSet <- function( expressions, analyticsSDRF, analysisMethodsFile
 }
 
 
-createSummarizedExperiment <- function( expressions, analyticsSDRF, analysisMethodsFile ) {
+.createSummarizedExperiment <- function( expressions, analyticsSDRF, analysisMethodsFile ) {
 	
 	# Only select columns with assay names in our SDRF.
 	expressions <- expressions[ , rownames( analyticsSDRF ) ]
@@ -494,7 +499,7 @@ createSummarizedExperiment <- function( expressions, analyticsSDRF, analysisMeth
 	analyticsSDRF <- DataFrame( analyticsSDRF )
 
 	# Get analysis methods
-	analysisMethodsList <- readSeqAnalysisMethods( analysisMethodsFile )
+	analysisMethodsList <- .readSeqAnalysisMethods( analysisMethodsFile )
 
 	# Create SummarizedExperiment
 	summarizedExperiment <- SummarizedExperiment( assays = SimpleList( counts = expressionsMatrix ), colData = analyticsSDRF, exptData = analysisMethodsList )
@@ -504,7 +509,7 @@ createSummarizedExperiment <- function( expressions, analyticsSDRF, analysisMeth
 }
 
 
-readArrayAnalysisMethods <- function( analysisMethodsFile ) {
+.readArrayAnalysisMethods <- function( analysisMethodsFile ) {
 	
 	# Read the analysis methods file.
 	analysisMethodsDF <- read.delim( analysisMethodsFile, header=FALSE, stringsAsFactors=FALSE )
@@ -526,7 +531,7 @@ readArrayAnalysisMethods <- function( analysisMethodsFile ) {
 }
 
 
-readSeqAnalysisMethods <- function( analysisMethodsFile ) {
+.readSeqAnalysisMethods <- function( analysisMethodsFile ) {
 	
 	# Read the analysis methods file.
 	analysisMethodsDF <- read.delim( analysisMethodsFile, header=FALSE, stringsAsFactors=FALSE )
@@ -567,20 +572,3 @@ readSeqAnalysisMethods <- function( analysisMethodsFile ) {
 	
 	return( analysisMethodsList )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
