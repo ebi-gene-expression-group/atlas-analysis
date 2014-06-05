@@ -55,6 +55,10 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# Get the list of Analytics objects.
 	allAnalytics <- experimentXMLlist$allAnalytics
 
+	# Create path to analysis methods file.
+	analysisMethodsFile <- paste( experimentAccession, "-analysis-methods.tsv", sep="" )
+	analysisMethodsFile <- file.path( atlasExperimentDirectory, analysisMethodsFile )
+
 	# Next step is to go through the analytics objects created from the XML,
 	# pull out the right rows form the SDRF, get the right expressions matrix,
 	# the gene annotations, and make the Bioconductor object (ExpressionSet,
@@ -70,7 +74,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		if( grepl( "microarray_1colour", atlasExperimentType ) ) {
 			
 			# Create an ExpressionSet.
-			expressionSet <- createExpressionSet( expressionsDF, analyticsSDRF )
+			expressionSet <- createExpressionSet( expressionsDF, analyticsSDRF, analysisMethodsFile )
 			
 			# Return it.
 			return( expressionSet )
@@ -80,7 +84,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		else if( grepl( "rnaseq", atlasExperimentType ) ) {
 			
 			# Create a SummarizedExperiment.
-			summarizedExperiment <- createSummarizedExperiment( expressionsDF, analyticsSDRF )
+			summarizedExperiment <- createSummarizedExperiment( expressionsDF, analyticsSDRF, analysisMethodsFile )
 		}
 			
 	})
@@ -406,7 +410,7 @@ createAnalyticsSDRF <- function( analytics, atlasSDRF ) {
 # createExpressionSet
 # 	- Take a data frame of normalized expressions and a parsed SDRF.
 # 	- Return an ExpressionSet object.
-createExpressionSet <- function( expressionsDF, analyticsSDRF ) {
+createExpressionSet <- function( expressionsDF, analyticsSDRF, analysisMethodsFile ) {
 
 	# Only select columns with assay names in our SDRF -- these are the
 	# ones that passed QC and are still in the XML.
@@ -430,13 +434,23 @@ createExpressionSet <- function( expressionsDF, analyticsSDRF ) {
 	# Add featureData -- this is just the probe set names for now.
 	featureData <- new( "AnnotatedDataFrame", data = data.frame( probeSets = rownames( expressionsMatrix ) ) )
 	featureNames( featureData ) <- rownames( expressionsMatrix )
+	
+	# Add analysis methods.
+	analysisMethodsList <- readArrayAnalysisMethods( analysisMethodsFile )
+	# Add this to a MIAME object.
+	exptData <- new( "MIAME", preprocessing = analysisMethodsList )
 
 	# Create new ExpressionSet.
-	return( new( "ExpressionSet", assayData = expressionData, phenoData = phenoData, featureData = featureData ) )
+	return( new( "ExpressionSet", 
+		assayData = expressionData, 
+		phenoData = phenoData, 
+		featureData = featureData, 
+		experimentData = exptData 
+	) )
 }
 
 
-createSummarizedExperiment <- function( expressionsDF, analyticsSDRF ) {
+createSummarizedExperiment <- function( expressionsDF, analyticsSDRF, analysisMethodsFile ) {
 	
 	# Only select columns with assay names in our SDRF.
 	expressionsDF <- expressionsDF[ , rownames( analyticsSDRF ) ]
@@ -447,10 +461,94 @@ createSummarizedExperiment <- function( expressionsDF, analyticsSDRF ) {
 	# Turn SDRF into a DataFrame.
 	analyticsSDRF <- DataFrame( analyticsSDRF )
 
+	# Get analysis methods
+	analysisMethodsList <- readSeqAnalysisMethods( analysisMethodsFile )
+
 	# Create SummarizedExperiment
-	summarizedExperiment <- SummarizedExperiment( assays = expressionsMatrix, colData = analyticsSDRF )
+	summarizedExperiment <- SummarizedExperiment( assays = expressionsMatrix, colData = analyticsSDRF, exptData = analysisMethodsList )
 
 	# Return it.
 	return( summarizedExperiment )
 }
+
+
+readArrayAnalysisMethods <- function( analysisMethodsFile ) {
+	
+	# Read the analysis methods file.
+	analysisMethodsDF <- read.delim( analysisMethodsFile, header=FALSE, stringsAsFactors=FALSE )
+	
+	# Find the row that has the normalization method.
+	normalizationRow <- which( analysisMethodsDF[ , 1 ] == "Normalization" )
+	
+	# Get the text on this row in the second column.
+	normalizationText <- analysisMethodsDF[ normalizationRow, 2 ]
+	
+	# Reorganise text.
+	normalizationText <- sub( "^(.*) <a href=(.*)>(.*)</a> (version.*). <a.*", "\\1 \\3 (\\2) \\4", normalizationText)
+	
+	# Make a list containing the normalization text.
+	analysisMethodsList <- list( normalization = normalizationText )
+	
+	# Return it.
+	return( analysisMethodsList )
+}
+
+
+readSeqAnalysisMethods <- function( analysisMethodsFile ) {
+	
+	# Read the analysis methods file.
+	analysisMethodsDF <- read.delim( analysisMethodsFile, header=FALSE, stringsAsFactors=FALSE )
+	
+	# Get the row with iRAP information.
+	irapRow <- grep( "Pipeline version", analysisMethodsDF[ , 1 ] )
+
+	# Get the text for iRAP.
+	irapInfo <- analysisMethodsDF[ irapRow, 2 ]
+
+	# Reorganise iRAP text.
+	irapInfo <- sub( "^<a href=(.*)>(.*)</a> (.*) ", "\\2 version \\3 (\\1)", irapInfo, )
+
+	# Get the rows with filtering info.
+	filteringRows <- grep( "Filtering Step", analysisMethodsDF[ , 1 ] )
+
+	# Get the text for the filtering steps.
+	filteringInfo <- analysisMethodsDF[ filteringRows, 2 ]
+
+	# Get the row woth mapping info.
+	mappingRow <- grep( "Read Mapping", analysisMethodsDF[ , 1 ] )
+
+	# Get the text for the mapping info.
+	mappingInfo <- analysisMethodsDF[ mappingRow, 2 ]
+
+	# Get the row with quantification info.
+	quantRow <- grep( "Quantification", analysisMethodsDF[ , 1 ] )
+	
+	# Get the quantification info.
+	quantInfo <- analysisMethodsDF[ quantRow, 2 ]
+
+	analysisMethodsList <- SimpleList( 
+		pipeline = irapInfo,
+		filtering = filteringInfo,
+		mapping = mappingInfo,
+		quantification = quantInfo
+	)
+	
+	return( analysisMethodsList )
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
