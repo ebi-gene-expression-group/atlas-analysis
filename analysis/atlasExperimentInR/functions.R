@@ -402,7 +402,7 @@ createBiocObject <- function( analytics, analyticsSDRF, atlasExperimentType, exp
 
 # createAnalyticsSDRF
 # 	- Take an Analytics object and a parsed SDRF.
-# 	- Return a new SDRF data frame with just the assays from the Analytics
+# 	- Return a new SDRF data frame with just the assay_names from the Analytics
 # 	object, as well as a column denoting which assay group each assay belongs
 # 	to.
 createAnalyticsSDRF <- function( analytics, atlasSDRF ) {
@@ -414,7 +414,7 @@ createAnalyticsSDRF <- function( analytics, atlasSDRF ) {
 	assayGroupSDRFs <- lapply( assayGroups, function( assayGroup ) {
 		
 		# Get the assay names.
-		assayNames <- assays( assayGroup )
+		assayNames <- assay_names( assayGroup )
 
 		# TODO: strip .Cy* from 2-colour assay names? Check diffAtlas_DE_limma.R
 

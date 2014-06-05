@@ -1,5 +1,5 @@
 # AssayGroup class
-setClass( "AssayGroup", slots = c( assays = "vector", assay_group_id = "character" ) )
+setClass( "AssayGroup", slots = c( assay_names = "vector", assay_group_id = "character" ) )
 
 
 #####################
@@ -8,8 +8,8 @@ setClass( "AssayGroup", slots = c( assays = "vector", assay_group_id = "characte
 # assay_group_id getter
 setGeneric( "assay_group_id", function( object ) standardGeneric( "assay_group_id" ) )
 
-# assays getter
-setGeneric( "assays", function( object ) standardGeneric( "assays" ) )
+# assay_names getter
+setGeneric( "assay_names", function( object ) standardGeneric( "assay_names" ) )
 
 ####################
 # AssayGroup Methods
@@ -37,7 +37,7 @@ setMethod( "initialize", "AssayGroup", function( .Object, assayGroupNode ) {
 	assayGroupAttrs <- xmlAttrs( assayGroupNode )
 	assayGroupID <- assayGroupAttrs[[ "id" ]]
 
-	.Object@assays <- assayGroupAssays
+	.Object@assay_names <- assayGroupAssays
 	.Object@assay_group_id <- assayGroupID
 	return( .Object )
 })
@@ -45,5 +45,5 @@ setMethod( "initialize", "AssayGroup", function( .Object, assayGroupNode ) {
 # assay_group_id getter
 setMethod( "assay_group_id", "AssayGroup", function( object ) object@assay_group_id )
 
-# assays
-setMethod( "assays", "AssayGroup", function( object ) object@assays )
+# assay_names
+setMethod( "assay_names", "AssayGroup", function( object ) object@assay_names )

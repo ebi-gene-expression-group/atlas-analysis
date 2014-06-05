@@ -80,18 +80,18 @@ setMethod( "getAllAssays", "Analytics", function( object ) {
 	
 	assayGroups <- assay_groups( object )
 
-	assays <- as.vector(
+	assay_names <- as.vector(
 		unlist(
 			sapply( assayGroups, 
 				function( assayGroup ) {
-					assays( assayGroup )
+					assay_names( assayGroup )
 				}
 			)
 		)
 	)
 
-	names( assays ) <- NULL
+	names( assay_names ) <- NULL
 
-	return( assays )
+	return( assay_names )
 })
 
