@@ -55,38 +55,23 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# Get the list of Analytics objects.
 	allAnalytics <- experimentXMLlist$allAnalytics
 
-	# Create path to analysis methods file.
-	analysisMethodsFile <- paste( experimentAccession, "-analysis-methods.tsv", sep="" )
-	analysisMethodsFile <- file.path( atlasExperimentDirectory, analysisMethodsFile )
-
 	# Next step is to go through the analytics objects created from the XML,
 	# pull out the right rows form the SDRF, get the right expressions matrix,
 	# the gene annotations, and make the Bioconductor object (ExpressionSet,
 	# MAList, or SummarizedExperiment).
 	atlasExperimentSummary <- lapply( allAnalytics, function( analytics ) {
-	
+		
+		# Get the SDRF rows for this analytics object's assays.
 		analyticsSDRF <- createAnalyticsSDRF( analytics, atlasSDRF )
 
-		# Get the expressions.
-		expressionsDF <- getExpressions( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory )
-		
-		# If this is a one-colour microarray experiment, make an ExpressionSet.
-		if( grepl( "microarray_1colour", atlasExperimentType ) ) {
-			
-			# Create an ExpressionSet.
-			expressionSet <- createExpressionSet( expressionsDF, analyticsSDRF, analysisMethodsFile )
-			
-			# Return it.
-			return( expressionSet )
-		}
-
-		# If this is an RNA-seq experiment, make a SummarizedExperiment.
-		else if( grepl( "rnaseq", atlasExperimentType ) ) {
-			
-			# Create a SummarizedExperiment.
-			summarizedExperiment <- createSummarizedExperiment( expressionsDF, analyticsSDRF, analysisMethodsFile )
-		}
-			
+		# Create Bioconductor object, either ExpressionSet, SummarizedExperiment, or MAList.
+		biocObject <- createBiocObject( 
+			analytics, 
+			analyticsSDRF, 
+			atlasExperimentType, 
+			experimentAccession, 
+			atlasExperimentDirectory 
+		)
 	})
 
 	return( atlasExperimentSummary )
@@ -302,12 +287,15 @@ addUnitCols <- function( colIndices, SDRF ) {
 }
 
 
-# getExpressions
+# createBiocObject
 # 	- Takes an Analytics object, experiment type, experiment accession, and
 # 	path to directory containing expressions file.
-# 	- Returns a data frame containing the expressions.
-getExpressions <- function( analytics, atlasExperimentType, experimentAccession, atlasExperimentDirectory ) {
+# 	- Returns either an ExpressionSet, MAList, or SummarizedExperiment.
+createBiocObject <- function( analytics, analyticsSDRF, atlasExperimentType, experimentAccession, atlasExperimentDirectory ) {
 	
+	# Create path to analysis methods file.
+	analysisMethodsFile <- paste( experimentAccession, "-analysis-methods.tsv", sep="" )
+	analysisMethodsFile <- file.path( atlasExperimentDirectory, analysisMethodsFile )
 	
 	# Is this a 1-colour microarray experiment?
 	if( grepl( "microarray_1colour", atlasExperimentType ) ) {
@@ -327,13 +315,54 @@ getExpressions <- function( analytics, atlasExperimentType, experimentAccession,
 		}
 		
 		# Read the expressions file.
-		expressionsDF <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
+		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
 		
 		# Add design elements as row names.
-		rownames( expressionsDF ) <- expressionsDF[,1]
+		rownames( expressions ) <- expressions[,1]
 		
 		# Remove design elements column as not needed.
-		expressionsDF[,1] <- NULL
+		expressions[,1] <- NULL
+		
+		# Create an ExpressionSet.
+		biocObject <- createExpressionSet( expressions, analyticsSDRF, analysisMethodsFile )
+		
+		# Return it.
+		return( biocObject )
+	}
+	# Is this a 2-colour array experiment?
+	else if( grepl( "microarray_2colour", atlasExperimentType ) ) {
+
+		# Get the array design.
+		arrayDesign <- platform( analytics )
+		
+		# Create the name of the file with log2 fold-changes.
+		mValuesFile <- paste( experimentAccession, "_", arrayDesign, "-log-fold-changes.tsv.undecorated", sep="" )
+		mValuesFile <- file.path( atlasExperimentDirectory, mValuesFile )
+
+		# Create the name of the file with average intensities.
+		aValuesFile <- paste( experimentAccession, "_", arrayDesign, "-average-intensities.tsv.undecorated", sep="" )
+		aValuesFile <- file.path( atlasExperimentDirectory, aValuesFile )
+		
+		# Read files.
+		mValues <- read.delim( mValuesFile, header = TRUE, stringsAsFactors = FALSE )
+		aValues <- read.delim( aValuesFile, header = TRUE, stringsAsFactors = FALSE )
+
+		# Add row names.
+		rownames( mValues ) <- mValues[ , 1 ]
+		mValues[ , 1 ] <- NULL
+		rownames( aValues ) <- aValues[ , 1 ]
+		aValues[ , 1 ] <- NULL
+		
+		# Create an MAList
+		maList <- list(
+			genes = rownames( mValues ),
+			M = mValues,
+			A = aValues
+		)
+
+		biocObject <- new( "MAList", maList )
+
+		return( biocObject )
 	}
 	# Is this an RNA-seq experiment?
 	else if( grepl( "rnaseq", atlasExperimentType ) ) {
@@ -350,13 +379,16 @@ getExpressions <- function( analytics, atlasExperimentType, experimentAccession,
 		}
 		
 		# Read the expressions file.
-		expressionsDF <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
+		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
 		
 		# Add gene IDs as row names.
-		rownames( expressionsDF ) <- expressionsDF[,1]
+		rownames( expressions ) <- expressions[,1]
 		
 		# Remove now unwanted column.
-		expressionsDF[,1] <- NULL
+		expressions[,1] <- NULL
+		
+		# Create a SummarizedExperiment.
+		biocObject <- createSummarizedExperiment( expressions, analyticsSDRF, analysisMethodsFile )
 	}
 	# Otherwise, don't recognise this experiment type so die.
 	else {
@@ -364,7 +396,7 @@ getExpressions <- function( analytics, atlasExperimentType, experimentAccession,
 	}
 	
 	# Return the data frame with expressions.
-	return( expressionsDF )
+	return( biocObject )
 }
 
 
@@ -410,14 +442,14 @@ createAnalyticsSDRF <- function( analytics, atlasSDRF ) {
 # createExpressionSet
 # 	- Take a data frame of normalized expressions and a parsed SDRF.
 # 	- Return an ExpressionSet object.
-createExpressionSet <- function( expressionsDF, analyticsSDRF, analysisMethodsFile ) {
+createExpressionSet <- function( expressions, analyticsSDRF, analysisMethodsFile ) {
 
 	# Only select columns with assay names in our SDRF -- these are the
 	# ones that passed QC and are still in the XML.
-	expressionsDF <- expressionsDF[ , rownames( analyticsSDRF ) ]
+	expressions <- expressions[ , rownames( analyticsSDRF ) ]
 
 	# Turn data frame into matrix.
-	expressionsMatrix <- as.matrix( expressionsDF )
+	expressionsMatrix <- as.matrix( expressions )
 	
 	# Create a new AssayData object
 	expressionData <- assayDataNew( storage.mode = "lockedEnvironment", exprs = expressionsMatrix )
@@ -450,13 +482,13 @@ createExpressionSet <- function( expressionsDF, analyticsSDRF, analysisMethodsFi
 }
 
 
-createSummarizedExperiment <- function( expressionsDF, analyticsSDRF, analysisMethodsFile ) {
+createSummarizedExperiment <- function( expressions, analyticsSDRF, analysisMethodsFile ) {
 	
 	# Only select columns with assay names in our SDRF.
-	expressionsDF <- expressionsDF[ , rownames( analyticsSDRF ) ]
+	expressions <- expressions[ , rownames( analyticsSDRF ) ]
 
 	# Turn data frame into matrix.
-	expressionsMatrix <- as.matrix( expressionsDF )
+	expressionsMatrix <- as.matrix( expressions )
 
 	# Turn SDRF into a DataFrame.
 	analyticsSDRF <- DataFrame( analyticsSDRF )
@@ -465,7 +497,7 @@ createSummarizedExperiment <- function( expressionsDF, analyticsSDRF, analysisMe
 	analysisMethodsList <- readSeqAnalysisMethods( analysisMethodsFile )
 
 	# Create SummarizedExperiment
-	summarizedExperiment <- SummarizedExperiment( assays = expressionsMatrix, colData = analyticsSDRF, exptData = analysisMethodsList )
+	summarizedExperiment <- SummarizedExperiment( assays = SimpleList( counts = expressionsMatrix ), colData = analyticsSDRF, exptData = analysisMethodsList )
 
 	# Return it.
 	return( summarizedExperiment )
