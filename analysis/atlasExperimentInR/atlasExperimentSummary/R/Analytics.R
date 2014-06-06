@@ -1,7 +1,3 @@
-#--------------------------------------------------
-# source("/ebi/microarray/home/mkeays/Atlas/git/atlasprod/analysis/atlasExperimentInR/atlasExperimentSummary/R/AssayGroup.R")
-#-------------------------------------------------- 
-
 # Analytics class
 setClass( "Analytics", slots = c( platform = "character", assay_groups = "list" ) )
 

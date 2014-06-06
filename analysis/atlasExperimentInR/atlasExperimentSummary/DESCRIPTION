@@ -7,7 +7,7 @@ Maintainer: Maria Keays <mkeays@ebi.ac.uk>
 Description: A package to create ExpressionSet, MAList, and/or
 	SummarizedExperiment objects representing experiments in Expression Atlas (
 	http://www.ebi.ac.uk/gxa ).
-Depends: XML, plyr, Biobase, GenomicRanges, limma
+Depends: XML, plyr, Biobase, GenomicRanges, limma, methods
 Collate: AssayGroup.R Analytics.R functions.R
-License: ***
+License: GPL (>= 3)
 LazyLoad: yes

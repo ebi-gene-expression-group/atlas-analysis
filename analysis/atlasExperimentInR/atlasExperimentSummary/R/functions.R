@@ -1,20 +1,5 @@
-#--------------------------------------------------
-# source("/ebi/microarray/home/mkeays/Atlas/git/atlasprod/analysis/atlasExperimentInR/atlasExperimentSummary/R/Analytics.R")
-#-------------------------------------------------- 
-
-# Required packages.
-library( XML )
-library( plyr )
-library( Biobase )
-library( GenomicRanges )
-library( limma )
-
-# Some bits of config.
 # ArrayExpress load directories -- where SDRFs live.
 ae2experiments <- "/ebi/microarray/home/arrayexpress/ae2_production/data/EXPERIMENT";
-
-# Directory with gene annotations.
-bioentityPropertiesEnsemblDir <- "/ebi/microarray/home/atlas3-production/bioentity_properties/ensembl";
 
 # summarizeAtlasExperiment
 # 	- Main function for the package. Takes an experiment accession and a
@@ -22,6 +7,11 @@ bioentityPropertiesEnsemblDir <- "/ebi/microarray/home/atlas3-production/bioenti
 # 	- Returns a list of ExpressionSet and/or MAList and/or SummarizedExperiment objects.
 summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirectory ) {
 	
+	# Quit if the accession does not look like an ArrayExpress one.
+	if( !grepl( "^E-\\w{4}-\\d+$", experimentAccession ) ) {
+		stop( paste( "Accession \"", experimentAccession, "\" does not look like an ArrayExpress accession. Cannot continue", sep="" ) )
+	}
+
 	# Atlas XML config file name.
 	atlasExperimentXMLfile <- paste( experimentAccession, "-configuration.xml", sep="" )
 	atlasExperimentXMLfile <- file.path( atlasExperimentDirectory, atlasExperimentXMLfile )
@@ -91,9 +81,6 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 # 	objects, and the experiment type from the XML.
 .parseAtlasXML <- function(filename) {
 	
-	# Load XML package.
-	library( XML )
-
 	# Read the XML file.
 	xmlTree <- xmlInternalTreeParse( filename )
 
