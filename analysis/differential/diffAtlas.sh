@@ -14,8 +14,6 @@ pushd ${expTargetDir}
 diffAtlas_DE.pl -atlasXML=${expAcc}-configuration.xml
 if [ $? -ne 0 ]; then
      echo "ERROR: Failed to calculate analytics for ${expAcc}" >&2
-     rm -rf *.tsv.undecorated
-     rm -rf *.png
      exit 1
 fi
 
