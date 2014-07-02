@@ -1,5 +1,7 @@
 #!/bin/bash    
 
+source ${ATLAS_PROD}/sw/atlasprod/db/scripts/experiment_loading_routines.sh
+
 # A wrapper script to allow for re-computing of differential expression for a microarraye experiment - so that this can be called from decorate_all_experiments.sh
 expAcc=$1
 expTargetDir=$2
