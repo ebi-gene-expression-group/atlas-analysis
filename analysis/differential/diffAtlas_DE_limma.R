@@ -47,8 +47,7 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 		#	A-values in aValues. This is essentially equivalent to the
 		#	ExpressionSet created for Affymetrix data.
 		#	- Fit LM, get DE stats. Contrast is implied, do not need to specify contrasts matrix.
-		#	- Write results and data for MvA plot -- think this part could be
-		#	the same as for Affymetrix data?
+		#	- Write results and data for MvA plot.
 		if( !is.null( aValuesFile ) ) {
 
 			# Sort ref and test assays so they are in the same order.
@@ -158,7 +157,7 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 		# Independent filtering.
 		# Make a data frame containing the row variances of the normalized data
 		# matrix, and the unadjusted p-values.
-		filterData <- data.frame( rowvar = rowVars( normExprs ), pvalue = fitEbayes$p.value )
+		filterData <- data.frame( rowvar = rowVars( normExprs ), test = fitEbayes$p.value )
 		
 		# theta is a vector of numbers from 0 to 0.8 in increments of 0.02.
 		# These values represent the proportion of the lower end of the data to
@@ -171,7 +170,7 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 		# data specified in theta.
 		filteredAdjustedPvalues <- filtered_p( 
 			filter = filterData$rowvar,	# use the row variances as the filter statistic.
-			test = filterData$pvalue,	# the unadjusted p-values.
+			test = filterData$test,	# the unadjusted p-values.
 			theta = theta,	# the range of filtering proportions.
 			method = "BH"	# use Benjamini-Hochberg for p-value adjustment.
 		)
