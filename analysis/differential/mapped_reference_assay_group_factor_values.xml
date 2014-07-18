@@ -98,7 +98,8 @@
         <value>untreated control</value>
         <value>unwounded control</value>
         <value>vector</value>
-        <value>vehicle</value>
+		<value>vehicle</value>
+		<value>Vehicle</value>
         <value>vehicle - control</value>
         <value>vehicle control</value>
         <value>wildtype</value>
