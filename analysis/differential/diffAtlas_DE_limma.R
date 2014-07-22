@@ -20,6 +20,10 @@ library( genefilter )
 diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, plotDataFile, aValuesFile = NULL ) {
 
 	e <- try({
+
+		twoColour <- NULL
+		# Set twoColour if there is an aValueFile.
+		if( !is.null( aValuesFile ) ) twoColour <- 1
 		
 		# Read expressions (M-values/log-fold-changes for 2-colour).
 		print( paste( "Reading", normExprsFile ) )
@@ -34,12 +38,68 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 		# 	assay 1<SEP>assay 2<SEP>assay 3
 		# Split on "<SEP>" -- we use this as a separator because it is very
 		# unlikely to crop up in actual assay names.
+		refAssays <- unlist( strsplit( refAssays, "<SEP>" ) )
+		testAssays <- unlist( strsplit( testAssays, "<SEP>" ) )
+		
+
+		# Assays that are technical replicates are separated by e.g.
+		# "<T1_SEP>", where the number after "T" is the number from the technical
+		# replicate group comment in the SDRF.
+		
+		# Get vectors of the technical replicate group(s), if any.
+		refAssays_techreps <- refAssays[ grep( "<T\\d+_SEP>", refAssays ) ]
+		testAssays_techreps <- testAssays[ grep( "<T\\d+_SEP>", testAssays ) ]
+		
+		# If there are some technical replicates...
+
+		# Pass normExprs and tech rep assay names to function. This will
+		# replace columns for the tech rep assays in normExprs with their
+		# mean values, and then return normExprs. Do this for the reference
+		# assays and/or the test assays. Also replace assay names of tech
+		# rep assays with tech rep group names. We pass the twoColour
+		# variable to the functions used here as well, because for
+		# two-colour array data we need to add back the "Cy3" or "Cy5" to
+		# the technical replicate group names after we've created them.
+		if( length( refAssays_techreps ) > 0 ) {
+			
+			# Replace columns for tech rep assays with their averages.
+			normExprs <- addTechRepAverages( normExprs, refAssays_techreps, twoColour )
+			
+			# Replace names of tech rep assays with tech rep group IDs to
+			# match columns added above.
+			refAssays <- replaceTechRepAssayNames( refAssays, twoColour )
+		}
+	
+		# If this is a one-colour design, also look at the test assays.
+		if( is.null( twoColour ) ) {
+		
+			if( length( testAssays_techreps ) > 0 ) {
+				
+				# Replace columns for tech rep assays with their averages.
+				normExprs <- addTechRepAverages( normExprs, testAssays_techreps, twoColour )
+				
+				# Replace names of tech rep assays with tech rep group IDs to
+				# match columns added above.
+				testAssays <- replaceTechRepAssayNames( testAssays, twoColour )
+			}
+		} 
+		# If this is two-colour data, still need to replace the test assay
+		# names, but don't need to average columns as that's already done.
+		else {
+			
+			if( length( testAssays_techreps ) > 0 ) {
+
+				# Replace names of tech rep assays with tech rep group IDs to
+				# match columns added above.
+				testAssays <- replaceTechRepAssayNames( testAssays, twoColour )
+			}
+		}
+			
 		# Use make.names to convert reserved characters to "." so that they
 		# match the column headings from reading in the normalized expressions
 		# above. 
-		refAssays <- make.names( unlist( strsplit( refAssays, "<SEP>" ) ) )
-		testAssays <- make.names( unlist( strsplit( testAssays, "<SEP>" ) ) )
-
+		refAssays <- make.names( refAssays )
+		testAssays <- make.names( testAssays )
 
 		# Provisions for 2-colour designs:
 		#	- If aValuesFile is not NULL, this means it's a 2-colour design.
@@ -48,19 +108,28 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 		#	ExpressionSet created for Affymetrix data.
 		#	- Fit LM, get DE stats. Contrast is implied, do not need to specify contrasts matrix.
 		#	- Write results and data for MvA plot.
-		if( !is.null( aValuesFile ) ) {
+		if( !is.null( twoColour ) ) {
 
 			# Sort ref and test assays so they are in the same order.
 			refAssays <- sort( refAssays )
 			testAssays <- sort( testAssays )
 			
-			# Read in A-values
+			# Read in A-values files (average intensities).
 			aValues <- read.delim( aValuesFile, stringsAsFactors = FALSE )
 			rownames( aValues ) <- aValues[ , 1 ]
 			aValues[ , 1 ] <- NULL
 
+			# If there are technical replicates, need to go through the same
+			# process as above, replacing tech rep assay columns with their
+			# averages, for the reference assays and the test assays.
+			if( length( refAssays_techreps > 0 ) ) {
+				
+				# Replace columns in aValues for tech rep assays with their averages.
+				aValues <- addTechRepAverages( aValues, refAssays_techreps, 1 )
+			}
+
 			# Strip off .Cy* endings to check the assay names are the same and
-			# to subset columns from normExpr and aValues.
+			# to subset columns from normExprs and aValues.
 			refAssaysNoCy <- gsub( ".Cy\\d$", "", refAssays )
 			testAssaysNoCy <- gsub( ".Cy\\d$", "", testAssays )
 
@@ -71,7 +140,6 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 			if( any( refAssaysNoCy != testAssaysNoCy ) ) {
 				stop( "Differing assay names found in test and reference assay groups after removing \".Cy3\" and \".Cy5\". Please verify this experiment has a two-colour design." )
 			}
-			
 			
 			# Create "targets" dataframe for design matrix.
 			# Vector of ref and test for Cy3-labelled samples.
@@ -86,6 +154,7 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 			if( any( is.na( cy3 ) ) || any( is.na( cy5 ) ) ) {
 				stop( "Some assays do not have an accession ending with \".Cy3\" or \".Cy5\". Please verify this experiment has a two-colour design." )
 			}
+			
 			# Create "targets" dataframe like:
 			#	-----------
 			#		Cy3	Cy5
@@ -95,14 +164,14 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 			#	A4	test	ref
 			#	-----------
 			targets <- data.frame( Cy3 = cy3, Cy5 = cy5 )
+			
 			# Rownames are assay names and should be the same as the column
 			# headings in dataframes of M-values and A-values.
 			rownames( targets ) <- refAssaysNoCy
 
 			# Design matrix
 			designMatrix <- modelMatrix( targets, ref="ref" )
-
-
+			
 			# Subset M-values and A-values
 			mValuesForContrast <- normExprs[ , refAssaysNoCy ]
 			aValuesForContrast <- aValues[ , refAssaysNoCy ]
@@ -110,7 +179,7 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 			# Verify that rownames (i.e. design element IDs) are the same (and
 			# in the same order) for subsetted M-values and A-values.
 			if( any( rownames( mValuesForContrast ) != rownames( aValuesForContrast ) ) ) {
-				stop("Different design element IDs found in M-values and A-values. Please verify they are from the same experiment.")
+				stop( "Different design element IDs found in M-values and A-values. Please verify they are from the same experiment." )
 			}
 
 			# Create MAList object.
@@ -126,7 +195,7 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 
 			fit <- lmFit( maList, designMatrix )
 	
-		} # if(!is.null(aValuesFile))
+		} # if(!is.null(twoColour))
 		
 		# Otherwise this is single colour Affymetrix array, make ExpressionSet and apply linear model fit.
 		else {
@@ -145,7 +214,7 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 			fit <- lmFit( esetForContrast, design=designMatrix )
 			
 			# simple contrast matrix.
-			contrast <- as.matrix( c(-1,1) )
+			contrast <- as.matrix( c( -1, 1 ) )
 
 			# Apply contrast.
 			fit <- contrasts.fit( fit, contrasts=contrast )
@@ -238,6 +307,118 @@ diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, 
 }
 
 
+addTechRepAverages <<- function( expressionValues, joinedTechRepAssays, twoColour ) {
+
+	# If this is two-colour data, get the dye names: go through the joined tech
+	# rep assay names and check they all share the same dye (either Cy3 or Cy5)
+	# -- otherwise we can't continue. Return the dye name for each group.
+	if( !is.null( twoColour ) ) {
+		techRepDyes <- getDyeNames( joinedTechRepAssays )
+	}
+
+	# Get the ID (e.g. "T1") from the separator between the assay names
+	# of each technical replicate group.
+	techRepIDs <- gsub( "^.*<(T\\d+)_SEP>.*$", "\\1", joinedTechRepAssays )
+	
+	# Make technical replicate group names (hopefully no real assay names will be the same as these).
+	techRepGroups <- paste( "technical_replicate_group_", techRepIDs, sep = "" )
+	
+	# Go through the joined assay names...
+	techRepAverages <- data.frame( sapply( joinedTechRepAssays, function( x ) {
+		
+		# Split on the tech rep group separator, and make names R-safe.
+		techRepAssayNames <- make.names( unlist( strsplit( x, "<T\\d+_SEP>" ) ) )
+
+		# If this is a two-colour design, remove dye names from assay names.
+		if( !is.null( twoColour ) ) {
+			
+			techRepAssayNames <- sub( ".Cy\\d$", "", techRepAssayNames )
+		}
+		
+		# Get the normalized expression levels for these assays.
+		techRepCols <- expressionValues[ , techRepAssayNames, drop=FALSE ]
+		
+		# Take the mean of each row.
+		techRepAverages <- data.frame( apply( techRepCols, 1, function( x ) { mean( x ) } ) )
+	} ) )
+	
+	# Name the columns of the data frame that we made using the technical replicate group names.
+	colnames( techRepAverages ) <- techRepGroups
+
+	# Now get all the technical replicate assay names for this group of assays.
+	allTechRepAssayNames <- make.names( unlist( strsplit( joinedTechRepAssays, "T\\d+_SEP>" ) ) )
+
+	# Remove these columns from expressionValues.
+	normExpr_noTechReps <- expressionValues[ , !( colnames( expressionValues ) %in% allTechRepAssayNames ), drop = FALSE ]
+
+	# Create a new data frame joining the leftover (non-tech-rep) columns and
+	# the averaged (tech rep) columns.
+	new_expressionValues <- cbind( normExpr_noTechReps, techRepAverages )
+
+	# Return the new data frame.
+	return( new_expressionValues )
+}
+
+
+replaceTechRepAssayNames <<- function( allAssayNames, twoColour ) {
+		
+	# Get the technical replicate assay names (joined together by e.g. "<T1_SEP>").
+	joinedTechRepAssays <- allAssayNames[ grep( "<T\\d+_SEP>", allAssayNames ) ]
+	
+	# If this is two-colour data, get the dye names: go through the joined tech
+	# rep assay names and check they all share the same dye (either Cy3 or Cy5)
+	# -- otherwise we can't continue. Return the dye name for each group.
+	if( !is.null( twoColour ) ) {
+		techRepDyes <- getDyeNames( joinedTechRepAssays )
+	}
+	
+	# Get the technical replicate group IDs (e.g. "T1").
+	techRepIDs <- gsub( "^.*<(T\\d+)_SEP>.*$", "\\1", joinedTechRepAssays )
+
+	# Make the technical replicate group names.
+	techRepGroups <- paste( "technical_replicate_group_", techRepIDs, sep = "" )
+
+	# Add dye names back if this is two-colour data.
+	if( !is.null( twoColour ) ) {
+		techRepGroups <- paste( techRepGroups, techRepDyes, sep="." )
+	}
+	
+	# Remove the existing techincal replicate assay names from the vector of
+	# assay names.
+	allAssayNames <- allAssayNames[ -( grep( "<T\\d+_SEP>", allAssayNames ) ) ]
+
+	# Add the new technical replicate group names instead.
+	allAssayNames <- c( allAssayNames, techRepGroups )
+
+	return( allAssayNames )
+}
+
+
+getDyeNames <<- function( joinedTechRepAssays ) {
+
+	# Go through the groups of joined assay names...
+	techRepDyes <- sapply( joinedTechRepAssays, function( x ) {
+		
+		# Split on tech rep group separator.
+		assayNames <- unlist( strsplit( x, "<T\\d+_SEP>" ) )
+
+		# Get a vector of all the dyes.
+		dyes <- gsub( "^.*\\.(Cy\\d)$", "\\1", assayNames )
+
+		# Check that there is exactly one dye name for this group, die if not.
+		if( length( unique( dyes ) ) != 1 ) { 
+			stop( "Error: did not find exactly one dye name for a two-colour technical replicate group" )
+		}
+		# If there is one dye name, assign to variable.
+		else {
+			dye <- unique( dyes )
+		}
+	})
+	# Remove the names sapply added as we don't need them.
+	names( techRepDyes ) <- NULL
+
+	return( techRepDyes )
+}
 
 
 # makeEset()
@@ -269,8 +450,6 @@ makeEset <<- function( exprsForContrast, refAssays, testAssays ) {
 		featureData = featureData
 	) )
 }
-
-
 
 
 # Run with arguments if there are any, otherwise don't do anything.

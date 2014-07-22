@@ -16,7 +16,12 @@
 use strict;
 use warnings;
 
+use File::Spec;
 use File::Basename;
+use Scalar::Util qw(looks_like_number);
+
+use AtlasConfig::Reader qw( parseAtlasConfig );
+use AtlasConfig::Common qw( map_technical_replicate_ids_to_assays );
 
 # Flush after every print not every newline
 $| = 1;
@@ -25,56 +30,48 @@ $| = 1;
 my $mvaScript = "diffAtlas_mvaPlot.R";
 my $limmaScript = "diffAtlas_DE_limma.R";
 
-
 # Get commandline arguments
 my ($atlasXML, $irapConfig) = init();
 
 
-# Get experiment accession from contrasts filename.
-(my $exptAcc = basename($atlasXML)) =~ s/(E-\w{4}-\d+).*/$1/;
-print "Experiment accession: $exptAcc\n";
+# Read XML config into AtlasConfig::ExperimentConfig object.
+my $experimentConfig = parseAtlasConfig( $atlasXML );
 
+my $atlasExperimentType = $experimentConfig->get_atlas_experiment_type;
 
-# Read Atlas XML config and put relevant info into hash. For all platforms we
-# want Atlas display name. For microarray we also want assay accessions so we
-# can do DE analysis. Don't need these for RNA-seq. We don't get an array
-# design accession for RNA-seq so here we just put the word "rnaseq" as the
-# key.
-# $contrastHash->{ "A-AFFY-35" }->{ "g1_g2" } ->{ "atlasName" } = "genotype: 'mutant X' vs. 'wild type'"
-#                               			  ->{ "reference" } = [ "WT1", "WT2", "WT3" ]
-#                              				  ->{ "test" } = [ "mutX1", "mutX2", "mutX3" ]
-#              ->{ "rnaseq" }->{ "g3_g4" }->{ "atlasName" } = "genotype: 'mutant Y' vs. 'wild type'"
-#                            			  ->{ "deseqFile" } = "./deSeqResults.genes_de.tsv"
-my $contrastHash = &readAtlasXML($atlasXML);
-
-# If we have an RNA-Seq experiment, get DESeq results filenames.
-if($irapConfig) { 
-	$contrastHash = &readIrapConf($contrastHash, $irapConfig, $exptAcc); 
+# Make sure we haven't been given a baseline experiment.
+if( $atlasExperimentType =~ /baseline/ ) {
+	die( "Experiments with type \"", $experimentConfig->get_atlas_experiment_type, "\" cannot be processed as differential.\n" );
 }
 
+# Get the experiment accession.
+my $exptAcc = $experimentConfig->get_experiment_accession;
 
-# Get DE results and write them.
-# $contrastHash has a key for each platform. A platform is either a microarray
-# design accession (e.g. "A-AFFY-35") or "rnaseq". We could have multiple
-# platforms in the same experiment, e.g. multiple microarrays or a combination
-# of microarray and RNA-seq. So we send the whole $contrastHash to
-# getDEresults() and go through each contrast in turn:
-# 	- for microarray data, we run differential expression statistics in limma
-# 	via an R script to get p-values, t-statistics, and log2 fold-changes.
-# 	- for RNA-seq data, stats have already been run in iRAP so we just read in
-# 	the results from that and get the p-values and log2 fold-changes. We don't
-# 	have t-statistics for RNA-seq obviously and for now we're not interested in
-# 	the likelihood ratio.
-&getDEresults($contrastHash, $exptAcc, $mvaScript, $limmaScript);
+print "Experiment accession: $exptAcc\n";
 
-# end
-#####
+# For microarray experiments, run limma analysis, write results, and create MvA
+# plots.
+if( $atlasExperimentType =~ /array/ ) {
+	
+	&runMicroarrayDifferentialExpression( $experimentConfig );
+}
 
+# For RNA-seq experiments, take results from iRAP's DESeq results files, write
+# them into one file, and create MvA plots.
+elsif( $atlasExperimentType =~ /rnaseq/ ) {
+	
+	# Read the iRAP config file to get the paths to the DESeq results files for
+	# each contrast.
+	my $contrastIDsToDESeqFiles = &readIrapConf( $irapConfig, $exptAcc );
+	
+	# Get the results, write them out, make MvA plots.
+	&getRNAseqResults( $contrastIDsToDESeqFiles, $experimentConfig );
+}
 
-
-
-
-
+# If we're passed an experiment type we don't recognise, die.
+else {
+	die( "Don't know what to do with experiment of type \"", $atlasExperimentType, "\"\n" );
+}
 
 
 ###############
@@ -104,99 +101,259 @@ sub init {
 }
 
 
+# runMicroarrayDifferentialExpression
+# 	- For each array design, for each contrast, run differential expression
+# 	analysis using limma script.
+# 	- For each array design, combine results for all contrasts and write
+# 	adjusted p-values, moderated t-statistics, and log2(fold-change)s to one
+# 	file.
+# 	- Create MvA plots for each contrast using MvA plotting script.
+sub runMicroarrayDifferentialExpression {
 
+	my ( $experimentConfig ) = @_;
 
+	# Log about one- or two-colour design.
+	if( $experimentConfig->get_atlas_experiment_type =~ /1colour/ ) {
+		print "Experiment has one-colour design.\n";
+	} else {
+		print "Experiment has two-colour design.\n";
+	}
 
-# readAtlasXML
-# 	- read Atlas XML contrast definitions file.
-#	- This file has an <analytics> section for each platform. For microarray
-#	each analytics section has an array design accession in <array_design>
-#	tags. We need to know which contrasts belong to which array design because
-#	we have to select the appropriate normalized expressions file when we come
-#	to do the DE analysis with limma.
-#	- RNA-seq analytics section doesn't have an <array_design> section. All
-#	RNA-seq data goes into the same <analytics> section. If there are multiple
-#	reference genomes used this is taken care of in the iRAP config file but
-#	this script doesn't care about that, because it is just retrieving
-#	pre-computed results for each contrast found in the XML and iRAP config.
-sub readAtlasXML {
-
-	$_ = shift for my ($atlasXML);
+	# Get the experiment accession.
+	my $experimentAccession = $experimentConfig->get_experiment_accession;
 	
-	# empty hash for contrast info.
-	my $contrastHash = {};
-	
-	# load XML::Simple with strict mode -- gives helpful error messages.
-	use XML::Simple qw(:strict);
-	
-	print "\nReading Atlas XML config from $atlasXML...\n";
-	# xml contains assay group and contrast definitions parsed from XML file, for each <analytics> section.
-	my $xml = XMLin($atlasXML, ForceArray => ['analytics', 'assay', 'contrast', 'assay_group'], KeyAttr => { contrast => 'id', assay_group => 'id' });
+	# Get all the analytics elements in this experiment.
+	my $allAnalytics = $experimentConfig->get_atlas_analytics;
 
-	# For each platform (array design or RNA-seq section)
-	foreach my $ana (@{ $xml->{ "analytics" } }) { 
+	# Go through each one...
+	foreach my $analytics ( @{ $allAnalytics } ) {
 
-		my $arrayDesign = $ana->{ "array_design" };
+		# Get the array design accession.
+		my $arrayDesignAccession = $analytics->get_platform;
 
-		if(defined($arrayDesign)) { $arrayDesign =~ s/\s//g; }
-		else { $arrayDesign = "rnaseq"; }
+		# Temp file for MvA plot data.
+		my $plotDataTempFile = "/tmp/plotData.$$.txt";
 
-		my $thisContrast = $ana->{ "contrasts" }->{ "contrast" };
-		foreach my $agPair (keys %{ $thisContrast }) {
-
-			$contrastHash->{ $arrayDesign }->{ $agPair }->{ "atlasName" } = $thisContrast->{ $agPair }->{ "name" };
+		# Temp file for limma results
+		my $limmaResTempFile = "/tmp/limma_res.$$.txt";
+		print "\n";
 		
-			unless($arrayDesign eq "rnaseq") {
+		# Empty hash for results.
+		my $analyticsDEResults = {};
 
-				my $refAGnum = $thisContrast->{ $agPair }->{ "reference_assay_group" };
-				my $testAGnum = $thisContrast->{ $agPair }->{ "test_assay_group" };
+		# Get the contrasts for this analytics element.
+		my $contrasts = $analytics->get_atlas_contrasts;
+		
+		# Go through the contrasts...
+		foreach my $contrast ( @{ $contrasts } ) {
+			
+			# Get the contrast name.
+			my $contrastName = $contrast->get_contrast_name;
 
-				# Have to create a new array for the assay accessions of each assay
-				# group by de-referencing the arrayref in $ana.
-				# Then pass the reference to this to $contrastHash.
-				# This is because if the same assay group is used more than once,
-				# passing the arrayref in $ana straight to $contrastHash does not
-				# work. The first time it does, but the second time the assay group
-				# is passed you just get e.g. (from Data::Dumper): 
-				# 	'reference' => $VAR1->{'A-AFFY-35'}{'g2_g3'}{'reference'}
-				# instead of:
-				#	'reference' => [
-				#                   'WT3',
-				#                   'WT1',
-				#                   'WT2'
-				#                  ]
-				# The second thing is what we actually wanted.
-				# The following code achieves that.
-				my @refAGarray = @{ $ana->{ "assay_groups" }->{ "assay_group" }->{ $refAGnum }->{ "assay" } };	
-				$contrastHash->{ $arrayDesign }->{ $agPair }->{ "reference" } = \@refAGarray;
+			# Get the contrast ID.
+			my $contrastID = $contrast->get_contrast_id;
 
-				my @testAGarray = @{ $ana->{ "assay_groups" }->{ "assay_group" }->{ $testAGnum }->{ "assay" }};
-				$contrastHash->{ $arrayDesign }->{ $agPair }->{ "test" } = \@testAGarray;
+			# Get the reference and test assays as Assay4Atlas objects.
+			my $referenceAssays = $contrast->get_reference_assay_group->get_assays;
+			my $testAssays = $contrast->get_test_assay_group->get_assays;
+			
+			# Variable to store R output.
+			my $R_limmaOutput;
+
+			# For one-colour array data:
+			if( $experimentConfig->get_atlas_experiment_type =~ /1colour/ ) {
+			
+				# Create the normalized expressions file name.
+				my $normalizedExpressionsFile = $experimentAccession . "_" . $arrayDesignAccession . "-normalized-expressions.tsv.undecorated";
+
+				# Check that it exists.
+				unless( -e $normalizedExpressionsFile ) {
+					die( "$normalizedExpressionsFile not found, cannot continue.\n" );
+				}
+
+				# Join the assay names with <SEP> (and e.g. <T1_SEP> for tech reps).
+				my $joinedRefAssayNames = "\"" . &joinAssayNames( $referenceAssays ) . "\"";
+				my $joinedTestAssayNames = "\"" . &joinAssayNames( $testAssays ) . "\"";
+
+				print "Computing differential expression statistics for contrast: ", $contrastName, " ...";
+				
+				# Run limma script.
+			 	$R_limmaOutput = `$limmaScript $normalizedExpressionsFile $joinedRefAssayNames $joinedTestAssayNames $limmaResTempFile $plotDataTempFile 2>&1`;
+				
+				# Check R output for errors.
+				if( $R_limmaOutput =~ /error/i ) {
+				 	
+					# Can't continue without results from limma so may as well quit.
+				 	die("\nError during differential expression analysis, outout from R below.\n------------\n$R_limmaOutput\n------------\n");
+				 
+				} else {
+				 	print "done\n";
+				}
 			}
-		}
-	}
+			# For two-colour array data:
+			else {
 
-	# Log what we've found
-	foreach my $arrayDesign (keys %{ $contrastHash }) {
-		
-		my $numContrasts = keys %{ $contrastHash->{ $arrayDesign }};
-		print "$numContrasts contrast";
-		unless($numContrasts == 1) { print "s";} 
-		print " found for $arrayDesign:\n";
-		
-		foreach my $agPair (keys %{ $contrastHash->{ $arrayDesign } }) {
+				# Create log2(fold-change) filename.
+				my $log2foldChangesFile = $experimentAccession . "_" . $arrayDesignAccession . "-log-fold-changes.tsv.undecorated";
+				# Check it exists.
+				unless( -e $log2foldChangesFile ) {
+					die( "$log2foldChangesFile not found, cannot continue.\n" );
+				}
 
-			print "\t", $contrastHash->{ $arrayDesign}->{ $agPair }->{ "atlasName" }, "\n";
+				# Create average intensities filename.
+				my $averageIntensitiesFile = $experimentAccession . "_" . $arrayDesignAccession . "-average-intensities.tsv.undecorated";
+				# Check it exists.
+				unless( -e $averageIntensitiesFile ) {
+					die( "$averageIntensitiesFile not found, cannot continue.\n" );
+				}
+
+				# Join the assay names with <SEP> (and e.g. <T1_SEP> for tech reps).
+				my $joinedRefAssayNames = "\"" . &joinAssayNames( $referenceAssays ) . "\"";
+				my $joinedTestAssayNames = "\"" . &joinAssayNames( $testAssays ) . "\"";
+
+				print "Computing differential expression statistics for contrast \"", $contrastName, "\"...";
+
+				# Run limma script.
+				$R_limmaOutput = `$limmaScript $log2foldChangesFile $joinedRefAssayNames $joinedTestAssayNames $limmaResTempFile $plotDataTempFile $averageIntensitiesFile 2>&1`;
+				
+				# Check R output for errors.
+				if( $R_limmaOutput =~ /error/i ) {
+
+					# Can't continue without results from limma so may as well quit.
+					die( "\nError during differential expression analysis, output from R below.\n------------\n$R_limmaOutput\n------------\n" );
+				
+				} else {
+					print "done\n";
+				}
+			}
+			# Get the differential expression results into the hash of all analytics results.
+			$analyticsDEResults = &readLimmaResults( $limmaResTempFile, $contrastID, $analyticsDEResults );
+
+			# Filename for MvA plot.
+			my $plotFile = $experimentAccession."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
+			# Create MvA.
+			&makeMvaPlot( "microarray", $plotFile, $plotDataTempFile, $contrastName, $mvaScript );
 		}
+
+		# Now we have results for all the contrasts in this analytics element. Write them to a file.
+		&writeResults( $analyticsDEResults, $experimentAccession, $analytics );
 	}
-	return $contrastHash;
 }
 
 
+# joinAssayNames
+# 	- Join assay names using "<SEP>" ( or e.g. "<T1_SEP>" for technical
+# 	replicates ).
+sub joinAssayNames {
+
+	my ( $assays ) = @_;
+
+	# First map assays to their technical replicate IDs (or
+	# "no_technical_replicate_id" if they don't have one).
+	my $techRepIDsToAssays = map_technical_replicate_ids_to_assays( $assays );
+
+	# Array for assay names to join with "<SEP>"
+	my $assayNamesToJoin = [];
+
+	# Now go through the technical replicate IDs...
+	foreach my $techRepID ( keys %{ $techRepIDsToAssays } ) {
+
+		# For assays that aren't technical replicates...
+		if( $techRepID eq "no_technical_replicate_id" ) {
+			
+			# Go through the assays
+			foreach my $assay ( @{ $techRepIDsToAssays->{ $techRepID } } ) {
+				
+				# Get the assay name
+				my $assayName = $assay->get_name;
+				
+				# Add it to the array of assay names to join.
+				push @{ $assayNamesToJoin }, $assayName;
+			}
+		}
+		# For assays that are technical replicates...
+		else {
+
+			# Create separator from technical replicate group ID, e.g.
+			# "<T1_SEP>", "T2_SEP>", ...
+			my $techRepSeparator = "<" . uc( $techRepID ) . "_SEP>";
+
+			# Array for assay names for this technical replicate group.
+			my $techRepAssays = [];
+
+			# Get all the assay names for this technical replicate group.
+			foreach my $assay ( @{ $techRepIDsToAssays->{ $techRepID } } ) {
+
+				# Get the assay name.
+				my $assayName = $assay->get_name;
+
+				# Add it to the array of assay names for this technical replicate group.
+				push @{ $techRepAssays }, $assayName;
+			}
+
+			# Now join the assay names with the separator.
+			my $joinedTechRepAssayNames = join $techRepSeparator, @{ $techRepAssays };
+
+			# Add this to the array of assay names to be joined
+			push @{ $assayNamesToJoin }, $joinedTechRepAssayNames;
+		}
+	}
+
+	# Now we've filled the array of assay names, with and without technical
+	# replicates. Join them together with "<SEP>".
+	my $joinedAssayNames = join "<SEP>", @{ $assayNamesToJoin };
+
+	return $joinedAssayNames;
+}
 
 
+# readLimmaResults
+# 	- parses output from limma script and adds them to a hash.
+sub readLimmaResults {
+
+	my ( $limmaResTempFile, $contrastID, $analyticsDEResults ) = @_;
+	
+	# Add results to hash.
+	open(LIMMARES, "<$limmaResTempFile") or die("Can't open file $limmaResTempFile: $!\n");
+	while(defined(my $line = <LIMMARES>)) {
+	 	
+	 	# potentially don't need headers in the limma results file?
+	 	unless($line =~ /^designElements/) {
+	 		
+	 		chomp $line;
+	 		
+	 		# Split on tabs
+	 		my @lineSplit = split "\t", $line;
+	 		
+	 		# Design element (probeset) ID is the first element, take it off.
+	 		my $designElement = shift @lineSplit;
+	 		
+	 		# Add array [p-value, t-statistic, logFoldChange] to hash for this
+	 		# design element for this contrast.
+	 		$analyticsDEResults->{ $designElement }->{ $contrastID } = \@lineSplit;
+	 	}
+	}
+	close(LIMMARES);
+	# clean up
+	`rm $limmaResTempFile`;
+
+	return $analyticsDEResults;
+}
 
 
+# stripCy
+# 	- remove ".Cy3" or ".Cy5" from ends of assay names.
+sub stripCy {
+				
+	my @assayNames = @_;
+	my @assayNamesNoCy = ();
+	foreach my $assayName (@assayNames) {
+
+		$assayName =~ s/\.Cy\d$//;
+		push @assayNamesNoCy, $assayName;
+	}
+	return @assayNamesNoCy;
+}
 
 
 # readIrapConf
@@ -205,334 +362,195 @@ sub readAtlasXML {
 #  - add filename for DESeq results file for each contrast to $contrastHash.
 sub readIrapConf {
 
-	$_ = shift for my ($contrastHash, $irapConfig, $exptAcc);
+	my ( $irapConfig, $exptAcc ) = @_;
 
 	# Directory of config file is the same as the beginning of path to
 	# DESeq files.
-	my $deseqDir = (fileparse($irapConfig))[1];
+	my $irapDir = ( fileparse( $irapConfig ) )[1];
 
 	# Get experiment accession, mapper, quantification method and DE method
 	# from config file to create full path to DESeq results files.
-	# $inContrasts is flag for getting contrast names.
-	my ($irapExptAcc, $mapper, $qMethod, $deMethod, $inContrasts, $numContrasts);
+	my ( $irapExptAcc, $mapper, $qMethod, $deMethod );
 	
-	open(CONF, $irapConfig) or die("Can't open $irapConfig: $!\n");
+	open( CONF, $irapConfig ) or die( "Can't open $irapConfig: $!\n" );
 
 	print "\nReading iRAP config: $irapConfig...\n";
-	while(defined(my $line = <CONF>)) {
+	while( defined( my $line = <CONF> ) ) {
 
 		chomp $line;
 
-		if($line =~ /^name=(.*)/) { 
+		if( $line =~ /^name=(.*)/ ) { 
 			$irapExptAcc = $1; 
 		
 			# Check experiment accession from iRAP config matches that in filename of
 			# Atlas contrasts file.
-			unless($irapExptAcc eq $exptAcc) {
+			unless( $irapExptAcc eq $exptAcc ) {
 				die "\niRAP experiment accession is: $irapExptAcc -- does not match Atlas experiment accession ($exptAcc)\n";
 			}
 		}
 		
-		elsif($line =~ /^mapper=(.*)/) { $mapper = $1; }
-		elsif($line =~ /^quant_method=(.*)/) { $qMethod = $1; }
-		elsif($line =~ /^de_method=(.*)/) { $deMethod = $1; }
+		elsif( $line =~ /^mapper=(.*)/ ) { $mapper = $1; }
+		elsif( $line =~ /^quant_method=(.*)/ ) { $qMethod = $1; }
+		elsif( $line =~ /^de_method=(.*)/ ) { $deMethod = $1; }
 	}
-	close(CONF);
+	close( CONF );
 
-	# Go through the assay group pairs (i.e. contrast IDs e.g. g1_g2) and add
-	# the path to the DESeq results file names to $contrastHash.
-	foreach my $agPair (keys %{ $contrastHash->{ "rnaseq" } }) {
-		# Get the filename of DESeq results for this contrast.
-		my $deseqFile = $deseqDir."$exptAcc/$mapper/$qMethod/$deMethod/$agPair.genes_de.tsv";
-		unless(-e $deseqFile) {
-			die("\nCan't find DESeq results file for contrast \"$agPair\".\nLooking for \"$deseqFile\"\n");
-		}
+	# Build path to DESeq results directory.
+	my $DESeqDirPath = File::Spec->catdir( $irapDir, $exptAcc, $mapper, $qMethod, $deMethod );
+
+	# Get all the DESeq results files.
+	my @DESeqResultsFiles = glob( "$DESeqDirPath/*.genes_de.tsv" );
+
+	# Empty hashref for DESeq results files.
+	my $contrastIDsToDESeqFiles = {};
+
+	# Go through the DESeq results files...
+	foreach my $deseqFile ( @DESeqResultsFiles ) {
 		
-		# Add DESeq filename to hash. Any contrasts in iRAP config and not in
-		# XML will be ignored.
-		$contrastHash->{ "rnaseq" }->{ $agPair }->{ "deseqFile" } = $deseqFile;
+		# Get the contrast ID from the file name.
+		( my $contrastID = basename( $deseqFile ) ) =~ s/\.genes_de\.tsv//;
+		
+		# Add the full path to the file to the hash under the contrast ID.
+		$contrastIDsToDESeqFiles->{ $contrastID } = $deseqFile;
 	}
 
-	return ($contrastHash);
+	return ( $contrastIDsToDESeqFiles );
 }
 
 
+# getRNAseqResults
+# 	- For each contrast, parse the DESeq results file to get log2(fold-change)s
+# 	and adjusted p-values.
+# 	- Write all contrast results into one single file.
+# 	- For each contrast, create MvA plots using MvA plotting script.
+sub getRNAseqResults {
 
+	my ( $contrastIDsToDESeqFiles, $experimentConfig ) = @_;
 
-
-
-# getDEresults
-# 	- For RNA-Seq, pull statistics results for each contrast out of DESeq results file from iRAP run.
-# 	- For microarray, run limma for each contrast and take statistics results from there.
-# 	- For both, for each contrast, create an MvA plot in a PNG file.
-# 	- Call writeResults() for each platform to write the results to a single TSV file.
-sub getDEresults {
-
-	$_ = shift for my ($contrastHash, $exptAcc, $mvaScript, $limmaScript);
+	# Get the RNA-seq analytics section from the experiment config.
+	my $allAnalytics = $experimentConfig->get_atlas_analytics;
 	
-	# Get results per "platform" i.e. array design accession (e.g. "A-AFFY-35") for
-	# microarray or "rnaseq" for RNA-seq.
-	foreach my $platform (keys %{ $contrastHash }) {
-
-		# Empty hash to put results in.
-		my $diffExpRes = {};
+	# Empty variable to put RNA-seq analytics object in.
+	my $rnaSeqAnalytics;
+	
+	# Go through the analytics elements, get the rnaseq one.
+	foreach my $analytics ( @{ $allAnalytics } ) {
 		
+		# Get the contrasts from the rnaseq analytics element.
+		if( $analytics->get_platform eq "rnaseq" ) { $rnaSeqAnalytics = $analytics; }
+	}	
+
+	# Get the contrasts from the RNA-seq analytics object.
+	my $rnaSeqContrasts = $rnaSeqAnalytics->get_atlas_contrasts;
+
+	# Make a hash for the contrasts mapping IDs to names.
+	my $contrastIDsToNames = {};
+	foreach my $contrast ( @{ $rnaSeqContrasts } ) {
+
+		my $contrastID = $contrast->get_contrast_id;
+		my $contrastName = $contrast->get_contrast_name;
+
+		$contrastIDsToNames->{ $contrastID } = $contrastName;
+	}
+
+	# Empty hash to store differential expression results before writing.
+	my $rnaSeqDEResults = {};
+
+	print "\nCollecting DESeq results...\n";
+	
+	# Go through the contrasts...
+	foreach my $contrastID (keys %{ $contrastIDsToDESeqFiles } ) {
+
+		print "Collecting results for contrast: ", $contrastIDsToNames->{ $contrastID }, "\n";
+		
+		# Get the path to the DESeq results file.
+		my $deseqFile = $contrastIDsToDESeqFiles->{ $contrastID };
+
+		# Need to get column indices of "baseMean", "log2FoldChange", and "padj" in DESeq results.
+		my ($basemeanIdx, $logfcIdx, $adjpvalIdx);
+
+		open(DESEQRES, $deseqFile) or die("Can't open $deseqFile: $!\n");
+
 		# Temp file for MvA plot data.
 		my $plotDataTempFile = "/tmp/plotData.$$.txt";
-
-		# Get RNA-seq results from DESeq results file(s).
-		if($platform eq "rnaseq") {
-
-			# use to check certain values are numeric.
-			use Scalar::Util qw(looks_like_number);
-
-			print "\nCollecting DESeq results...\n";
-			
-			# Get results for each contrast
-			foreach my $agPair (keys %{ $contrastHash->{ "rnaseq" } }) {
-
-				my $deseqFile = $contrastHash->{ "rnaseq" }->{ $agPair }->{ "deseqFile" };
-				my $atlasName = $contrastHash->{ "rnaseq" }->{ $agPair }->{ "atlasName" };
-			
-				# Need to get column indices of "baseMean", "log2FoldChange", and "padj" in DESeq results.
-				my ($basemeanIdx, $logfcIdx, $adjpvalIdx);
-
-				open(DESEQRES, $deseqFile) or die("Can't open $deseqFile: $!\n");
-
-				open(PLOTDATA, ">$plotDataTempFile") or die("Can't open file to write temporary plot data to: $!\n");
-				printf(PLOTDATA "ID\tavgExpr\tlogFC\tadjPval");
-
-				print "Reading DESeq results from $deseqFile...";
-				while(defined(my $line = <DESEQRES>)) {
-
-					chomp $line;
-					my @lineSplit = split "\t", $line;
-					
-					# On first line, get column indices
-					if($line =~ /^id\t/) {
-
-						$basemeanIdx = (grep { $lineSplit[$_] eq "baseMean" } 0..$#lineSplit)[0];
-						$logfcIdx = (grep { $lineSplit[$_] eq "log2FoldChange" } 0..$#lineSplit)[0];
-						$adjpvalIdx = (grep { $lineSplit[$_] eq "padj" } 0..$#lineSplit)[0];
-
-						if($basemeanIdx == 0 || $logfcIdx == 0 || $adjpvalIdx == 0) {
-							die("Couldn't get column indices for all required columns.\n");
-						}
-					}
-					else {
-						
-						# Use indices found above to get values (gene ID is always the
-						# very first element).
-						my $geneID = $lineSplit[0];
-
-						my $baseMean = $lineSplit[$basemeanIdx];
-						my $logFC = $lineSplit[$logfcIdx];
-						my $adjPval = $lineSplit[$adjpvalIdx];
-						# Ensure we get numbers for the things that are supposed to
-						# be numbers (weird prob with DESeq output).
-						unless(looks_like_number($baseMean)) {
-							die "\nDid not get numeric value for baseMean:\nGene ID: $geneID\nbaseMean: $baseMean\n";
-						}
-						# Allow "NA" adjusted p-values through.
-						unless(looks_like_number($adjPval) || $adjPval eq "NA") {
-							die "\nDid not get numeric value for adjusted p-value:\nGene ID: $geneID\nadjusted p-value: $adjPval\n";
-						}
-						# Allow "NA" log fold-changes through.
-						unless(looks_like_number($logFC) || $logFC eq "NA") {
-							die "\nDid not get numeric value for log2FoldChange:\nGene ID: $geneID\nlog2FoldChange: $logFC\n";
-						}
-						
-						# Add to hash for file of all contrasts' results.
-						$diffExpRes->{ $geneID }->{ $agPair } = [ $adjPval, $logFC ];
-						# Add to file for MvA plot.
-						printf(PLOTDATA "\n$geneID\t$baseMean\t$logFC\t$adjPval");
-					}
-				}
-				close(PLOTDATA);
-				close(DESEQRES);
-				print "done\n";
-
-				# Filename for MvA plot
-				my $plotFile = "$exptAcc-".$agPair."-mvaPlot.png";
-				# Create MvA
-				makeMvaPlot("rnaseq", $plotFile, $plotDataTempFile, $atlasName, $mvaScript);
-			
-			} # foreach my $agPair (keys %{ $contrastHash->{ "rnaseq" } })
 		
-		} # if($platform eq "rnaseq")
+		open(PLOTDATA, ">$plotDataTempFile") or die("Can't open file to write temporary plot data to: $!\n");
+		printf(PLOTDATA "ID\tavgExpr\tlogFC\tadjPval");
 
-		# Run limma to get DE results for microarray.
-		else {
+		print "Reading DESeq results from $deseqFile...";
+		while(defined(my $line = <DESEQRES>)) {
 
-			# Temp file for limma results
-			my $limmaResTempFile = "/tmp/limma_res.$$.txt";
-			print "\n";
-
+			chomp $line;
+			my @lineSplit = split "\t", $line;
 			
-			# Get results for each contrast.
-			foreach my $agPair (keys %{ $contrastHash->{ $platform } }) {
+			# On first line, get column indices
+			if($line =~ /^id\t/) {
 
-				
-				my $atlasName = $contrastHash->{ $platform }->{ $agPair }->{ "atlasName" };
-				
-				# Variables for normalized expressions and average intensities
-				# filenames (only need $aValues if we have a 2-colour design.
-				my ($normExpr, $aValues);
-				
-				# Work out whether this is a 2-colour design or not. We can't
-				# necessarily go by array design accession because some array
-				# designs can be used for 1-colour and 2-colour designs.
-				# First see if the arrays of test and reference assay
-				# accessions are the same length. If not this can't be
-				# 2-colour.
-				if(@{ $contrastHash->{ $platform }->{ $agPair }->{ "reference"} } == @{ $contrastHash->{ $platform }->{ $agPair }->{ "test" } }) {
-					
-					# Next strip any ".Cy3" and ".Cy5" from the ends of each assay
-					# accession, and then compare the accessions. After
-					# removing ".Cy3" and ".Cy5", the arrays of assay
-					# accessions should be identical for a 2-colour design.
-					my @refAssaysNoCy = sort(stripCy(@{ $contrastHash->{ $platform }->{ $agPair }->{ "reference" } })); 
-					my @testAssaysNoCy = sort(stripCy(@{ $contrastHash->{ $platform }->{ $agPair }->{ "test" } }));
-			
-					my $same = 1;
-					my $c = 0;
-					foreach my $refAssay (@refAssaysNoCy) {
-						
-						if($refAssay ne $testAssaysNoCy[$c]) {
+				$basemeanIdx = (grep { $lineSplit[$_] eq "baseMean" } 0..$#lineSplit)[0];
+				$logfcIdx = (grep { $lineSplit[$_] eq "log2FoldChange" } 0..$#lineSplit)[0];
+				$adjpvalIdx = (grep { $lineSplit[$_] eq "padj" } 0..$#lineSplit)[0];
 
-							$same = 0;
-						}
-						$c++;
-					}
-					# if the two arrays of assay accessions are the same, we
-					# can assume we have a 2-colour design.
-					if($same) {
-
-						print "Contrast \"$atlasName\" has 2-colour design.\n";
-
-						# $normExpr gets filename for log-fold-changes
-						$normExpr = $exptAcc."_".$platform."-log-fold-changes.tsv.undecorated";
-						$aValues = $exptAcc."_".$platform."-average-intensities.tsv.undecorated";
-					}
-					# If the ref and test assays are not identical after
-					# removing ".Cy3" and ".Cy5" and the array design is
-					# A-AGIL-28, die because we can't handle single-colour
-					# designs on this array yet.
-					elsif($platform eq "A-AGIL-28") {
-						die "Looks like A-AGIL-28 but not two-colour design. Please verify that this experiment has a two-colour design.\n";
-					}
+				if($basemeanIdx == 0 || $logfcIdx == 0 || $adjpvalIdx == 0) {
+					die("Couldn't get column indices for all required columns.\n");
 				}
-				
-				# If $aValues is still undef, that means this is a single-colour design.
-				unless($aValues) {
-
-					print "Contrast \"$atlasName\" has 1-colour design.\n";
-
-					# Normalized expressions filename
-					$normExpr = $exptAcc."_".$platform."-normalized-expressions.tsv.undecorated";
-					unless(-e $normExpr) {
-						die "Can't find normalized expressions matrix \"$normExpr\"\n";
-					}
-				}
-				
-				
-				
-				# Reference and test assay accessions for limma script
-				# Put double quotes around assay names in case they contain
-				# spaces, and separate them using \<SEP\>. We use this as it is
-				# very unlikely to crop up in actual assay names.
-				# We pass groups of assay names to limma R script like:
-				#	"assay 1"\<SEP\>"assay 2"\<SEP\>"assay 3"
-				# And in R they come out like:
-				# 	assay 1<SEP>assay 2<SEP>assay 3
-				my $refAssays = join "\"\\<SEP\\>\"", @{ $contrastHash->{ $platform }->{ $agPair }->{ "reference" }};
-				my $testAssays = join "\"\\<SEP\\>\"", @{ $contrastHash->{ $platform }->{ $agPair }->{ "test" }};
-
-				$refAssays = "\"$refAssays\"";
-				$testAssays = "\"$testAssays\"";
-
-
-				print "Computing differential expression statistics for contrast \"", $atlasName, "\"...";
-
-				# Variable for output of limma script.
-				my $R_limmaOutput;
-				
-				# Run the limma R script via system call.
-				# For 2-colour data, we pass the A-values as well.
-				if($aValues) {
-					
-					$R_limmaOutput = `$limmaScript $normExpr $refAssays $testAssays $limmaResTempFile $plotDataTempFile $aValues 2>&1`;
-				}
-				else {
-					# Run limma script without A-values for 1-colour data.
-					$R_limmaOutput = `$limmaScript $normExpr $refAssays $testAssays $limmaResTempFile $plotDataTempFile 2>&1`;
-				}
-
-				# Check for errors. This does not catch warnings.
-				if($R_limmaOutput =~ /error/i) {
-					
-					# Can't continue without results from limma so may as well quit.
-					die("\nError during differential expression analysis, outout from R below.\n------------\n$R_limmaOutput\n------------\n");
-				
-				} else {
-					print "done\n";
-				}
-
-
-				# Add results to hash.
-				open(LIMMARES, "<$limmaResTempFile") or die("Can't open file $limmaResTempFile: $!\n");
-				while(defined(my $line = <LIMMARES>)) {
-					
-					# potentially don't need headers in the limma results file?
-					unless($line =~ /^designElements/) {
-						
-						chomp $line;
-						
-						# Split on tabs
-						my @lineSplit = split "\t", $line;
-						
-						# Design element (probeset) ID is the first element, take it off.
-						my $designElement = shift @lineSplit;
-						
-						# Add array [p-value, t-statistic, logFoldChange] to hash for this
-						# design element for this contrast.
-						$diffExpRes->{ $designElement }->{ $agPair } = \@lineSplit;
-					}
-				}
-				close(LIMMARES);
-				# clean up
-				`rm $limmaResTempFile`;
-
-
-				# Filename for MvA plot
-				my $plotFile = $exptAcc."_".$platform."-".$agPair."-mvaPlot.png";
-				# Create MvA
-				makeMvaPlot("microarray", $plotFile, $plotDataTempFile, $atlasName, $mvaScript);
 			}
-			
-			print "Statistics for all contrasts computed for $platform.\n";
-		} # if($platform eq "rnaseq"){}else
-		
-		# Write all results for this platform to a tab-delimited text file.
-		writeResults($diffExpRes, $contrastHash, $exptAcc, $platform);
+			else {
+				
+				# Use indices found above to get values (gene ID is always the
+				# very first element).
+				my $geneID = $lineSplit[0];
 
-	} # foreach my $platform (keys %{ $contrastHash })
+				my $baseMean = $lineSplit[$basemeanIdx];
+				my $logFC = $lineSplit[$logfcIdx];
+				my $adjPval = $lineSplit[$adjpvalIdx];
+				# Ensure we get numbers for the things that are supposed to
+				# be numbers (weird prob with DESeq output).
+				unless(looks_like_number($baseMean)) {
+					die "\nDid not get numeric value for baseMean:\nGene ID: $geneID\nbaseMean: $baseMean\n";
+				}
+				# Allow "NA" adjusted p-values through.
+				unless(looks_like_number($adjPval) || $adjPval eq "NA") {
+					die "\nDid not get numeric value for adjusted p-value:\nGene ID: $geneID\nadjusted p-value: $adjPval\n";
+				}
+				# Allow "NA" log fold-changes through.
+				unless(looks_like_number($logFC) || $logFC eq "NA") {
+					die "\nDid not get numeric value for log2FoldChange:\nGene ID: $geneID\nlog2FoldChange: $logFC\n";
+				}
+				
+				# Add to hash for file of all contrasts' results.
+				$rnaSeqDEResults->{ $geneID }->{ $contrastID } = [ $adjPval, $logFC ];
+				# Add to file for MvA plot.
+				printf(PLOTDATA "\n$geneID\t$baseMean\t$logFC\t$adjPval");
+			}
+		}
+		close(PLOTDATA);
+		close(DESEQRES);
+		print "done\n";
+
+		# Filename for MvA plot
+		my $plotFile = "$exptAcc-".$contrastID."-mvaPlot.png";
+
+		# Get the human-readable contrast name from the hash.
+		my $atlasName = $contrastIDsToNames->{ $contrastID };
+
+		# Create MvA
+		makeMvaPlot("rnaseq", $plotFile, $plotDataTempFile, $atlasName, $mvaScript);
+	}
+	
+	# Write the results to a file.
+	&writeResults( $rnaSeqDEResults, $experimentConfig->get_experiment_accession, $rnaSeqAnalytics );
 }
-
-
-
-
 
 
 # makeMvaPlot
 # 	- Create MvA plot using MvA plot script.
 sub makeMvaPlot {
 
-	$_ = shift for my ($platform, $plotFile, $plotDataTempFile, $atlasName, $mvaScript);
+	$_ = shift for my ($platform, $plotFile, $plotDataTempFile, $contrastName, $mvaScript);
 
 	print "Making MvA plot...";
 	# Create MvA plot with MvA plot script
-	my $R_mvaOutput = `$mvaScript $plotDataTempFile \"$atlasName\" $plotFile $platform 2>&1`;
+	my $R_mvaOutput = `$mvaScript $plotDataTempFile \"$contrastName\" $plotFile $platform 2>&1`;
 	
 	# Check for errors (this doesn't catch warnings).
 	if($R_mvaOutput =~ /error/i) {
@@ -550,19 +568,26 @@ sub makeMvaPlot {
 }
 
 
-
-
-
-
 # writeResults
 #	- write all results for a single platform (e.g. "A-AFFY-35" or "rnaseq") to
 #	a tab-delimited text file.
 sub writeResults {
 
-	$_ = shift for my ($diffExpRes, $contrastHash, $exptAcc, $platform);
+	$_ = shift for my ( $analyticsDEResults, $experimentAccession, $analytics);
 	
+	# Get the platform from the analytics element.
+	my $platform = $analytics->get_platform;
+
 	# Results file needs array design accession if it's microarray.
 	my $resFile = ( $platform eq "rnaseq" ? $exptAcc."-analytics.tsv.undecorated" : $exptAcc."_".$platform."-analytics.tsv.undecorated" );
+
+	# Get all the contrast IDs for this analytics element.
+	my $analyticsContrastIDs = [];
+	
+	foreach my $contrast ( @{ $analytics->get_atlas_contrasts } ) {
+
+		push @{ $analyticsContrastIDs }, $contrast->get_contrast_id;
+	}
 	
 	print "\nWriting results to $resFile\n";
 
@@ -571,24 +596,24 @@ sub writeResults {
 	# Write column headers
 	if($platform eq "rnaseq") { printf(RESFILE "Gene ID"); }
 	else { printf(RESFILE "Design Element"); }
-	foreach my $agPair (keys %{ $contrastHash->{ $platform } }) {
-		printf(RESFILE "\t$agPair.p-value");
-		unless($platform eq "rnaseq") { printf(RESFILE "\t$agPair.t-statistic"); }
-		printf(RESFILE "\t$agPair.log2foldchange");
+	foreach my $contrastID ( @{ $analyticsContrastIDs }) {
+		printf(RESFILE "\t$contrastID.p-value");
+		unless($platform eq "rnaseq") { printf(RESFILE "\t$contrastID.t-statistic"); }
+		printf(RESFILE "\t$contrastID.log2foldchange");
 	}
 
 	# Write statistics
-	foreach my $id (keys %{ $diffExpRes }) {
+	foreach my $id (keys %{ $analyticsDEResults }) {
 
 		printf(RESFILE "\n$id");
 
 		# Use ordering of assay group pairs from %contrastHash so stats are in
 		# the same order as the headers.
-		foreach my $agPair (keys %{ $contrastHash->{ $platform } }) {
+		foreach my $contrastID ( @{ $analyticsContrastIDs }) {
 
 			my $statsString = "";
-			if(exists($diffExpRes->{ $id }->{ $agPair })) {
-				$statsString = join "\t", @{ $diffExpRes->{ $id }->{ $agPair }};
+			if(exists($analyticsDEResults->{ $id }->{ $contrastID })) {
+				$statsString = join "\t", @{ $analyticsDEResults->{ $id }->{ $contrastID }};
 			} else {
 
 				# Some genes are excluded if their counts are zero across all
@@ -607,19 +632,3 @@ sub writeResults {
 }
 			
 
-
-
-
-# stripCy
-# 	- remove ".Cy3" or ".Cy5" from ends of assay names.
-sub stripCy {
-				
-	my @assayNames = @_;
-	my @assayNamesNoCy = ();
-	foreach my $assayName (@assayNames) {
-
-		$assayName =~ s/\.Cy\d$//;
-		push @assayNamesNoCy, $assayName;
-	}
-	return @assayNamesNoCy;
-}
