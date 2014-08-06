@@ -1,0 +1,4 @@
+export( parseAtlasXML )
+exportClasses( Analytics, AssayGroup )
+export( platform, assay_groups, getAllAssays, assay_group_id, assay_names, assay_group_label )
+import( XML, methods )
