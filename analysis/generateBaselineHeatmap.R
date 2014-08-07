@@ -124,6 +124,12 @@ geneIDsToGeneNames[ emptyGeneNameIdxs , ] <- rownames( geneIDsToGeneNames )[ emp
 # Now remove the Gene.Name column from the data frame.
 fpkmsDataFrame$Gene.Name <- NULL
 
+# Check that there is more than one column of FPKMs. We can't make a heatmap
+# with less than two columns of data.
+if( ncol( fpkmsDataFrame ) < 2 ) {
+	stop( "Less than two columns of FPKMs found. Cannot continue." )
+}
+
 # The FPKMs data frame can contain non-numeric values, such as "LOWDATA", which
 # come from Cufflinks. We treat this as missing data, and in order for R to
 # understand that we have to convert all non-numeric values to NA. The
@@ -167,7 +173,7 @@ assayGroupLabels <- sapply( colnames( top100geneFPKMs ), function( assayGroupID 
 } )
 
 # Make the heatmap filename.
-heatmapFilename <- paste( experimentAccession, "-heatmap.pdf", sep="" )
+heatmapFilename <- paste( experimentAccessionAndSpecies, "-heatmap.pdf", sep="" )
 # Prepend path to experiment directory.
 heatmapFilename <- file.path( atlasExperimentDirectory, heatmapFilename )
 
