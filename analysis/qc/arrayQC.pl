@@ -22,6 +22,13 @@ use warnings;
 # MAGE-TAB parsing.
 use Magetab4Atlas;
 
+use AtlasSiteConfig;
+use File::Spec;
+use EBI::FGPT::Config qw( $CONFIG );
+
+my $atlasProdDir = $ENV{ "ATLAS_PROD" };
+my $atlasSiteConfig = AtlasSiteConfig->new->get_atlas_site_config;
+
 # Helpful message
 my $usage = "Usage:
 	arrayQC.pl <experiment accession>
@@ -49,11 +56,12 @@ my ($H_contrastHash, $xmlExptType) = &readAtlasXML($atlasXMLfile);
 my $qcRscript = "arrayQC.R";
 
 # Path to directory with ArrayExpress/Atlas load directories underneath.
-my $exptsLoadStem = "/ebi/microarray/home/arrayexpress/ae2_production/data/EXPERIMENT";
+my $exptsLoadStem = File::Spec->catdir( $CONFIG->get_AE2_LOAD_DIR, "EXPERIMENT" );
 
 # miRBase mapped array designs -- we need to subset probes if we find one of these.
 # Get an array of miRBase mapping files.
-my @A_miRBaseFiles = glob("/ebi/microarray/home/atlas3-production/bioentity_properties/mirbase/*.A-*.tsv");
+my $miRBaseDirectory = File::Spec->catdir( $atlasProdDir, $atlasSiteConfig->get_mirbase_mappings_directory )
+my @A_miRBaseFiles = glob( "$miRBaseDirectory/*.A-*.tsv" );
 
 # Create a hash for easy checking.
 my $H_miRBaseFileHash = {};

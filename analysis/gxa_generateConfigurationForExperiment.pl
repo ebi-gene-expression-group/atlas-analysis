@@ -120,8 +120,10 @@ if($args->{ "debug" }) {
 	$logger->debug("Debugging mode ON");
 }
 
+my $atlasProdDir = $ENV{ "ATLAS_PROD" };
+
 # Get name of file with reference factor values and factor types to ignore.
-my $referencesIgnoreFile = $atlasSiteConfig->get_references_ignore_file;
+my $referencesIgnoreFile = File::Spec->catfile( $atlasProdDir, $atlasSiteConfig->get_references_ignore_file );
 
 # Create hashes for reference factor values to use in contrasts, and factor
 # types to ignore when creating assay groups.

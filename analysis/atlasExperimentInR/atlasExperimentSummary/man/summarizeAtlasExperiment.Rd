@@ -39,7 +39,7 @@
 # Summarize an Atlas microarray experiment.
 arrayExperimentSummaryList <- summarizeAtlasExperiment( 
 	"E-MEXP-1025", 
-	"/ebi/microarray/home/atlas3-production/analysis/differential/microarray/experiments/E-MEXP-1025/" 
+	"$ATLAS_PROD/analysis/differential/microarray/experiments/E-MEXP-1025/" 
 )
 
 # Get some ExpressionSet objects.
@@ -52,7 +52,7 @@ preproc( experimentData( expressionSet_affy18 ) )
 # Summarize an Atlas RNA-seq experiment.
 rnaseqExperimentSummaryList <- summarizeAtlasExperiment(
 	"E-GEOD-38400",
-	"/ebi/microarray/home/atlas3-production/analysis/differential/rna-seq/experiments/E-GEOD-38400/" 
+	"$ATLAS_PROD/analysis/differential/rna-seq/experiments/E-GEOD-38400/" 
 )
 
 # Get the SummarizedExperiment object.

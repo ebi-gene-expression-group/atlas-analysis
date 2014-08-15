@@ -11,6 +11,8 @@ suppressMessages( library( gplots ) )
 # Load RColorBrewer package for nice colours.
 suppressMessages( library( RColorBrewer ) )
 
+atlasProdDir <- Sys.getenv( "ATLAS_PROD" )
+
 #############
 # Functions #
 #############
@@ -31,7 +33,7 @@ get_ensgene_filename <- function( species ) {
 	suppressMessages( library( yaml ) )
 	
 	# Path to YAML site config.
-	siteConfigFile <- "/ebi/microarray/home/atlas3-production/sw/atlasprod/perl_modules/supporting_files/AtlasSiteConfig.yml"
+	siteConfigFile <- file.path( atlasProdDir, "sw", "atlasprod", "perl_modules", "supporting_files", "AtlasSiteConfig.yml" )
 
 	# Parse site config.
 	siteConfig <- yaml.load_file( siteConfigFile )
