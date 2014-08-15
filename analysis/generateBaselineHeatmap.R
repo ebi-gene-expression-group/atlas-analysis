@@ -11,6 +11,104 @@ suppressMessages( library( gplots ) )
 # Load RColorBrewer package for nice colours.
 suppressMessages( library( RColorBrewer ) )
 
+#############
+# Functions #
+#############
+
+check_file_exists <- function( filename ) {
+
+	if( !file.exists( filename ) ) {
+		stop( paste(
+			"Cannot find:",
+			filename
+		) )
+	}
+}
+
+get_ensgene_filename <- function( species ) {
+	
+	# Load yaml package for site config parsing.
+	suppressMessages( library( yaml ) )
+	
+	# Path to YAML site config.
+	siteConfigFile <- "/ebi/microarray/home/atlas3-production/sw/atlasprod/perl_modules/supporting_files/AtlasSiteConfig.yml"
+
+	# Parse site config.
+	siteConfig <- yaml.load_file( siteConfigFile )
+
+	# Get the Ensembl bioentity properties directory.
+	ensemblDirectory <- siteConfig$bioentity_properties_ensembl
+
+	# Create path to ensgene file.
+	ensgeneFilePath <- file.path( ensemblDirectory, paste( species, "ensgene", "tsv", sep="." ) )
+
+	return( ensgeneFilePath )
+}
+
+make_species_specific_data_frame <- function( speciesFPKMsFile, speciesEnsgeneFile ) {
+
+	# Read in the files now we have them.
+	message( paste( "Reading FPKMs from", speciesFPKMsFile, "..." ) )
+	fpkmsDataFrame <- read.delim( speciesFPKMsFile, stringsAsFactors=FALSE, header=TRUE )
+	message( "Successfully read FPKMs" )
+
+	message( paste( "Reading Ensembl gene annotations from", speciesEnsgeneFile, "..." ) )
+	ensgene <- read.delim( speciesEnsgeneFile, stringsAsFactors=FALSE, header=TRUE )
+	message( "Successfully read Ensembl gene annotations" )
+
+	message( "Adding gene names to FPKMs data frame..." )
+
+	# Just need the "ensgene" and "symbol" columns from the bioentity
+	# properties file. These are the gene names and gene IDs, respectively.
+	ensgene <- ensgene[ , c( "ensgene", "symbol" ) ]
+
+	# Get all the gene names from ensgene in the same order as the gene IDs in
+	# the FPKMs matrix. If there is no name for a gene, use an emtpy string.
+	geneNames <- sapply( fpkmsDataFrame$GeneID, function( geneID ) {
+		
+		# Get the index of the gene ID in the ensgene data frame.
+		ensGeneIdx <- which( ensgene$ensgene == geneID )
+		
+		# If the index has length >0 then there was a match.
+		if( length( ensGeneIdx ) > 0 ) {
+			# Get the gene name at that index.
+			name <- ensgene$symbol[ ensGeneIdx ]
+		} else {
+			# If there wasn't a match, use an empty string.
+			name <- ""
+		}
+	})
+
+	# Add the gene names to the FPKMs data frame.
+	fpkmsDataFrame$Gene.Name <- geneNames
+	
+	# Need to do some reshuffling and renaming of columns in the FPKMs data frame.
+	# Count the columns.
+	numCol <- ncol( fpkmsDataFrame )
+	# Get column indices for GeneID and Gene.Name columns
+	geneIDcol <- which( colnames( fpkmsDataFrame ) == "GeneID" )
+	geneNameCol <- which( colnames( fpkmsDataFrame ) == "Gene.Name" )
+
+	# The assay group columns are the rest of the columns.
+	assayGroupCols <- 1:numCol
+	assayGroupCols <- assayGroupCols[ -c( geneIDcol, geneNameCol ) ]
+	
+	# Re-shuffle the column order.
+	fpkmsDataFrame <- fpkmsDataFrame[ , c( geneIDcol, geneNameCol, assayGroupCols ) ]
+
+	# Rename the GeneID column so it's the same as the decorated FPKMs matrices
+	# for single-species experiments when it's read in.
+	colnames( fpkmsDataFrame )[ 1 ] <- "Gene.ID"
+
+	message( "Successfully added gene names to FPKMs data frame" )
+
+	return( fpkmsDataFrame )
+}
+
+###############################
+# Script start.
+
+
 # Get the commandline arguments.
 args <- commandArgs( TRUE )
 
@@ -29,13 +127,7 @@ if( length( args ) == 1 ) {
 }
 
 # Check the directory provided exists, die if not.
-if( !file.exists( atlasExperimentDirectory ) ) {
-	stop( paste( 
-		"The experiment directory provided does not exist -- cannot continue.\nDirectory provided was:\n\t", 
-		atlasExperimentDirectory, 
-		sep = "" 
-	) )
-}
+check_file_exists( atlasExperimentDirectory )
 
 # Build the XML config file name and the FPKM matrix filename.
 # Need to get the experiment accession out of the path passed.
@@ -44,40 +136,10 @@ experimentAccession <- basename( atlasExperimentDirectory )
 # Log accession.
 message( paste( "Experiment accession is:", experimentAccession ) )
 
-# Log species if there is one.
-if( exists( "species" ) ) {
-	message( paste( "Species is:", species ) )
-}
-
 # XML config file.
 experimentConfigFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, "-configuration.xml", sep="" ) )
 # Check it exists.
-if( !file.exists( experimentConfigFile ) ) {
-	stop( paste(
-		"Cannot find XML config file for experiment",
-		experimentAccession,
-		"at:\n",
-		experimentConfigFile
-	) )
-}
-
-# If species was provided, append to accession.
-experimentAccessionAndSpecies <- experimentAccession
-if( exists( "species" ) ) {
-	experimentAccessionAndSpecies <- paste( experimentAccessionAndSpecies, species, sep="_" )
-}
-
-# FPKMs matrix file.
-fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccessionAndSpecies, ".tsv", sep="" ) )
-# Check it exists.
-if( !file.exists( fpkmsMatrixFile ) ) {
-	stop( paste(
-		"Cannot find FPKMs matrix file for experiment",
-		experimentAccession,
-		"at:\n",
-		fpkmsMatrixFile
-	) )
-}
+check_file_exists( experimentConfigFile )
 
 # Parse XML config to a list.
 message( paste( "Reading experiment XML config from", experimentConfigFile, "..." ) )
@@ -101,10 +163,46 @@ invisible( lapply( rnaseqAssayGroups, function( assayGroup) {
 } ) )
 message( "All assay groups have labels." )
 
-# Read in the FPKMs.
-message( paste( "Reading FPKMs from", fpkmsMatrixFile, "..." ) )
-fpkmsDataFrame <- read.delim( fpkmsMatrixFile, stringsAsFactors=FALSE, header=TRUE )
-message( "Successfully read FPKMs" )
+
+
+# If species was provided, we want to append to accession, but there won't
+# always be a species provided, so we have a new variable that can be either
+# just accession, or accession_species. This is used for FPKM matrix and
+# heatmap filenames.
+experimentAccessionForFilename <- experimentAccession
+
+# If species was provided...
+if( exists( "species" ) ) {
+	# Log species.
+	message( paste( "Species is:", species ) )
+	
+	# Add the species to the accession, for filenames.
+	experimentAccessionForFilename <- paste( experimentAccessionForFilename, species, sep="_" )
+	
+	# The undecorated FPKM matrix for this species.
+	speciesFPKMsFile <- file.path( atlasExperimentDirectory, paste( experimentAccessionForFilename, ".tsv.undecorated", sep="" ) )
+
+	# Check it exists.
+	check_file_exists( speciesFPKMsFile )
+	
+	# Get the Ensembl bioentity properties "ensgene" file name.
+	speciesEnsgeneFile <- get_ensgene_filename( species )
+	check_file_exists( speciesEnsgeneFile )
+
+	fpkmsDataFrame <- make_species_specific_data_frame( speciesFPKMsFile, speciesEnsgeneFile )
+
+} else {
+	# FPKMs matrix file.
+	fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, ".tsv", sep="" ) )
+
+	# Check the FPKMs matrix exists.
+	check_file_exists( fpkmsMatrixFile )
+
+	# Read in the FPKMs.
+	message( paste( "Reading FPKMs from", fpkmsMatrixFile, "..." ) )
+	fpkmsDataFrame <- read.delim( fpkmsMatrixFile, stringsAsFactors=FALSE, header=TRUE )
+	message( "Successfully read FPKMs" )
+}
 
 # Assign gene IDs as row names.
 rownames( fpkmsDataFrame ) <- fpkmsDataFrame$Gene.ID
@@ -173,7 +271,7 @@ assayGroupLabels <- sapply( colnames( top100geneFPKMs ), function( assayGroupID 
 } )
 
 # Make the heatmap filename.
-heatmapFilename <- paste( experimentAccessionAndSpecies, "-heatmap.pdf", sep="" )
+heatmapFilename <- paste( experimentAccessionForFilename, "-heatmap.pdf", sep="" )
 # Prepend path to experiment directory.
 heatmapFilename <- file.path( atlasExperimentDirectory, heatmapFilename )
 
@@ -223,4 +321,6 @@ heatmap.2(
 	margins = c( marginHeight, 6 )
 )
 invisible( dev.off() )
+
+
 
