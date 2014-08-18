@@ -10,7 +10,7 @@ use strict;
 use warnings;
 
 # XML config parsing.
-use AtlasConfig::Reader;
+use AtlasConfig::Reader qw( parseAtlasConfig );
 # Site config
 use AtlasSiteConfig;
 # MAGE-TAB parsing.
@@ -34,7 +34,7 @@ my $exptsLoadStem = File::Spec->catdir( $CONFIG->get_AE2_LOAD_DIR, "EXPERIMENT" 
 
 # miRBase mapped array designs -- we need to subset probes if we find one of these.
 # Get an array of miRBase mapping files.
-my $miRBaseDirectory = File::Spec->catdir( $atlasProdDir, $atlasSiteConfig->get_mirbase_mappings_directory )
+my $miRBaseDirectory = File::Spec->catdir( $atlasProdDir, $atlasSiteConfig->get_mirbase_mappings_directory );
 my @A_miRBaseFiles = glob( "$miRBaseDirectory/*.A-*.tsv" );
 
 # Create a hash for easy checking.
@@ -47,23 +47,34 @@ foreach my $miRBaseFile (@A_miRBaseFiles) {
 	$H_miRBaseFileHash->{ $arrayDesign } = $miRBaseFile;
 }
 
+
+# Atlas XML config file name.
+my $atlasXMLconfigFile = $exptAccession . "-configuration.xml";
+# Atlas experiment directory.
+my $atlasExperimentDir = File::Spec->catdir( $atlasProdDir, "analysis", "differential", "microarray", "experiments", $exptAccession );
+# Full path to XML config file.
+my $atlasXMLconfigPath = File::Spec->catfile( $atlasExperimentDir, $atlasXMLconfigFile );
+
+# Parse the config.
+my $experimentConfig = parseAtlasConfig( $atlasXMLconfigPath );
+
+# Check that the experiment type is a microarray one.
+unless( $experimentConfig->get_atlas_experiment_type =~ /array/ ) {
+	die "This does not look like a microarray experiment. Experiment type is \"", $experimentConfig->get_atlas_experiment_type, "\n";
+}
+
 # Get the pipeline (e.g. MEXP, MTAB, GEOD, ...) for this experiment.
 (my $pipeline = $exptAccession) =~ s/E-(\w{4})-\d+/$1/;
 
 # Experiment load directory and IDF filename.
-my $loadDir = "$exptsLoadStem/$pipeline/$exptAccession";
-my $idfFilename = "$loadDir/$exptAccession.idf.txt";
+my $loadDir = File::Spec->catdir( $exptsLoadStem, $pipeline, $exptAccession );
+my $idfFilename = File::Spec->catfile( $loadDir, "$exptAccession.idf.txt" );
 
 # Read the MAGE-TAB.
 print "Reading MAGE-TAB...\n";
 my $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idfFilename );
 print "Read MAGE-TAB.\n";
 
-# Check experiment type is an array one.
-my $experimentType = $magetab4atlas->get_experiment_type;
-if($experimentType !~ /array/) {
-	die "This is not a microarray experiment. Experiment type found is: \"$experimentType\"\n";
-}
 
 # Create hash mapping assay names to raw data file names for each array design:
 #
@@ -72,7 +83,7 @@ if($experimentType !~ /array/) {
 #						  ->{ <array design 2> }->{ <assay 3> } = <file 3>
 # 		  				  ...
 # Also pass $experimentType and get back normalization mode to pass to R script.
-my ($H_arraysToAssaysToFiles, $normalizationMode) = &makeArraysToAssaysToFiles($magetab4atlas, $loadDir, $experimentType);
+my ($H_arraysToAssaysToFiles, $normalizationMode) = &makeArraysToAssaysToFiles( $magetab4atlas, $loadDir, $experimentConfig);
 
 # Log how many array designs and assays were found
 my $arrayCount = keys %{ $H_arraysToAssaysToFiles };
@@ -150,8 +161,6 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 
 # &makeArraysToAssaysToFiles
 # 
-# NB: THIS IS VERY SIMILAR TO FUNCTION IN arrayQC.pl!
-#
 # 	- Creates a hash matching each data file to each assay, for each array design.
 # 	- E.g.:
 # 		$H->{ <array design 1> }->{ <assay 1> } = <file 1>
@@ -161,22 +170,55 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 # Arguments:
 # 	- $magetab4atlas : a Magetab4Atlas object.
 # 	- $loadDir : path to load directory containing raw data files.
+# 	- $experimentConfig : AtlasConfig::ExperimentConfig object.
 sub makeArraysToAssaysToFiles {
 	# Magetab4Atlas object and path to load directory.
-	my ($magetab4atlas, $loadDir) = @_;
+	my ($magetab4atlas, $loadDir, $experimentConfig ) = @_;
+	
+	my $experimentType = $experimentConfig->get_atlas_experiment_type;
+
+	# Get all the assay names from the experiment config.
+	my $allAnalytics = $experimentConfig->get_atlas_analytics;
+
+	# Create a hash of all the assay names found in the experiment config,
+	# mapped to their respective array designs.
+	my $arrayDesignsToAssayNames = {};
+
+	foreach my $analytics ( @{ $allAnalytics }) {
+
+		my $analyticsAssays = $analytics->get_assays;
+
+		my $arrayDesign = $analytics->get_platform;
+
+		$arrayDesignsToAssayNames->{ $arrayDesign } = [];
+
+		foreach my $assay ( @{ $analyticsAssays } ) {
+
+			push @{ $arrayDesignsToAssayNames->{ $arrayDesign } }, $assay->get_name;
+		}
+	}
 
 	# Ref to empty hash to fill
 	my $H_arraysToAssaysToFiles = {};
+	
 	# Normalization mode.
 	my $normalizationMode = 0;
+	
 	# Go through the assays...
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
 		# Get assay name
 		my $assayName = $assay4atlas->get_name;
 		# Array design
 		my $arrayDesign = $assay4atlas->get_array_design;
+
+		# Check that we saw this assay in the XML config. If not, skip it.
+		unless( grep { /^$assayName$/ } @{ $arrayDesignsToAssayNames->{ $arrayDesign } } ) { 
+			print "Assay \"$assayName\" not found in XML config, not including in normalization.\n";
+			next;
+		}
+
 		# Raw data filename.
-		my $arrayDataFile = $loadDir."/".$assay4atlas->get_array_data_file;
+		my $arrayDataFile = File::Spec->catfile( $loadDir, $assay4atlas->get_array_data_file );
 		
 		# For 1-colour array data, need to tell the R script whether this is
 		# Affymetrix or Agilent (or other -- for now we only handle Affy and Agil
@@ -185,10 +227,10 @@ sub makeArraysToAssaysToFiles {
 		# to record manufacturer there so that might not be ideal.
 		# For now only allow one experiment type per experiment but may
 		# need to change this.
-		if($experimentType eq "one-colour array") {
-				if($arrayDataFile =~ /\.cel$/i) { $normalizationMode = "oligo"; }
+		if( $experimentType =~ /1colour/ ) {
+				if( $arrayDataFile =~ /\.cel$/i ) { $normalizationMode = "oligo"; }
 				else { $normalizationMode = "agil1"; }
-		} elsif($experimentType eq "two-colour array") {
+		} elsif( $experimentType =~ /2colour/ ) {
 			$normalizationMode = "agil2";
 
 			# Remove label name from assay name which was added by Magetab4Atlas.
