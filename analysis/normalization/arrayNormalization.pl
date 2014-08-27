@@ -208,11 +208,15 @@ sub makeArraysToAssaysToFiles {
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
 		# Get assay name
 		my $assayName = $assay4atlas->get_name;
+
+		# Escape any metacharacters
+		my $assayNameEsc = quotemeta( $assayName );
+		
 		# Array design
 		my $arrayDesign = $assay4atlas->get_array_design;
 
 		# Check that we saw this assay in the XML config. If not, skip it.
-		unless( grep { /^$assayName$/ } @{ $arrayDesignsToAssayNames->{ $arrayDesign } } ) { 
+		unless( grep { /^$assayNameEsc$/ } @{ $arrayDesignsToAssayNames->{ $arrayDesign } } ) { 
 			print "Assay \"$assayName\" not found in XML config, not including in normalization.\n";
 			next;
 		}
@@ -228,8 +232,8 @@ sub makeArraysToAssaysToFiles {
 		# For now only allow one experiment type per experiment but may
 		# need to change this.
 		if( $experimentType =~ /1colour/ ) {
-				if( $arrayDataFile =~ /\.cel$/i ) { $normalizationMode = "oligo"; }
-				else { $normalizationMode = "agil1"; }
+			if( $arrayDataFile =~ /\.cel$/i ) { $normalizationMode = "oligo"; }
+			else { $normalizationMode = "agil1"; }
 		} elsif( $experimentType =~ /2colour/ ) {
 			$normalizationMode = "agil2";
 
@@ -240,6 +244,6 @@ sub makeArraysToAssaysToFiles {
 		# Add data to hash.
 		$H_arraysToAssaysToFiles->{ $arrayDesign }->{ $assayName } = $arrayDataFile;
 	}
-
+	
 	return ($H_arraysToAssaysToFiles, $normalizationMode);
 }
