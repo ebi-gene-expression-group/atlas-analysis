@@ -162,6 +162,5 @@
         <value>wild type genotype</value>
     </reference_factor_values>
     <ignore_factor_types>
-        <type>individual</type>
     </ignore_factor_types>
 </atlas_factor_config>
