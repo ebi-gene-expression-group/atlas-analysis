@@ -27,7 +27,7 @@ check_file_exists <- function( filename ) {
 	}
 }
 
-get_ensgene_filename <- function( species ) {
+get_ensgene_filename <- function( species, atlasProdDir ) {
 	
 	# Load yaml package for site config parsing.
 	suppressMessages( library( yaml ) )
@@ -42,7 +42,7 @@ get_ensgene_filename <- function( species ) {
 	ensemblDirectory <- siteConfig$bioentity_properties_ensembl
 
 	# Create path to ensgene file.
-	ensgeneFilePath <- file.path( ensemblDirectory, paste( species, "ensgene", "tsv", sep="." ) )
+	ensgeneFilePath <- file.path( atlasProdDir, ensemblDirectory, paste( species, "ensgene", "tsv", sep="." ) )
 
 	return( ensgeneFilePath )
 }
@@ -188,7 +188,7 @@ if( exists( "species" ) ) {
 	check_file_exists( speciesFPKMsFile )
 	
 	# Get the Ensembl bioentity properties "ensgene" file name.
-	speciesEnsgeneFile <- get_ensgene_filename( species )
+	speciesEnsgeneFile <- get_ensgene_filename( species, atlasProdDir )
 	check_file_exists( speciesEnsgeneFile )
 
 	fpkmsDataFrame <- make_species_specific_data_frame( speciesFPKMsFile, speciesEnsgeneFile )
