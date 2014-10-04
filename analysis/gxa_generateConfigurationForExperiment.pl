@@ -77,6 +77,8 @@ use DateTime;
 use Log::Log4perl;
 use Log::Log4perl::Level;
 use File::Spec;
+use Data::Dumper;
+
 
 use AtlasSiteConfig;
 use AtlasConfig::Setup qw(
@@ -142,8 +144,18 @@ if($args->{ "ignore_factor" }) {
 	$ignoreFactorTypes->{ $args->{ "ignore_factor" } } = 1;
 }
 
+$logger->debug( "Parsing MAGE-TAB..." );
+
 # Get a Magetab4Atlas object containing the appropriate assays.
 my $magetab4atlas = create_magetab4atlas($args, $ignoreFactorTypes);
+
+$logger->debug( "Successfully parsed MAGE-TAB" );
+
+$logger->debug( Dumper( $magetab4atlas ) );
+
+unless( @{ $magetab4atlas->get_assays } ) {
+	$logger->logdie( "No assays were detected during MAGE-TAB parsing, cannot continue." );
+}
 
 # Create the XML config experiment type.
 my $atlasExperimentType = create_atlas_experiment_type($magetab4atlas, $args->{ "analysis_type" });
