@@ -46,7 +46,7 @@ my $atlasXMLfile = "$exptAccession-configuration.xml";
 
 # Die if the XML file doesn't exist.
 unless(-e $atlasXMLfile) {
-	die "[ERROR] Could not file $atlasXMLfile";
+	die "[ERROR] Could not find file $atlasXMLfile";
 }
 
 # Read XML config file and get hash of contrasts.
