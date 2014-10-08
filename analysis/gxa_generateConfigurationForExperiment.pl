@@ -99,7 +99,7 @@ my $args = &parse_args();
 
 # Log4perl config.
 my $logger_config = q(
-	log4perl.category.ATLASCONFIG_LOGGER          = INFO, LOG1, SCREEN
+	log4perl.rootlogger			         = INFO, LOG1, SCREEN
 	log4perl.appender.SCREEN             = Log::Log4perl::Appender::Screen
 	log4perl.appender.SCREEN.stderr      = 0
 	log4perl.appender.SCREEN.layout      = Log::Log4perl::Layout::PatternLayout
@@ -114,7 +114,7 @@ my $logger_config = q(
 
 # Initialise logger.
 Log::Log4perl::init(\$logger_config);
-my $logger = Log::Log4perl::get_logger("ATLASCONFIG_LOGGER");
+my $logger = Log::Log4perl::get_logger;
 
 # Turn on debugging if required.
 if($args->{ "debug" }) {
