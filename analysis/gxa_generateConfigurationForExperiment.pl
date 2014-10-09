@@ -77,6 +77,8 @@ use DateTime;
 use Log::Log4perl;
 use Log::Log4perl::Level;
 use File::Spec;
+use Data::Dumper;
+
 
 use AtlasSiteConfig;
 use AtlasConfig::Setup qw(
@@ -97,7 +99,7 @@ my $args = &parse_args();
 
 # Log4perl config.
 my $logger_config = q(
-	log4perl.category.ATLASCONFIG_LOGGER          = INFO, LOG1, SCREEN
+	log4perl.rootlogger			         = INFO, LOG1, SCREEN
 	log4perl.appender.SCREEN             = Log::Log4perl::Appender::Screen
 	log4perl.appender.SCREEN.stderr      = 0
 	log4perl.appender.SCREEN.layout      = Log::Log4perl::Layout::PatternLayout
@@ -112,7 +114,7 @@ my $logger_config = q(
 
 # Initialise logger.
 Log::Log4perl::init(\$logger_config);
-my $logger = Log::Log4perl::get_logger("ATLASCONFIG_LOGGER");
+my $logger = Log::Log4perl::get_logger;
 
 # Turn on debugging if required.
 if($args->{ "debug" }) {
@@ -142,8 +144,18 @@ if($args->{ "ignore_factor" }) {
 	$ignoreFactorTypes->{ $args->{ "ignore_factor" } } = 1;
 }
 
+$logger->debug( "Parsing MAGE-TAB..." );
+
 # Get a Magetab4Atlas object containing the appropriate assays.
 my $magetab4atlas = create_magetab4atlas($args, $ignoreFactorTypes);
+
+$logger->debug( "Successfully parsed MAGE-TAB" );
+
+$logger->debug( Dumper( $magetab4atlas ) );
+
+unless( @{ $magetab4atlas->get_assays } ) {
+	$logger->logdie( "No assays were detected during MAGE-TAB parsing, cannot continue." );
+}
 
 # Create the XML config experiment type.
 my $atlasExperimentType = create_atlas_experiment_type($magetab4atlas, $args->{ "analysis_type" });
