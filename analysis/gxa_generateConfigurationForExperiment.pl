@@ -76,8 +76,6 @@ Expression Atlas team <arrayexpress-atlas@ebi.ac.uk>
 use strict;
 use warnings;
 
-use lib "/ebi/microarray/home/mkeays/Atlas/git/atlasprod/perl_modules";
-
 use Pod::Usage;
 use Getopt::Long;
 use Cwd qw();
