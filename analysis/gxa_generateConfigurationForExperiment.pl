@@ -49,6 +49,12 @@ Optional. Specify a factor type to ignore when creating assay groups.
 Optional. Specify a directory to write the XML configuration file. Default is
 current working directory.
 
+=item -a --assay-groups-only
+
+Optional. Differential experiments only. Passing this option means the script
+will only write assay groups to XML file, and will not try to create any
+contrasts.
+
 =item -d --debug
 
 Optional. Log debugging messages.
@@ -70,6 +76,8 @@ Expression Atlas team <arrayexpress-atlas@ebi.ac.uk>
 use strict;
 use warnings;
 
+use lib "/ebi/microarray/home/mkeays/Atlas/git/atlasprod/perl_modules";
+
 use Pod::Usage;
 use Getopt::Long;
 use Cwd qw();
@@ -79,8 +87,10 @@ use Log::Log4perl::Level;
 use File::Spec;
 use Data::Dumper;
 
+use Common qw(
+	get_atlas_site_config
+);
 
-use AtlasSiteConfig;
 use AtlasConfig::Setup qw(
 	create_factor_configs
 	create_magetab4atlas
@@ -92,7 +102,7 @@ use AtlasConfig::ExperimentConfigFactory qw( create_experiment_config );
 # Auto flush buffer.
 $| = 1;
 
-my $atlasSiteConfig = AtlasSiteConfig->new->get_atlas_site_config;
+my $atlasSiteConfig = get_atlas_site_config;
 
 # Parse command line arguments.
 my $args = &parse_args();
@@ -166,10 +176,11 @@ my $experimentConfig = create_experiment_config(
 	$magetab4atlas, 
 	$atlasExperimentType, 
 	$args->{ "experiment_accession" }, 
-	$referenceFactorValues
+	$referenceFactorValues,
+	$args->{ "assay_groups_only" }
 );
 
-$experimentConfig->write_xml( $args->{ "output_directory" } );
+$experimentConfig->write_xml( $args->{ "output_directory" }, $args->{ "assay_groups_only" } );
 
 
 
@@ -204,6 +215,7 @@ sub parse_args {
 		"r|reference=s"		=> \$args{ "reference_value" },	# new reference factor value
 		"i|ignore=s"		=> \$args{ "ignore_factor" },	# factor type to ignore
 		"o|outdir=s"		=> \$args{ "output_directory" },	# dir for XML file
+		"a|assay-groups-only"	=> \$args{ "assay_groups_only" },	# only create assay groups for differential (no contrasts)
 		"d|debug"			=> \$args{ "debug" },
 	);
 
@@ -267,6 +279,12 @@ sub parse_args {
 			-output => \*STDOUT,
 			-verbose => 1,
 		);
+	}
+
+	# If "-a" is passed as well as "-t baseline", this is pointless, warn that
+	# it doesn't make a difference but continue.
+	if( $args{ "analysis_type" } eq "baseline" && $args{ "assay_groups_only" } ) {
+		print "WARN  - assay groups only option makes no sense for a baseline experiment, ignoring.\n";
 	}
 
 	# If no output directory was specified, log that we will print to current working directory.
