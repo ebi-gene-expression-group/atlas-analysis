@@ -36,10 +36,13 @@
 	intensities are normalized using within-array loess normalization in limma.
 }
 \examples{
+
+atlasProdTestDir <- Sys.getenv( "ATLAS_PROD_TEST" )
+
 # Summarize an Atlas microarray experiment.
 arrayExperimentSummaryList <- summarizeAtlasExperiment( 
 	"E-MEXP-1025", 
-	"$ATLAS_PROD/analysis/differential/microarray/experiments/E-MEXP-1025/" 
+	file.path( atlasProdTestDir, "analysis", "differential", "microarray", "experiments", "E-MEXP-1025" ) 
 )
 
 # Get some ExpressionSet objects.
@@ -52,7 +55,7 @@ preproc( experimentData( expressionSet_affy18 ) )
 # Summarize an Atlas RNA-seq experiment.
 rnaseqExperimentSummaryList <- summarizeAtlasExperiment(
 	"E-GEOD-38400",
-	"$ATLAS_PROD/analysis/differential/rna-seq/experiments/E-GEOD-38400/" 
+	file.path( atlasProdTestDir, "analysis", "differential", "rna-seq", "experiments", "E-GEOD-38400" )
 )
 
 # Get the SummarizedExperiment object.

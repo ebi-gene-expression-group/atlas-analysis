@@ -1,3 +1,6 @@
+# Load atlasConfigParser package to read XML config.
+suppressMessages( library( atlasConfigParser ) )
+
 # ArrayExpress load directories -- where SDRFs live.
 ae2experiments <- "/ebi/microarray/home/arrayexpress/ae2_production/data/EXPERIMENT";
 
@@ -22,7 +25,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	}
 
 	# Parse the XML file.
-	experimentXMLlist <- .parseAtlasXML( atlasExperimentXMLfile )
+	experimentXMLlist <- parseAtlasXML( atlasExperimentXMLfile )
 
 	# Get the pipeline code from the experiment accession e.g. MTAB, MEXP
 	pipeline <- gsub( "E-", "", experimentAccession )
@@ -71,58 +74,6 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 
 	return( atlasExperimentSummary )
 
-}
-
-
-# .parseAtlasXML
-# 	- Read Atlas XML config file and return a list of Analytics objects, as
-# 	well as the experiment type.
-# 	- The function returns a list with two elements: the list of Analytics
-# 	objects, and the experiment type from the XML.
-.parseAtlasXML <- function(filename) {
-	
-	# Read the XML file.
-	xmlTree <- xmlInternalTreeParse( filename )
-
-	# Get the configuration node -- the root of the tree.
-	configNode <- xmlRoot( xmlTree )
-
-	# Get the config node attributes.
-	configNodeAttrs <- xmlAttrs( configNode )
-
-	# Get the Atlas experiment type. We'll use this later to decide whether to
-	# create an ExpressionSet/MAList or SummarizedExperiment.
-	atlasExperimentType <- configNodeAttrs[[ "experimentType" ]]
-
-	# If this is a baseline RNA-seq experiment there won't be any raw counts,
-	# so can't create a BioC object.
-	if( grepl( "^rnaseq\\w*baseline$", atlasExperimentType ) ) {
-		stop( paste( "Cannot create R objects for experiment type \"", atlasExperimentType, "\".", sep="" ) )
-	}
-	
-	# Go through the analytics node(s).
-	# Get them from the configuration node.
-	allAnalyticsNodes <- xmlElementsByTagName( configNode, "analytics" )
-
-	# Create a list of Analytics objects.
-	allAnalytics <- lapply( allAnalyticsNodes, function( analyticsNode ) {
-		analyticsObject <- new( "Analytics", atlasExperimentType, analyticsNode )
-	})
-	
-	names( allAnalytics ) <- sapply( allAnalytics,
-		function( analytics ) {
-			platform( analytics )
-		}
-	)
-
-	# Since we can't return more than one thing, make a list to put the
-	# analytics list in as well as the experiment type.
-	parsedXMLlist <- list()
-	
-	parsedXMLlist$allAnalytics <- allAnalytics
-	parsedXMLlist$experimentType <- atlasExperimentType
-
-	return( parsedXMLlist )
 }
 
 

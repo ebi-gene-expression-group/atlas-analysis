@@ -1,13 +1,13 @@
 Package: atlasExperimentSummary
-Version: 1.0
-Date: 2014/06/05
+Version: 1.1
+Date: 2014/11/10
 Title: Summarize Expression Atlas experiments in Bioconductor objects
 Author: EBI Expression Atlas team
 Maintainer: Maria Keays <mkeays@ebi.ac.uk>
 Description: A package to create ExpressionSet, MAList, and/or
-	SummarizedExperiment objects representing experiments in Expression Atlas (
+	SummarizedExperiment object(s) representing experiments in Expression Atlas (
 	http://www.ebi.ac.uk/gxa ).
-Depends: XML, plyr, Biobase, GenomicRanges, limma, methods
-Collate: AssayGroup.R Analytics.R functions.R
+Depends: atlasConfigParser, plyr, Biobase, GenomicRanges, limma, methods
+Collate: functions.R
 License: GPL (>= 3)
 LazyLoad: yes
