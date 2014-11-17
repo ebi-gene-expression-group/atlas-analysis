@@ -227,7 +227,11 @@ fpkmsDataFrame$Gene.Name <- NULL
 # Check that there is more than one column of FPKMs. We can't make a heatmap
 # with less than two columns of data.
 if( ncol( fpkmsDataFrame ) < 2 ) {
-	stop( "Less than two columns of FPKMs found. Cannot continue." )
+	# Warn what has happened.
+	warning( "Less than two columns of FPKMs found. Cannot continue." )
+	
+	# Exit without exit code.
+	q( save="no" )
 }
 
 # The FPKMs data frame can contain non-numeric values, such as "LOWDATA", which
