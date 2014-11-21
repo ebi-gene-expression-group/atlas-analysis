@@ -17,9 +17,11 @@ ${ATLAS_PROD}/sw/atlasprod/analysis/qc/arrayQC.pl $expAcc
 exitCode=$?
 if [ $exitCode -eq 1 ]; then
     # The QC procedure succeeded but the experiment failed the QC
+    popd
     mv ${ATLAS_PROD}/analysis/differential/microarray/experiments/$expAcc ${ATLAS_PROD}/failedQC/microarray/
     echo "[QC] Quality control for ${expAcc} has failed - see http://www.ebi.ac.uk/~rpetry/atlas3/failedQC/microarray/${expAcc} for more info"
 elif [ $exitCode -ne 0 ]; then
+    popd
     # The QC procedure itself failed (e.g. due to lack of memory) - we don't know if the experiment passes or fails the QC
     # Perl die() returns exit code=255
     echo "ERROR: Failed to perform QC for ${expAcc} - exit code: $exitCode" >&2
@@ -28,5 +30,5 @@ else
     # Experiment has passed QC check - move quality report dir into qc/
     mkdir -p qc
     mv *_QM qc
+    popd
 fi
-popd
