@@ -103,7 +103,7 @@ $| = 1;
 my $atlasSiteConfig = get_atlas_site_config;
 
 # Parse command line arguments.
-my $args = &parse_args();
+my $args = parse_args();
 
 # Log4perl config.
 my $logger_config = q(
