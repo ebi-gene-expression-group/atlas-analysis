@@ -8,6 +8,7 @@
 
 use strict;
 use warnings;
+use 5.10.0;
 
 # XML config parsing.
 use AtlasConfig::Reader qw( parseAtlasConfig );
@@ -241,6 +242,9 @@ sub makeArraysToAssaysToFiles {
 			$assayName =~ s/\.Cy\d$//;
 		}
 		
+        # Replace "%20" that is added if there are spaces in filenames.
+        $arrayDataFile =~ s/%20/ /g;
+
 		# Add data to hash.
 		$H_arraysToAssaysToFiles->{ $arrayDesign }->{ $assayName } = $arrayDataFile;
 	}
