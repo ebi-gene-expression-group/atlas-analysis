@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-source ${ATLAS_PROD}/sw/atlasprod/irap/gxa_preirap.conf
-source ${ATLAS_PROD}/sw/atlasprod/irap/gxa_preirap_routines.sh
+source ${ATLAS_PROD}/sw/atlasinstall_prod/atlasprod/irap/gxa_preirap.conf
+source ${ATLAS_PROD}/sw/atlasinstall_prod/atlasprod/irap/gxa_preirap_routines.sh
 
 if [ $# -lt 1 ]; then
    echo "Usage: $0 expAcc"
@@ -13,7 +13,7 @@ expAcc=$1
 pushd ${ATLAS_PROD}/analysis/differential/microarray/experiments/$expAcc
 rm -rf qc
 
-${ATLAS_PROD}/sw/atlasprod/analysis/qc/arrayQC.pl $expAcc
+${ATLAS_PROD}/sw/atlasinstall_prod/atlasprod/analysis/qc/arrayQC.pl $expAcc
 exitCode=$?
 if [ $exitCode -eq 1 ]; then
     # The QC procedure succeeded but the experiment failed the QC

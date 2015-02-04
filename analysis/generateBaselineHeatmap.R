@@ -33,7 +33,7 @@ get_ensgene_filename <- function( species, atlasProdDir ) {
 	suppressMessages( library( yaml ) )
 	
 	# Path to YAML site config.
-	siteConfigFile <- file.path( atlasProdDir, "sw", "atlasprod", "perl_modules", "supporting_files", "AtlasSiteConfig.yml" )
+	siteConfigFile <- file.path( atlasProdDir, "sw", "atlasinstall_prod", "atlasprod", "perl_modules", "supporting_files", "AtlasSiteConfig.yml" )
 
 	# Parse site config.
 	siteConfig <- yaml.load_file( siteConfigFile )
