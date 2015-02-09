@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
-source ${ATLAS_PROD}/sw/atlasinstall_prod/atlasprod/irap/gxa_preirap.conf
-source ${ATLAS_PROD}/sw/atlasinstall_prod/atlasprod/irap/gxa_preirap_routines.sh
+# Source script from the same (prod or test) Atlas environment as this script
+scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source ${scriptDir}/../../bash_util/generic_routines.sh
+atlasEnv=`atlas_env`
+
+source ${ATLAS_PROD}/sw/atlasinstall_${atlasEnv}/atlasprod/irap/gxa_preirap.conf
 
 if [ $# -lt 1 ]; then
    echo "Usage: $0 expAcc"
@@ -13,7 +17,7 @@ expAcc=$1
 pushd ${ATLAS_PROD}/analysis/differential/microarray/experiments/$expAcc
 rm -rf qc
 
-${ATLAS_PROD}/sw/atlasinstall_prod/atlasprod/analysis/qc/arrayQC.pl $expAcc
+${ATLAS_PROD}/sw/atlasinstall_${atlasEnv}/atlasprod/analysis/qc/arrayQC.pl $expAcc
 exitCode=$?
 if [ $exitCode -eq 1 ]; then
     # The QC procedure succeeded but the experiment failed the QC
