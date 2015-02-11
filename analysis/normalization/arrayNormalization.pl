@@ -20,6 +20,7 @@ use Magetab4Atlas;
 use AtlasSiteConfig;
 use File::Spec;
 use EBI::FGPT::Config qw( $CONFIG );
+use IPC::Cmd qw( can_run );
 
 my $atlasProdDir = $ENV{ "ATLAS_PROD" };
 my $atlasSiteConfig = AtlasSiteConfig->new->get_atlas_site_config;
@@ -27,8 +28,20 @@ my $atlasSiteConfig = AtlasSiteConfig->new->get_atlas_site_config;
 # Experiment accession.
 my $exptAccession = shift;
 
+unless( $exptAccession ) {
+    die "Please provide experiment accession as an argument.\n";
+}
+
 # Filename of R script for normalization.
 my $normalizationRscript = "arrayNormalization.R";
+unless( can_run( $normalizationRscript ) ) {
+    die "Script \"$normalizationRscript\" not found. Please ensure it is in your \$PATH and you can run it.\n";
+}
+
+# Check that we can run R.
+unless( can_run( "R" ) ) {
+    die "R was not found. Please ensure it is installed and you can run it.\n";
+}
 
 # Path to directory with ArrayExpress/Atlas load directories underneath.
 my $exptsLoadStem = File::Spec->catdir( $CONFIG->get_AE2_LOAD_DIR, "EXPERIMENT" );
