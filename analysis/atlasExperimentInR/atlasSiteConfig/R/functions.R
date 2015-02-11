@@ -33,7 +33,7 @@ createAtlasSiteConfig <- function( ) {
     suppressMessages( library( yaml ) )
 
     # Read in the site config file.
-    atlasSiteConfig <- yaml.load.file( atlasSiteConfigFile )
+    atlasSiteConfig <- yaml.load_file( atlasSiteConfigFile )
 
     return( atlasSiteConfig )
 }
