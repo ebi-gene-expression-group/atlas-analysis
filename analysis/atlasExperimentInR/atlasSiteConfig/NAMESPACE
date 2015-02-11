@@ -1,4 +1,4 @@
 export( createAtlasSiteConfig )
 exportClasses( AtlasSiteConfig )
 export( site_config_list )
-import( yaml, methods )
+import( yaml )
