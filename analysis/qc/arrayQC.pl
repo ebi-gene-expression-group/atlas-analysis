@@ -25,6 +25,7 @@ use AtlasSiteConfig;
 use File::Spec;
 use EBI::FGPT::Config qw( $CONFIG );
 use Log::Log4perl;
+use IPC::Cmd qw( can_run );
 
 $| = 1;
 
@@ -70,6 +71,14 @@ $logger->info( "[QC] Successfully read XML config." );
 
 # R script (should be in PATH).
 my $qcRscript = "arrayQC.R";
+unless( can_run( $qcRscript ) ) {
+    $logger->logdie( "[QC] $qcRscript not found. Please ensure it is installed and you can run it." );
+}
+
+# Check that R is available.
+unless( can_run( "R" ) ) {
+    $logger->logdie( "[QC] R not found. Please ensure it is installed and you can run it." );
+}
 
 # Path to directory with ArrayExpress/Atlas load directories underneath.
 my $exptsLoadStem = File::Spec->catdir( $CONFIG->get_AE2_LOAD_DIR, "EXPERIMENT" );
