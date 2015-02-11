@@ -1,0 +1,12 @@
+Package: atlasSiteConfig
+Version: 1.0
+Date: 2015/02/11
+Title: Parse Expression Atlas YAML site config file.
+Author: EBI Expression Atlas team
+Maintainer: Maria Keays <mkeays@ebi.ac.uk>
+Description: A pacakge to ready in the YAML format site config file which
+    contains paths to commonly-used files/directories etc.
+Depends: yaml
+Collate: AtlasSiteConfig.R functions.R
+License: GPL (>= 3)
+LazyLoad: yes
