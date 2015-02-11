@@ -19,6 +19,7 @@ use warnings;
 use File::Spec;
 use File::Basename;
 use Scalar::Util qw(looks_like_number);
+use IPC::Cmd qw( can_run );
 
 use AtlasConfig::Reader qw( parseAtlasConfig );
 use AtlasConfig::Common qw( map_technical_replicate_ids_to_assays );
@@ -29,6 +30,19 @@ $| = 1;
 # assumes R scripts directory is in PATH
 my $mvaScript = "diffAtlas_mvaPlot.R";
 my $limmaScript = "diffAtlas_DE_limma.R";
+
+# Check that R is installed.
+unless( can_run( "R" ) ) {
+    die( "R not found. Please ensure it is installed and you can run it.\n" );
+}
+
+# Check the R scripts can be run.
+foreach my $Rscript ( $mvaScript, $limmaScript ) {
+
+    unless( can_run( $Rscript ) ) {
+        die( "$Rscript not found. Please ensure it is installed and you can run it.\n" );
+    }
+}
 
 # Get commandline arguments
 my ($atlasXML, $irapConfig) = init();
