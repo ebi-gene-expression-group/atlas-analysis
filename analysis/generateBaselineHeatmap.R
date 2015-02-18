@@ -2,6 +2,8 @@
 #
 # Script to create a heatmap for a baseline Expression Atlas experiment.
 
+# Load atlasSiteConfig package to read YAML site config.
+suppressMessages( library( atlasSiteConfig ) )
 # Load atlasConfigParser package to read XML config.
 suppressMessages( library( atlasConfigParser ) )
 # Load genefilter package to get rowVars function.
@@ -29,14 +31,8 @@ check_file_exists <- function( filename ) {
 
 get_ensgene_filename <- function( species, atlasProdDir ) {
 	
-	# Load yaml package for site config parsing.
-	suppressMessages( library( yaml ) )
-	
-	# Path to YAML site config.
-	siteConfigFile <- file.path( atlasProdDir, "sw", "atlasinstall_prod", "atlasprod", "perl_modules", "supporting_files", "AtlasSiteConfig.yml" )
-
-	# Parse site config.
-	siteConfig <- yaml.load_file( siteConfigFile )
+	# Parse site config to a list.
+	siteConfig <- createAtlasSiteConfig()
 
 	# Get the Ensembl bioentity properties directory.
 	ensemblDirectory <- siteConfig$bioentity_properties_ensembl
