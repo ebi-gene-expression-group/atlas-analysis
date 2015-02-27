@@ -13,7 +13,7 @@ use 5.10.0;
 # XML config parsing.
 use AtlasConfig::Reader qw( parseAtlasConfig );
 # Site config
-use AtlasSiteConfig;
+use Common qw( get_atlas_site_config );
 # MAGE-TAB parsing.
 use Magetab4Atlas;
 
@@ -23,7 +23,7 @@ use EBI::FGPT::Config qw( $CONFIG );
 use IPC::Cmd qw( can_run );
 
 my $atlasProdDir = $ENV{ "ATLAS_PROD" };
-my $atlasSiteConfig = AtlasSiteConfig->new->get_atlas_site_config;
+my $atlasSiteConfig = get_atlas_site_config;
 
 # Experiment accession.
 my $exptAccession = shift;
