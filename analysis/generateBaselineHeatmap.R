@@ -70,7 +70,7 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
     }
 
     # Get just the columns of expression levels.
-    fpkmCols <- fpkmsDataFrame[ , startCol:ncol( fpkmsDataFrame ) ]
+    fpkmCols <- fpkmsDataFrame[ , startCol:ncol( fpkmsDataFrame ), drop=FALSE ]
 
     # Go through the rows ...
     medians <- t( apply( fpkmCols, 1, function( fpkmsRow ) {
