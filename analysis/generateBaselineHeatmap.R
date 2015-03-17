@@ -82,6 +82,8 @@ get_ensgene_filename <- function( species, atlasProdDir ) {
 
 get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
 
+    startCol <- get_start_col( dataFrameType )
+
     # Check that the FPKM columns all have comma-separated values, quit if not.
     if( !all( apply( fpkmsDataFrame[ , startCol:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
 
