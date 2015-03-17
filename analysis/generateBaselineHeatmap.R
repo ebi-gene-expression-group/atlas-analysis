@@ -29,22 +29,7 @@ check_file_exists <- function( filename ) {
 	}
 }
 
-get_ensgene_filename <- function( species, atlasProdDir ) {
-	
-	# Parse site config to a list.
-	siteConfig <- createAtlasSiteConfig()
-
-	# Get the Ensembl bioentity properties directory.
-	ensemblDirectory <- siteConfig$bioentity_properties_ensembl
-
-	# Create path to ensgene file.
-	ensgeneFilePath <- file.path( atlasProdDir, ensemblDirectory, paste( species, "ensgene", "tsv", sep="." ) )
-
-	return( ensgeneFilePath )
-}
-
-
-get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
+get_start_col <- function( dataFrameType ) {
 
     if( dataFrameType == "decorated" ) {
         
@@ -63,6 +48,40 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
         ) )
     }
 
+    return( startCol )
+}
+
+count_data_columns <- function( fpkmsDataFrame, dataFrameType ) {
+
+    startCol = get_start_col( dataFrameType )
+
+    # Check that there is more than one column of FPKMs. We can't make a heatmap
+    # with less than two columns of data.
+    if( ncol( fpkmsDataFrame[ startCol:ncol( fpkmsDataFrame ) ) < 2 ) {
+        # Warn what has happened.
+        warning( "Less than two columns of FPKMs found. Cannot continue." )
+        
+        # Exit without exit code.
+        q( save="no" )
+    }
+}
+
+get_ensgene_filename <- function( species, atlasProdDir ) {
+	
+	# Parse site config to a list.
+	siteConfig <- createAtlasSiteConfig()
+
+	# Get the Ensembl bioentity properties directory.
+	ensemblDirectory <- siteConfig$bioentity_properties_ensembl
+
+	# Create path to ensgene file.
+	ensgeneFilePath <- file.path( atlasProdDir, ensemblDirectory, paste( species, "ensgene", "tsv", sep="." ) )
+
+	return( ensgeneFilePath )
+}
+
+get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
+
     # Check that the FPKM columns all have comma-separated values, quit if not.
     if( !all( apply( fpkmsDataFrame[ , startCol:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
 
@@ -70,7 +89,7 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
     }
 
     # Get just the columns of expression levels.
-    fpkmCols <- fpkmsDataFrame[ , startCol:ncol( fpkmsDataFrame ), drop=FALSE ]
+    fpkmCols <- fpkmsDataFrame[ , startCol:ncol( fpkmsDataFrame ) ]
 
     # Go through the rows ...
     medians <- t( apply( fpkmCols, 1, function( fpkmsRow ) {
@@ -98,6 +117,8 @@ make_species_specific_data_frame <- function( speciesFPKMsFile, speciesEnsgeneFi
 	message( paste( "Reading FPKMs from", speciesFPKMsFile, "..." ) )
 	
     fpkmsDataFrame <- read.delim( speciesFPKMsFile, stringsAsFactors=FALSE, header=TRUE )
+
+    count_data_columns( fpkmsDataFrame, "undecorated" )
     
     if( dataType == "quartiles" ) {
         
@@ -273,7 +294,9 @@ if( exists( "species" ) ) {
     message( paste( "Reading file", fpkmsMatrixFile, "..." ) )
 
     fpkmsDataFrame <- read.delim( fpkmsMatrixFile, stringsAsFactors = FALSE, header = TRUE )
-	
+
+    count_data_columns( fpkmsDataFrame, "decorated" )
+
     # Read in the FPKMs.
     if( dataType == "quartiles" ) {
         
@@ -316,15 +339,6 @@ geneIDsToGeneNames[ emptyGeneNameIdxs , ] <- rownames( geneIDsToGeneNames )[ emp
 # Now remove the Gene.Name column from the data frame.
 fpkmsDataFrame$Gene.Name <- NULL
 
-# Check that there is more than one column of FPKMs. We can't make a heatmap
-# with less than two columns of data.
-if( ncol( fpkmsDataFrame ) < 2 ) {
-	# Warn what has happened.
-	warning( "Less than two columns of FPKMs found. Cannot continue." )
-	
-	# Exit without exit code.
-	q( save="no" )
-}
 
 # The FPKMs data frame can contain non-numeric values, such as "LOWDATA", which
 # come from Cufflinks. We treat this as missing data, and in order for R to
