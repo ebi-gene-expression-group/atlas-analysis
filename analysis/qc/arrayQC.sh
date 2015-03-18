@@ -24,6 +24,7 @@ if [ $exitCode -eq 1 ]; then
     popd
     mv ${ATLAS_PROD}/analysis/differential/microarray/experiments/$expAcc ${ATLAS_PROD}/failedQC/microarray/
     echo "[QC] Quality control for ${expAcc} has failed - see http://www.ebi.ac.uk/~rpetry/atlas3/failedQC/microarray/${expAcc} for more info"
+    exit 2
 elif [ $exitCode -ne 0 ]; then
     popd
     # The QC procedure itself failed (e.g. due to lack of memory) - we don't know if the experiment passes or fails the QC
