@@ -21,8 +21,8 @@ use File::Basename;
 use Scalar::Util qw(looks_like_number);
 use IPC::Cmd qw( can_run );
 
-use AtlasConfig::Reader qw( parseAtlasConfig );
-use AtlasConfig::Common qw( map_technical_replicate_ids_to_assays );
+use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
+use Atlas::AtlasConfig::Common qw( map_technical_replicate_ids_to_assays );
 
 # Flush after every print not every newline
 $| = 1;
@@ -48,7 +48,7 @@ foreach my $Rscript ( $mvaScript, $limmaScript ) {
 my ($atlasXML, $irapConfig) = init();
 
 
-# Read XML config into AtlasConfig::ExperimentConfig object.
+# Read XML config into Atlas::AtlasConfig::ExperimentConfig object.
 my $experimentConfig = parseAtlasConfig( $atlasXML );
 
 my $atlasExperimentType = $experimentConfig->get_atlas_experiment_type;

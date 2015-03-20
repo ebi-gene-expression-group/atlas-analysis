@@ -11,13 +11,12 @@ use warnings;
 use 5.10.0;
 
 # XML config parsing.
-use AtlasConfig::Reader qw( parseAtlasConfig );
+use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
 # Site config
-use Common qw( get_atlas_site_config );
+use Atlas::Common qw( get_atlas_site_config );
 # MAGE-TAB parsing.
-use Magetab4Atlas;
+use Atlas::Magetab4Atlas;
 
-use AtlasSiteConfig;
 use File::Spec;
 use EBI::FGPT::Config qw( $CONFIG );
 use IPC::Cmd qw( can_run );
@@ -86,7 +85,7 @@ my $idfFilename = File::Spec->catfile( $loadDir, "$exptAccession.idf.txt" );
 
 # Read the MAGE-TAB.
 print "Reading MAGE-TAB...\n";
-my $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idfFilename );
+my $magetab4atlas = Atlas::Magetab4Atlas->new( "idf_filename" => $idfFilename );
 print "Read MAGE-TAB.\n";
 
 
@@ -182,11 +181,11 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 # 		  ->{ <array design 2> }->{ <assay 3> } = <file 3>
 # 		  ...
 # Arguments:
-# 	- $magetab4atlas : a Magetab4Atlas object.
+# 	- $magetab4atlas : a Atlas::Magetab4Atlas object.
 # 	- $loadDir : path to load directory containing raw data files.
-# 	- $experimentConfig : AtlasConfig::ExperimentConfig object.
+# 	- $experimentConfig : Atlas::AtlasConfig::ExperimentConfig object.
 sub makeArraysToAssaysToFiles {
-	# Magetab4Atlas object and path to load directory.
+	# Atlas::Magetab4Atlas object and path to load directory.
 	my ($magetab4atlas, $loadDir, $experimentConfig ) = @_;
 	
 	my $experimentType = $experimentConfig->get_atlas_experiment_type;
@@ -251,7 +250,7 @@ sub makeArraysToAssaysToFiles {
 		} elsif( $experimentType =~ /2colour/ ) {
 			$normalizationMode = "agil2";
 
-			# Remove label name from assay name which was added by Magetab4Atlas.
+			# Remove label name from assay name which was added by Atlas::Magetab4Atlas.
 			$assayName =~ s/\.Cy\d$//;
 		}
 		

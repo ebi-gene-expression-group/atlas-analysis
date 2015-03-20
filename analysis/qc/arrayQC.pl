@@ -19,13 +19,13 @@
 use strict;
 use warnings;
 
-use Magetab4Atlas;
-use AtlasConfig::Reader qw( parseAtlasConfig );
-use AtlasSiteConfig;
+use Atlas::Magetab4Atlas;
+use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
 use File::Spec;
 use EBI::FGPT::Config qw( $CONFIG );
 use Log::Log4perl;
 use IPC::Cmd qw( can_run );
+use Atlas::Common qw( get_atlas_site_config );
 
 $| = 1;
 
@@ -42,7 +42,7 @@ Log::Log4perl::init( \$logger_config );
 my $logger = Log::Log4perl::get_logger;
 
 my $atlasProdDir = $ENV{ "ATLAS_PROD" };
-my $atlasSiteConfig = AtlasSiteConfig->new->get_atlas_site_config;
+my $atlasSiteConfig = get_atlas_site_config;
 
 # Helpful message
 my $usage = "Usage:
@@ -111,7 +111,7 @@ unless(-e $idfFilename) {
 
 # Read the MAGE-TAB.
 $logger->info( "[QC] Reading MAGE-TAB from \"$idfFilename\"..." );
-my $magetab4atlas = Magetab4Atlas->new( "idf_filename" => $idfFilename );
+my $magetab4atlas = Atlas::Magetab4Atlas->new( "idf_filename" => $idfFilename );
 $logger->info( "[QC] Successfully read MAGE-TAB" );
 
 # Next need to sort the raw data files by array design and within that
@@ -190,7 +190,7 @@ if($failed) {
 	$experimentConfig->write_xml( "." );
 	$logger->info( "[QC] Successfully written new XML config file." );
 
-	# Because the AtlasConfig modules write files with ".auto" on the end,
+	# Because the Atlas::AtlasConfig modules write files with ".auto" on the end,
 	# rename the new one so that it doesn't.
 	$logger->info( "[QC] Removing \".auto\" from new XML config filename..." );
 	`mv $atlasXMLfile.auto $atlasXMLfile`;
@@ -213,14 +213,14 @@ if($failed) {
 # 	  ->{ <array design 2> }->{ <factor value(s) 3> }->{ <assay name 3> } = <file 3>
 # 	  ...
 # Arguments:
-# 	- $magetab4atlas : a Magetab4Atlas object
+# 	- $magetab4atlas : a Atlas::Magetab4Atlas object
 # 	- $loadDir : path to load directory containing raw data files.
-# 	- $experimentConfig : AtlasConfig::ExperimentConfig object.
+# 	- $experimentConfig : Atlas::AtlasConfig::ExperimentConfig object.
 sub makeArraysToFactorValuesToFiles {
-	# Magetab4Atlas object and path to load directory.
+	# Atlas::Magetab4Atlas object and path to load directory.
 	my ($magetab4atlas, $loadDir, $experimentConfig) = @_;
 	
-	# Experiment type from Magetab4Atlas will be either "one-colour array" or
+	# Experiment type from Atlas::Magetab4Atlas will be either "one-colour array" or
 	# "two-colour array". Die if it's something else.
 	my $experimentType = $magetab4atlas->get_experiment_type;
 	unless($experimentType eq "one-colour array" || $experimentType eq "two-colour array") {
@@ -412,7 +412,7 @@ sub removeLoadDirFromReport {
 #	them from the experiment config. Also remove contrasts containing them if the
 #	contrast no longer has enough replicates without failed assays.
 # ARGUMENTS:
-# 	- $experimentConfig : AtlasConfig::ExperimenConfig object.
+# 	- $experimentConfig : Atlas::AtlasConfig::ExperimenConfig object.
 # 	- $qcRscriptOutput : variable containing all output from R script (STDOUT, STDERR)
 # 	- $arrayDesign : ArrayExpress array design accession
 sub removeRejectedAssays {

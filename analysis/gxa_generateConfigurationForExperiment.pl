@@ -85,16 +85,16 @@ use Log::Log4perl::Level;
 use File::Spec;
 use Data::Dumper;
 
-use Common qw(
+use Atlas::Common qw(
 	get_atlas_site_config
 );
 
-use AtlasConfig::Setup qw(
+use Atlas::AtlasConfig::Setup qw(
 	create_factor_configs
 	create_magetab4atlas
 	create_atlas_experiment_type
 );
-use AtlasConfig::ExperimentConfigFactory qw( create_experiment_config );
+use Atlas::AtlasConfig::ExperimentConfigFactory qw( create_experiment_config );
 
 
 # Auto flush buffer.
