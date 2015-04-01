@@ -103,7 +103,7 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
             vec <- strsplit( x, "," )[[1]]
 
             # Get the median.
-            vec[ 3 ]
+            as.numeric( vec[ 3 ] )
         })
     }) )
    
