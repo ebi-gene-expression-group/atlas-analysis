@@ -6,6 +6,9 @@
 # ExpressionSet (1-colour microarray data), or MAList (2-colour microarray
 # data).
 
+# Load ExpressionAtlas package
+library( ExpressionAtlas )
+
 # Get commandline arguments.
 args <- commandArgs( TRUE )
 
@@ -36,9 +39,6 @@ if( length( args ) == 0 || length( args ) > 2 ) {
 
 # Log where we're reading and writing.
 cat( paste("\nReading and writing files in", atlasExperimentDirectory, "\n\n" ) )
-
-# Load atlasExperimentSummary package
-library( atlasExperimentSummary )
 
 # Create experiment summary SimpleList.
 experimentSummary <- summarizeAtlasExperiment( 

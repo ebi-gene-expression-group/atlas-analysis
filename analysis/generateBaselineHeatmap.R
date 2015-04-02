@@ -2,10 +2,8 @@
 #
 # Script to create a heatmap for a baseline Expression Atlas experiment.
 
-# Load atlasSiteConfig package to read YAML site config.
-suppressMessages( library( atlasSiteConfig ) )
-# Load atlasConfigParser package to read XML config.
-suppressMessages( library( atlasConfigParser ) )
+# Load ExpressionAtlas package.
+suppressMessages( library( ExpressionAtlas ) )
 # Load genefilter package to get rowVars function.
 suppressMessages( library( genefilter ) )
 # Load gplots package for heatmap.2 function.
