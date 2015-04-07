@@ -114,7 +114,7 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
 make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOrganismEnsgeneFile, dataType ) {
 
 	# Read in the files now we have them.
-	message( paste( "Reading FPKMs from", dataOrganismFPKMsFile, "..." ) )
+	print( paste( "Reading FPKMs from", dataOrganismFPKMsFile, "..." ) )
 	
     fpkmsDataFrame <- read.delim( dataOrganismFPKMsFile, stringsAsFactors=FALSE, header=TRUE )
 
@@ -140,13 +140,13 @@ make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOr
         stop( paste( "Don't know what to do with option \"", dataType, "\"" ) )
     }
 
-	message( "Successfully read FPKMs" )
+	print( "Successfully read FPKMs" )
 
-	message( paste( "Reading Ensembl gene annotations from", dataOrganismEnsgeneFile, "..." ) )
+	print( paste( "Reading Ensembl gene annotations from", dataOrganismEnsgeneFile, "..." ) )
 	ensgene <- read.delim( dataOrganismEnsgeneFile, stringsAsFactors=FALSE, header=TRUE )
-	message( "Successfully read Ensembl gene annotations" )
+	print( "Successfully read Ensembl gene annotations" )
 
-	message( "Adding gene names to FPKMs data frame..." )
+	print( "Adding gene names to FPKMs data frame..." )
 
 	# Just need the "ensgene" and "symbol" columns from the bioentity
 	# properties file. These are the gene names and gene IDs, respectively.
@@ -190,7 +190,7 @@ make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOr
 	# for single-organism experiments when it's read in.
 	colnames( fpkmsDataFrame )[ 1 ] <- "Gene.ID"
 
-	message( "Successfully added gene names to FPKMs data frame" )
+	print( "Successfully added gene names to FPKMs data frame" )
 
 	return( fpkmsDataFrame )
 }
@@ -227,7 +227,7 @@ check_file_exists( atlasExperimentDirectory )
 experimentAccession <- basename( atlasExperimentDirectory )
 
 # Log accession.
-message( paste( "Experiment accession is:", experimentAccession ) )
+print( paste( "Experiment accession is:", experimentAccession ) )
 
 # XML config file.
 experimentConfigFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, "-configuration.xml", sep="" ) )
@@ -235,9 +235,9 @@ experimentConfigFile <- file.path( atlasExperimentDirectory, paste( experimentAc
 check_file_exists( experimentConfigFile )
 
 # Parse XML config to a list.
-message( paste( "Reading experiment XML config from", experimentConfigFile, "..." ) )
+print( paste( "Reading experiment XML config from", experimentConfigFile, "..." ) )
 experimentConfigList <- parseAtlasXML( experimentConfigFile )
-message( "Successfully read experiment XML config" )
+print( "Successfully read experiment XML config" )
 
 # Get the AssayGroup objects from the experiment config ready to use later.
 # First get list of analytics.
@@ -248,13 +248,13 @@ rnaseqAnalytics <- experimentAnalytics$rnaseq
 rnaseqAssayGroups <- assay_groups( rnaseqAnalytics )
 
 # Check that all assay groups have a label, we cannot continue without one.
-message( "Verifying that all assay groups in XML config have labels..." )
+print( "Verifying that all assay groups in XML config have labels..." )
 invisible( lapply( rnaseqAssayGroups, function( assayGroup) {
 	if( length( assay_group_label( assayGroup ) ) == 0 ) {
 		stop( paste( "Assay group", assay_group_id( assayGroup ), "does not have a label. Cannot continue." ) )
 	}
 } ) )
-message( "All assay groups have labels." )
+print( "All assay groups have labels." )
 
 
 
@@ -265,7 +265,7 @@ message( "All assay groups have labels." )
 experimentAccessionForFilename <- experimentAccession
 
 # FIXME
-message( paste( "Accession is", experimentAccessionForFilename ) )
+print( paste( "Accession is", experimentAccessionForFilename ) )
 
 # If organism was provided...
 if( exists( "dataOrganism" ) ) {
@@ -273,7 +273,7 @@ if( exists( "dataOrganism" ) ) {
 	print( dataOrganism )
 
 	# Log organism.
-	message( paste( "Species is:", dataOrganism ) )
+	print( paste( "Species is:", dataOrganism ) )
 	
 	# Add the organism to the accession, for filenames.
 	experimentAccessionForFilename <- paste( experimentAccessionForFilename, dataOrganism, sep="_" )
@@ -293,18 +293,18 @@ if( exists( "dataOrganism" ) ) {
 } else {
 
 	#FIXME
-	message( "Getting path to FPKMs matrix file..." )
+	print( "Getting path to FPKMs matrix file..." )
 
 	# FPKMs matrix file.
 	fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, ".tsv", sep="" ) )
 
 	#FIXME
-	message( "Got FPKMs matrix file" )
+	print( "Got FPKMs matrix file" )
 
 	# Check the FPKMs matrix exists.
 	check_file_exists( fpkmsMatrixFile )
 
-    message( paste( "Reading file", fpkmsMatrixFile, "..." ) )
+    print( paste( "Reading file", fpkmsMatrixFile, "..." ) )
 
     fpkmsDataFrame <- read.delim( fpkmsMatrixFile, stringsAsFactors = FALSE, header = TRUE )
 
@@ -331,7 +331,7 @@ if( exists( "dataOrganism" ) ) {
         stop( paste( "Don't know what to do with option \"", dataType, "\"" ) )
     }
     
-    message( "Successfully read FPKMs" )
+    print( "Successfully read FPKMs" )
 }
 
 # Assign gene IDs as row names.
@@ -358,13 +358,13 @@ fpkmsDataFrame$Gene.Name <- NULL
 # understand that we have to convert all non-numeric values to NA. The
 # "as.numeric" function does this for us. Here we apply it to each column of
 # the FPKMs data frame, to create a new one, without any non-numeric values.
-message( "Converting all values to numeric..." )
+print( "Converting all values to numeric..." )
 fpkmsNumeric <- data.frame( lapply( fpkmsDataFrame, function( x ) {
 	# Suppress warnings about coercion to NA -- that's why we're using this
 	# function anyway!
 	suppressWarnings( as.numeric( x ) )
 } ) )
-message( "Numeric conversion complete" )
+print( "Numeric conversion complete" )
 
 # Conversion to numeric-only has removed the row names, so we have to add them back.
 rownames( fpkmsNumeric ) <- rownames( fpkmsDataFrame )
@@ -432,7 +432,7 @@ if( longestLabel / 3 > 8 ) {
 }
 
 # Make the heatmap.
-message( paste( "Drawing heatmap in", heatmapFilename ) )
+print( paste( "Drawing heatmap in", heatmapFilename ) )
 pdf( heatmapFilename, height=imageHeight, width=imageWidth )
 heatmap.2( 
 	as.matrix( top100geneFPKMs ), 
