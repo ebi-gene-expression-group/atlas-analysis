@@ -264,6 +264,9 @@ message( "All assay groups have labels." )
 # heatmap filenames.
 experimentAccessionForFilename <- experimentAccession
 
+# FIXME
+message( paste( "Accession is", experimentAccessionForFilename ) )
+
 # If species was provided...
 if( exists( "species" ) ) {
 	# Log species.
@@ -285,8 +288,15 @@ if( exists( "species" ) ) {
 	fpkmsDataFrame <- make_species_specific_data_frame( speciesFPKMsFile, speciesEnsgeneFile, dataType )
 
 } else {
+
+	#FIXME
+	message( "Getting path to FPKMs matrix file..." )
+
 	# FPKMs matrix file.
 	fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, ".tsv", sep="" ) )
+
+	#FIXME
+	message( "Got FPKMs matrix file" )
 
 	# Check the FPKMs matrix exists.
 	check_file_exists( fpkmsMatrixFile )
