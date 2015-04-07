@@ -114,7 +114,7 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
 make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOrganismEnsgeneFile, dataType ) {
 
 	# Read in the files now we have them.
-	print( paste( "Reading FPKMs from", dataOrganismFPKMsFile, "..." ) )
+	cat( paste( "Reading FPKMs from", dataOrganismFPKMsFile, "...\n" ) )
 	
     fpkmsDataFrame <- read.delim( dataOrganismFPKMsFile, stringsAsFactors=FALSE, header=TRUE )
 
@@ -140,13 +140,13 @@ make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOr
         stop( paste( "Don't know what to do with option \"", dataType, "\"" ) )
     }
 
-	print( "Successfully read FPKMs" )
+	cat( "Successfully read FPKMs\n" )
 
-	print( paste( "Reading Ensembl gene annotations from", dataOrganismEnsgeneFile, "..." ) )
+	cat( paste( "Reading Ensembl gene annotations from", dataOrganismEnsgeneFile, "...\n" ) )
 	ensgene <- read.delim( dataOrganismEnsgeneFile, stringsAsFactors=FALSE, header=TRUE )
-	print( "Successfully read Ensembl gene annotations" )
+	cat( "Successfully read Ensembl gene annotations\n" )
 
-	print( "Adding gene names to FPKMs data frame..." )
+	cat( "Adding gene names to FPKMs data frame...\n" )
 
 	# Just need the "ensgene" and "symbol" columns from the bioentity
 	# properties file. These are the gene names and gene IDs, respectively.
@@ -190,7 +190,7 @@ make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOr
 	# for single-organism experiments when it's read in.
 	colnames( fpkmsDataFrame )[ 1 ] <- "Gene.ID"
 
-	print( "Successfully added gene names to FPKMs data frame" )
+	cat( "Successfully added gene names to FPKMs data frame\n" )
 
 	return( fpkmsDataFrame )
 }
@@ -227,7 +227,7 @@ check_file_exists( atlasExperimentDirectory )
 experimentAccession <- basename( atlasExperimentDirectory )
 
 # Log accession.
-print( paste( "Experiment accession is:", experimentAccession ) )
+cat( paste( "Experiment accession is:", experimentAccession, "\n" ) )
 
 # XML config file.
 experimentConfigFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, "-configuration.xml", sep="" ) )
@@ -235,9 +235,9 @@ experimentConfigFile <- file.path( atlasExperimentDirectory, paste( experimentAc
 check_file_exists( experimentConfigFile )
 
 # Parse XML config to a list.
-print( paste( "Reading experiment XML config from", experimentConfigFile, "..." ) )
+cat( paste( "Reading experiment XML config from", experimentConfigFile, "...\n" ) )
 experimentConfigList <- parseAtlasXML( experimentConfigFile )
-print( "Successfully read experiment XML config" )
+cat( "Successfully read experiment XML config\n" )
 
 # Get the AssayGroup objects from the experiment config ready to use later.
 # First get list of analytics.
@@ -248,13 +248,13 @@ rnaseqAnalytics <- experimentAnalytics$rnaseq
 rnaseqAssayGroups <- assay_groups( rnaseqAnalytics )
 
 # Check that all assay groups have a label, we cannot continue without one.
-print( "Verifying that all assay groups in XML config have labels..." )
+cat( "Verifying that all assay groups in XML config have labels...\n" )
 invisible( lapply( rnaseqAssayGroups, function( assayGroup) {
 	if( length( assay_group_label( assayGroup ) ) == 0 ) {
 		stop( paste( "Assay group", assay_group_id( assayGroup ), "does not have a label. Cannot continue." ) )
 	}
 } ) )
-print( "All assay groups have labels." )
+cat( "All assay groups have labels.\n" )
 
 
 
@@ -264,16 +264,11 @@ print( "All assay groups have labels." )
 # heatmap filenames.
 experimentAccessionForFilename <- experimentAccession
 
-# FIXME
-print( paste( "Accession is", experimentAccessionForFilename ) )
-
 # If organism was provided...
 if( exists( "dataOrganism" ) ) {
 
-	print( dataOrganism )
-
 	# Log organism.
-	print( paste( "Species is:", dataOrganism ) )
+	cat( paste( "Species is:", dataOrganism, "\n" ) )
 	
 	# Add the organism to the accession, for filenames.
 	experimentAccessionForFilename <- paste( experimentAccessionForFilename, dataOrganism, sep="_" )
@@ -293,18 +288,18 @@ if( exists( "dataOrganism" ) ) {
 } else {
 
 	#FIXME
-	print( "Getting path to FPKMs matrix file..." )
+	cat( "Getting path to FPKMs matrix file...\n" )
 
 	# FPKMs matrix file.
 	fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, ".tsv", sep="" ) )
 
 	#FIXME
-	print( "Got FPKMs matrix file" )
+	cat( "Got FPKMs matrix file\n" )
 
 	# Check the FPKMs matrix exists.
 	check_file_exists( fpkmsMatrixFile )
 
-    print( paste( "Reading file", fpkmsMatrixFile, "..." ) )
+    cat( paste( "Reading file", fpkmsMatrixFile, "...\n" ) )
 
     fpkmsDataFrame <- read.delim( fpkmsMatrixFile, stringsAsFactors = FALSE, header = TRUE )
 
@@ -331,7 +326,7 @@ if( exists( "dataOrganism" ) ) {
         stop( paste( "Don't know what to do with option \"", dataType, "\"" ) )
     }
     
-    print( "Successfully read FPKMs" )
+    cat( "Successfully read FPKMs\n" )
 }
 
 # Assign gene IDs as row names.
@@ -358,13 +353,13 @@ fpkmsDataFrame$Gene.Name <- NULL
 # understand that we have to convert all non-numeric values to NA. The
 # "as.numeric" function does this for us. Here we apply it to each column of
 # the FPKMs data frame, to create a new one, without any non-numeric values.
-print( "Converting all values to numeric..." )
+cat( "Converting all values to numeric...\n" )
 fpkmsNumeric <- data.frame( lapply( fpkmsDataFrame, function( x ) {
 	# Suppress warnings about coercion to NA -- that's why we're using this
 	# function anyway!
 	suppressWarnings( as.numeric( x ) )
 } ) )
-print( "Numeric conversion complete" )
+cat( "Numeric conversion complete\n" )
 
 # Conversion to numeric-only has removed the row names, so we have to add them back.
 rownames( fpkmsNumeric ) <- rownames( fpkmsDataFrame )
@@ -432,7 +427,7 @@ if( longestLabel / 3 > 8 ) {
 }
 
 # Make the heatmap.
-print( paste( "Drawing heatmap in", heatmapFilename ) )
+cat( paste( "Drawing heatmap in", heatmapFilename, "\n" ) )
 pdf( heatmapFilename, height=imageHeight, width=imageWidth )
 heatmap.2( 
 	as.matrix( top100geneFPKMs ), 
