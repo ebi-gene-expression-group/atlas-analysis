@@ -48,7 +48,7 @@ setMethod( "initialize", "AssayGroup", function( .Object, assayGroupNode ) {
 			assayGroupAttrs[[ "label" ]]
 		},
 		error = function( cond ) {
-			message( paste( "Assay group", assayGroupID, "does not have a label" ) )
+			cat( paste( "Assay group", assayGroupID, "does not have a label\n" ) )
 			return( NULL )
 		}
 	)
