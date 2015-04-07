@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration experimentType="rnaseq_mrna_differential">
+    <analytics>
+        <assay_groups>
+            <assay_group id="g1" label="wild type genotype">
+                <assay>SRR504179</assay>
+                <assay>SRR504181</assay>
+                <assay>SRR504180</assay>
+            </assay_group>
+            <assay_group id="g2" label="nrpe1">
+                <assay>SRR504182</assay>
+                <assay>SRR504184</assay>
+                <assay>SRR504183</assay>
+            </assay_group>
+            <assay_group id="g3" label="swi3b +/-">
+                <assay>SRR504187</assay>
+                <assay>SRR504185</assay>
+                <assay>SRR504186</assay>
+            </assay_group>
+            <assay_group id="g4" label="idn2-1">
+                <assay>SRR576329</assay>
+                <assay>SRR576328</assay>
+                <assay>SRR576327</assay>
+            </assay_group>
+        </assay_groups>
+        <contrasts>
+            <contrast id="g1_g2">
+                <name>'nrpe1' vs 'wild type genotype'</name>
+                <reference_assay_group>g1</reference_assay_group>
+                <test_assay_group>g2</test_assay_group>
+            </contrast>
+            <contrast id="g1_g3">
+                <name>'swi3b +/-' vs 'wild type genotype'</name>
+                <reference_assay_group>g1</reference_assay_group>
+                <test_assay_group>g3</test_assay_group>
+            </contrast>
+            <contrast id="g1_g4">
+                <name>'idn2-1' vs 'wild type genotype'</name>
+                <reference_assay_group>g1</reference_assay_group>
+                <test_assay_group>g4</test_assay_group>
+            </contrast>
+        </contrasts>
+    </analytics>
+</configuration>
