@@ -269,6 +269,9 @@ message( paste( "Accession is", experimentAccessionForFilename ) )
 
 # If species was provided...
 if( exists( "species" ) ) {
+
+	message( "Got a species." )
+
 	# Log species.
 	message( paste( "Species is:", species ) )
 	
