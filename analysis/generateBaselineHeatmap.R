@@ -64,7 +64,7 @@ count_data_columns <- function( fpkmsDataFrame, dataFrameType ) {
     }
 }
 
-get_ensgene_filename <- function( species, atlasProdDir ) {
+get_ensgene_filename <- function( organism, atlasProdDir ) {
 	
 	# Parse site config to a list.
 	siteConfig <- createAtlasSiteConfig()
@@ -73,7 +73,7 @@ get_ensgene_filename <- function( species, atlasProdDir ) {
 	ensemblDirectory <- siteConfig$bioentity_properties_ensembl
 
 	# Create path to ensgene file.
-	ensgeneFilePath <- file.path( atlasProdDir, ensemblDirectory, paste( species, "ensgene", "tsv", sep="." ) )
+	ensgeneFilePath <- file.path( atlasProdDir, ensemblDirectory, paste( organism, "ensgene", "tsv", sep="." ) )
 
 	return( ensgeneFilePath )
 }
@@ -111,12 +111,12 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
     return( medians )
 }
 
-make_species_specific_data_frame <- function( speciesFPKMsFile, speciesEnsgeneFile, dataType ) {
+make_organism_specific_data_frame <- function( organismFPKMsFile, organismEnsgeneFile, dataType ) {
 
 	# Read in the files now we have them.
-	message( paste( "Reading FPKMs from", speciesFPKMsFile, "..." ) )
+	message( paste( "Reading FPKMs from", organismFPKMsFile, "..." ) )
 	
-    fpkmsDataFrame <- read.delim( speciesFPKMsFile, stringsAsFactors=FALSE, header=TRUE )
+    fpkmsDataFrame <- read.delim( organismFPKMsFile, stringsAsFactors=FALSE, header=TRUE )
 
     count_data_columns( fpkmsDataFrame, "undecorated" )
     
@@ -130,7 +130,7 @@ make_species_specific_data_frame <- function( speciesFPKMsFile, speciesEnsgeneFi
         if( any( apply( fpkmsDataFrame[ , 3:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
             stop( paste( 
                 "You specified noquartiles option but I found commas in ",
-                speciesFPKMsFile,
+                organismFPKMsFile,
                 " -- please check."
             ))
         }
@@ -142,8 +142,8 @@ make_species_specific_data_frame <- function( speciesFPKMsFile, speciesEnsgeneFi
 
 	message( "Successfully read FPKMs" )
 
-	message( paste( "Reading Ensembl gene annotations from", speciesEnsgeneFile, "..." ) )
-	ensgene <- read.delim( speciesEnsgeneFile, stringsAsFactors=FALSE, header=TRUE )
+	message( paste( "Reading Ensembl gene annotations from", organismEnsgeneFile, "..." ) )
+	ensgene <- read.delim( organismEnsgeneFile, stringsAsFactors=FALSE, header=TRUE )
 	message( "Successfully read Ensembl gene annotations" )
 
 	message( "Adding gene names to FPKMs data frame..." )
@@ -187,7 +187,7 @@ make_species_specific_data_frame <- function( speciesFPKMsFile, speciesEnsgeneFi
 	fpkmsDataFrame <- fpkmsDataFrame[ , c( geneIDcol, geneNameCol, assayGroupCols ) ]
 
 	# Rename the GeneID column so it's the same as the decorated FPKMs matrices
-	# for single-species experiments when it's read in.
+	# for single-organism experiments when it's read in.
 	colnames( fpkmsDataFrame )[ 1 ] <- "Gene.ID"
 
 	message( "Successfully added gene names to FPKMs data frame" )
@@ -213,10 +213,10 @@ if( length( args ) == 2 ) {
 } else if( length( args ) == 3 ) {
 	atlasExperimentDirectory <- args[ 1 ]
     dataType <- args[ 2 ]
-	species <- args[ 3 ]
+	organism <- args[ 3 ]
 } else {
 	# Print a usage message and exit.
-	stop( "\nUsage:\n\tgenerateBaselineHeatmap.R <Atlas experiment directory> [ quartiles | noquartiles ] [<species>]\n\n" )
+	stop( "\nUsage:\n\tgenerateBaselineHeatmap.R <Atlas experiment directory> [ quartiles | noquartiles ] [<organism>]\n\n" )
 }
 
 # Check the directory provided exists, die if not.
@@ -258,41 +258,35 @@ message( "All assay groups have labels." )
 
 
 
-# If species was provided, we want to append to accession, but there won't
-# always be a species provided, so we have a new variable that can be either
-# just accession, or accession_species. This is used for FPKM matrix and
+# If organism was provided, we want to append to accession, but there won't
+# always be a organism provided, so we have a new variable that can be either
+# just accession, or accession_organism. This is used for FPKM matrix and
 # heatmap filenames.
 experimentAccessionForFilename <- experimentAccession
 
 # FIXME
 message( paste( "Accession is", experimentAccessionForFilename ) )
 
-# If species was provided...
-if( exists( "species" ) ) {
+# If organism was provided...
+if( exists( "organism" ) ) {
 
-	message( "Got a species." )
-
-	print( species )
-
-	message( "That was species" )
-
-	# Log species.
-	message( paste( "Species is:", species ) )
+	# Log organism.
+	message( paste( "Species is:", organism ) )
 	
-	# Add the species to the accession, for filenames.
-	experimentAccessionForFilename <- paste( experimentAccessionForFilename, species, sep="_" )
+	# Add the organism to the accession, for filenames.
+	experimentAccessionForFilename <- paste( experimentAccessionForFilename, organism, sep="_" )
 	
-	# The undecorated FPKM matrix for this species.
-	speciesFPKMsFile <- file.path( atlasExperimentDirectory, paste( experimentAccessionForFilename, ".tsv.undecorated", sep="" ) )
+	# The undecorated FPKM matrix for this organism.
+	organismFPKMsFile <- file.path( atlasExperimentDirectory, paste( experimentAccessionForFilename, ".tsv.undecorated", sep="" ) )
 
 	# Check it exists.
-	check_file_exists( speciesFPKMsFile )
+	check_file_exists( organismFPKMsFile )
 	
 	# Get the Ensembl bioentity properties "ensgene" file name.
-	speciesEnsgeneFile <- get_ensgene_filename( species, atlasProdDir )
-	check_file_exists( speciesEnsgeneFile )
+	organismEnsgeneFile <- get_ensgene_filename( organism, atlasProdDir )
+	check_file_exists( organismEnsgeneFile )
 
-	fpkmsDataFrame <- make_species_specific_data_frame( speciesFPKMsFile, speciesEnsgeneFile, dataType )
+	fpkmsDataFrame <- make_organism_specific_data_frame( organismFPKMsFile, organismEnsgeneFile, dataType )
 
 } else {
 
