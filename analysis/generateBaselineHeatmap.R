@@ -270,6 +270,8 @@ message( paste( "Accession is", experimentAccessionForFilename ) )
 # If organism was provided...
 if( exists( "organism" ) ) {
 
+	print( organism )
+
 	# Log organism.
 	message( paste( "Species is:", organism ) )
 	
