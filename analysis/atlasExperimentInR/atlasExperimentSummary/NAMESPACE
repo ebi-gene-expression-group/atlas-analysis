@@ -1,2 +1,0 @@
-export( summarizeAtlasExperiment )
-import( Biobase, GenomicRanges, atlasConfigParser, limma, methods, plyr )
