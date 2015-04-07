@@ -272,6 +272,8 @@ if( exists( "species" ) ) {
 
 	message( "Got a species." )
 
+	print( species )
+
 	# Log species.
 	message( paste( "Species is:", species ) )
 	
