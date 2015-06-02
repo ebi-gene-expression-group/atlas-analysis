@@ -468,6 +468,11 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		# Get the assay names.
 		assayNames <- assay_names( assayGroup )
 
+		# Sanity checking.
+		if( length( assayNames ) == 0 ) { 
+			stop( "ERROR - Did not find any assay names for an assay group. Cannot continue." )
+		}
+
 		# TODO: strip .Cy* from 2-colour assay names? Check diffAtlas_DE_limma.R
 
 		# Get the SDRF rows for these assays.
