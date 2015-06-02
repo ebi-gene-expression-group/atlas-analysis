@@ -26,7 +26,10 @@ setMethod( "initialize", "BiologicalReplicate", function( .Object, assayNames, t
 	}
 
 	.Object@assay_names <- assayNames
-	.Object@technical_replicate_id <- techRepId
+
+	if( !is.null( techRepId ) ) {
+		.Object@technical_replicate_id <- techRepId
+	}
 
 	return( .Object )
 })
