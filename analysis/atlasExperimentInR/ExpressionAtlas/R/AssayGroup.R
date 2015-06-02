@@ -65,7 +65,17 @@ setMethod( "biological_replicates", "AssayGroup", function( object ) object@biol
 setMethod( "assay_group_id", "AssayGroup", function( object ) object@assay_group_id )
 
 # Method for assay_names getter #FIXME
-setMethod( "assay_names", "AssayGroup", function( object ) object@assay_names )
+setMethod( "assay_names", "AssayGroup", function( object ) { 
+	
+	biologicalReplicates <- object@biological_replicates
+
+	assayNames <- unlist( sapply( biologicalReplicates, function( biologicalReplicate ) {
+
+		assay_names( biologicalReplicate )
+	} ) )
+
+	assayNames
+} )
 
 # Method for assay_group_label getter
 setMethod( "assay_group_label", "AssayGroup", function( object ) object@assay_group_label )
