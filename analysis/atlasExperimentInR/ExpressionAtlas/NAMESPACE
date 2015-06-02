@@ -1,4 +1,4 @@
 export( summarizeAtlasExperiment, parseAtlasXML, createAtlasSiteConfig, createArrayExpressSiteConfig )
 exportClasses( Analytics, AssayGroup, BiologicalReplicate )
-export( platform, assay_groups, getAllAssays, assay_group_id, assay_names, assay_group_label, biological_replicates, technical_replicate_id )
+export( platform, assay_groups, getAllAssays, assay_group_id, assay_names, assay_group_label, biological_replicates, biorep_assay_names, technical_replicate_id )
 import( Biobase, GenomicRanges, limma, plyr, XML, yaml, methods )

@@ -71,7 +71,7 @@ setMethod( "assay_names", "AssayGroup", function( object ) {
 
 	assayNames <- unlist( sapply( biologicalReplicates, function( biologicalReplicate ) {
 
-		assay_names( biologicalReplicate )
+		biorep_assay_names( biologicalReplicate )
 	} ) )
 
 	assayNames

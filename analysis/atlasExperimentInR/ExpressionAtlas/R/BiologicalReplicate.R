@@ -5,7 +5,7 @@ setClass( "BiologicalReplicate", slots = c( assay_names = "vector", technical_re
 # BiologicalReplicate Generics
 
 # assay_names getter.
-setGeneric( "assay_names", function( object ) standardGeneric( "assay_names" ) )
+setGeneric( "biorep_assay_names", function( object ) standardGeneric( "biorep_assay_names" ) )
 
 # technical_replicate_id getter.
 setGeneric( "technical_replicate_id", function( object ) standardGeneric( "technical_replicate_id" ) )
@@ -36,7 +36,7 @@ setMethod( "initialize", "BiologicalReplicate", function( .Object, assayNames, t
 
 
 # Method for assay_names getter.
-setMethod( "assay_names", "BiologicalReplicate", function( object ) object@assay_names )
+setMethod( "biorep_assay_names", "BiologicalReplicate", function( object ) object@assay_names )
 
 # Method for technical_replicate_id getter.
 setMethod( "technical_replicate_id", "BiologicalReplicate", function( object ) object@technical_replicate_id )
