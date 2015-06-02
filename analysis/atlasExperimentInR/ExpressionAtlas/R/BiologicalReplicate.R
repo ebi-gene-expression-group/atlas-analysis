@@ -14,7 +14,7 @@ setGeneric( "technical_replicate_id", function( object ) standardGeneric( "techn
 # BiologicalReplicate Methods
 
 # Constructor.
-setMethod( "initialize", "BiologicalReplicate", function( .Object, techRepId, assayNames ) {
+setMethod( "initialize", "BiologicalReplicate", function( .Object, assayNames, techRepId = NULL ) {
 	
 	# Make sure that there's only one technical replicate ID.
 	if( length( techRepId ) > 1 ) {
