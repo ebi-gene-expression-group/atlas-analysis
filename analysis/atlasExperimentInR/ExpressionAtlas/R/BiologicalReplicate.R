@@ -1,5 +1,5 @@
 # BiologicalReplicate class.
-setClass( "BiologicalReplicate", slots = c( assay_names = "vector", techincal_replicate_id = "character" ) )
+setClass( "BiologicalReplicate", slots = c( assay_names = "vector", technical_replicate_id = "character" ) )
 
 ##############################
 # BiologicalReplicate Generics
