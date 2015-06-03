@@ -260,7 +260,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# If we got a technical replicate group column, add this at the end of the
 	# subsetSDRF.
 	if( length( techRepGroupColIndex ) > 0 ) {
-		subsetSDRF[[ "technicalReplicateGroup" ]] <- completeSDRF[ , techRepGroupColIndex ]
+		subsetSDRF <- cbind( subsetSDRF, completeSDRF[ , techRepGroupColIndex ] )
 	}
 	
 	# Next thing is to name the columns so they have nice names.
