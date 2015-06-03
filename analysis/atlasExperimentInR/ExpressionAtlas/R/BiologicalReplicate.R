@@ -25,7 +25,7 @@ setMethod( "initialize", "BiologicalReplicate", function( .Object, assayNames, t
 		stop( "ERROR - Problem with technical replicate IDs. Cannot continue." )
 	}
 
-	.Object@assay_names <- assayNames
+	.Object@assay_names <- make.names( assayNames )
 
 	if( !is.null( techRepId ) ) {
 		.Object@technical_replicate_id <- techRepId
