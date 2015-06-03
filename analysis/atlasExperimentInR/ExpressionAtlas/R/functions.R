@@ -468,6 +468,11 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		# Get the assay names.
 		assayNames <- assay_names( assayGroup )
 
+		# De-bugging.
+		cat( "Assay names:\n" )
+		print( assayNames )
+		cat( "\n" )
+
 		# Sanity checking.
 		if( length( assayNames ) == 0 ) { 
 			stop( "ERROR - Did not find any assay names for an assay group. Cannot continue." )
@@ -477,6 +482,10 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 
 		# Get the SDRF rows for these assays.
 		atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ), ]
+
+		cat( "atlasSDRF:\n" )
+		print( atlasSDRF )
+		cat( "\n" )
 	})
 
 	# Make a new data frame from the SDRF chunks list.
@@ -492,9 +501,6 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# Sort the rows by assay name.
 	analyticsSDRF <- analyticsSDRF[ sort( rownames( analyticsSDRF ) ) , ]
 	
-	# De-bugging
-	print( analyticsSDRF )
-
 	return( analyticsSDRF )
 }
 
