@@ -210,6 +210,10 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# Get the Factor column indices, an any unit columns next to them.
 	factorColIndices <- grep( "Factor\\s?Value", completeSDRF[ 1, ] )
 	factorColIndices <- .addUnitCols( factorColIndices, completeSDRF )
+
+	# Get the index of the Comment[technical replicate group] column, if there
+	# is one.
+	techRepGroupColIndex <- grep( "Comment\\s?\\[\\s?technical[ _]replicate[ _]group\\s?\\]", completeSDRF[ 1, ] )
 	
 	# Get the column index for assay names. For microarray data, this is "Assay
 	# Name" or "Hybridization Name". For RNA-seq data, this is "Comment[ENA_RUN]"
@@ -252,6 +256,10 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		
 		subsetSDRF <- completeSDRF[ , c( assayNameColIndex, charColIndices, factorColIndices ) ]
 	}
+
+	# If we got a technical replicate group column, add this at the end of the
+	# subsetSDRF.
+	subsetSDRF$technicalReplicateGroup <- completeSDRF[ , techRepGroupColIndex ]
 	
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
