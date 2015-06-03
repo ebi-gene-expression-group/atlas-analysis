@@ -269,6 +269,12 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	newColNames <- gsub( "Unit\\s?\\[", "", newColNames )
 	newColNames <- gsub( "\\s?\\]", "", newColNames )
 	newColNames[ 1 ] <- "AssayName"
+
+	# Add a column name for the technical replicate group column if there
+	# is one.
+	if( length( techRepGroupColIndex ) > 0 ) {
+		newColNames <- c( newColNames, "technical_replicate_group" )
+	}
 	
 	# Replace spaces with underscores.
 	newColNames <- gsub( " ", "_", newColNames )
