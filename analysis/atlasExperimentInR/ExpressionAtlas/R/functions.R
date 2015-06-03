@@ -466,7 +466,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	assayGroupSDRFs <- lapply( assayGroups, function( assayGroup ) {
 		
 		# Get the assay names.
-		assayNames <- assay_names( assayGroup )
+		assayNames <- make.names( assay_names( assayGroup ) )
 
 		# De-bugging.
 		cat( "Assay names:\n" )
