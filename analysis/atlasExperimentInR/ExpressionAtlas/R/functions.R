@@ -367,13 +367,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		}
 		
 		# Read the expressions file.
-		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
-		
-		# Add design elements as row names.
-		rownames( expressions ) <- expressions[,1]
-		
-		# Remove design elements column as not needed.
-		expressions[,1] <- NULL
+		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE, row.names = 1 )
 		
 		# Create an ExpressionSet.
 		biocObject <- .createExpressionSet( expressions, analyticsSDRF, analysisMethodsFile )
@@ -396,15 +390,9 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		aValuesFile <- file.path( atlasExperimentDirectory, aValuesFile )
 		
 		# Read files.
-		mValues <- read.delim( mValuesFile, header = TRUE, stringsAsFactors = FALSE )
-		aValues <- read.delim( aValuesFile, header = TRUE, stringsAsFactors = FALSE )
+		mValues <- read.delim( mValuesFile, header = TRUE, stringsAsFactors = FALSE, row.names = 1 )
+		aValues <- read.delim( aValuesFile, header = TRUE, stringsAsFactors = FALSE, row.names = 1 )
 
-		# Add row names.
-		rownames( mValues ) <- mValues[ , 1 ]
-		mValues[ , 1 ] <- NULL
-		rownames( aValues ) <- aValues[ , 1 ]
-		aValues[ , 1 ] <- NULL
-		
 		# Create an MAList
 		maList <- list(
 			genes = rownames( mValues ),
@@ -431,13 +419,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		}
 		
 		# Read the expressions file.
-		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
-		
-		# Add gene IDs as row names.
-		rownames( expressions ) <- expressions[,1]
-		
-		# Remove now unwanted column.
-		expressions[,1] <- NULL
+		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE, row.names = 1 )
 		
 		# Create a SummarizedExperiment.
 		biocObject <- .createSummarizedExperiment( expressions, analyticsSDRF, analysisMethodsFile )
@@ -468,11 +450,6 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		# Get the assay names.
 		assayNames <- assay_names( assayGroup )
 
-		# De-bugging.
-		cat( "Assay names:\n" )
-		print( assayNames )
-		cat( "\n" )
-
 		# Sanity checking.
 		if( length( assayNames ) == 0 ) { 
 			stop( "ERROR - Did not find any assay names for an assay group. Cannot continue." )
@@ -482,10 +459,6 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 
 		# Get the SDRF rows for these assays.
 		atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ), ]
-
-		cat( "atlasSDRF:\n" )
-		print( atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ), ] )
-		cat( "\n" )
 	})
 
 	# Make a new data frame from the SDRF chunks list.
@@ -525,6 +498,10 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	
 	# Add sample names (assay names).
 	sampleNames( expressionData ) <- colnames( expressionsMatrix )
+
+	if( class( analyticsSDRF ) == "character" ) {
+		print( analyticsSDRF )
+	}
 	
 	# Add the SDRF data.
 	phenoData <- new( "AnnotatedDataFrame", data = analyticsSDRF )
