@@ -499,10 +499,6 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# Add sample names (assay names).
 	sampleNames( expressionData ) <- colnames( expressionsMatrix )
 
-	if( class( analyticsSDRF ) == "character" ) {
-		print( analyticsSDRF )
-	}
-	
 	# Add the SDRF data.
 	phenoData <- new( "AnnotatedDataFrame", data = analyticsSDRF )
 	
