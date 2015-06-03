@@ -107,7 +107,7 @@ setMethod( "assay_group_label", "AssayGroup", function( object ) object@assay_gr
 		# Use the "simplify = FALSE" setting in sapply() so that the named list
 		# structure is not lost.
 		techRepAssays <- sapply( technicalReplicateIds, simplify = FALSE, function( techRepId ) {
-								techRepAssays <- .find_assays_for_tech_rep_id( allAssays, techRepId )
+								techRepAssays <- .find_assays_for_tech_rep_id( assayGroupAssays, techRepId )
 		})
 		
 		# Now make a vector of BiologicalReplicate objects.
