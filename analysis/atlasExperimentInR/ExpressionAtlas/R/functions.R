@@ -484,7 +484,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ), ]
 
 		cat( "atlasSDRF:\n" )
-		print( atlasSDRF )
+		print( atlasSDRF[ which( atlasSDRF$AssayName %in% assayNames ), ] )
 		cat( "\n" )
 	})
 
