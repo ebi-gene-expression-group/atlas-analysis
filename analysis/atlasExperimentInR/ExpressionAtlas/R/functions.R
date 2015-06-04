@@ -262,6 +262,8 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	if( length( techRepGroupColIndex ) > 0 ) {
 		subsetSDRF <- cbind( subsetSDRF, completeSDRF[ , techRepGroupColIndex ] )
 	}
+
+	print( subsetSDRF )
 	
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
