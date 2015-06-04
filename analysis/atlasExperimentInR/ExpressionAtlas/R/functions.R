@@ -263,8 +263,6 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		subsetSDRF <- cbind( subsetSDRF, completeSDRF[ , techRepGroupColIndex ] )
 	}
 
-	print( subsetSDRF )
-	
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
 	newColNames <- gsub( "Factor\\s?Value\\s?\\[", "", newColNames )
@@ -294,6 +292,9 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	
 	# Remove the first row of the SDRF (this is the old column headings)
 	subsetSDRF <- subsetSDRF[ -1, ]
+	
+	print( subsetSDRF )
+	print( newColNames )
 
 	# Add the new column names as the column headings.
 	colnames( subsetSDRF ) <- newColNames
