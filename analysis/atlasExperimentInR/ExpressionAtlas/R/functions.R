@@ -270,10 +270,10 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	newColNames <- gsub( "\\s?\\]", "", newColNames )
 	newColNames[ 1 ] <- "AssayName"
 
-	# Add a column name for the technical replicate group column if there
-	# is one.
+	# Replace the last column name with one for the technical replicate group
+	# column, if there is one.
 	if( length( techRepGroupColIndex ) > 0 ) {
-		newColNames <- c( newColNames, "technical_replicate_group" )
+		newColNames[ length( newColNames ) ] <- c( newColNames, "technical_replicate_group" )
 	}
 	
 	# Replace spaces with underscores.
