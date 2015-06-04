@@ -273,7 +273,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# Replace the last column name with one for the technical replicate group
 	# column, if there is one.
 	if( length( techRepGroupColIndex ) > 0 ) {
-		newColNames[ length( newColNames ) ] <- c( newColNames, "technical_replicate_group" )
+		newColNames[ length( newColNames ) ] <- "technical_replicate_group"
 	}
 	
 	# Replace spaces with underscores.
