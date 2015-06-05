@@ -293,9 +293,6 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# Remove the first row of the SDRF (this is the old column headings)
 	subsetSDRF <- subsetSDRF[ -1, ]
 	
-	print( subsetSDRF )
-	print( newColNames )
-
 	# Add the new column names as the column headings.
 	colnames( subsetSDRF ) <- newColNames
 	

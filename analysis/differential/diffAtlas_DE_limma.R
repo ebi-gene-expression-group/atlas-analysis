@@ -4,9 +4,11 @@
 # Microarray differential expression statistics computation for the
 # Differential Atlas.
 
-library( limma )
-library( Biobase )
-library( genefilter )
+suppressMessages( library( limma ) )
+suppressMessages( library( Biobase ) )
+suppressMessages( library( genefilter ) )
+
+suppressMessages( library( ExpressionAtlas ) )
 
 # diffAtlas_DE_limma()
 # - Differential expression analysis (2-group comparison) using limma.
@@ -17,13 +19,16 @@ library( genefilter )
 #	- resFile <- filename for results.
 #	- plotDataFile <- filename for data for MvA plot.
 #	- aValuesFile <- filename for matrix of A-values; only needed for 2-colour designs. Default is NULL.
-diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, plotDataFile, aValuesFile = NULL ) {
+#diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, plotDataFile, aValuesFile = NULL ) {
+diffAtlas_DE_limma <<- function( xmlConfigFileName ) {
 
 	e <- try({
 
-		twoColour <- NULL
+
+
+		#twoColour <- NULL
 		# Set twoColour if there is an aValueFile.
-		if( !is.null( aValuesFile ) ) twoColour <- 1
+		#if( !is.null( aValuesFile ) ) twoColour <- 1
 		
 		# Read expressions (M-values/log-fold-changes for 2-colour).
 		print( paste( "Reading", normExprsFile ) )
