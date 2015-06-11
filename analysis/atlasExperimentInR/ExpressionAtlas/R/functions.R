@@ -1,10 +1,10 @@
 
-# parseAtlasXML
+# parseAtlasConfig
 # 	- Read Atlas XML config file and return a list of Analytics objects, as
 # 	well as the experiment type.
 # 	- The function returns a list with two elements: the list of Analytics
 # 	objects, and the experiment type from the XML.
-parseAtlasXML <- function( atlasXMLconfigFile ) {
+parseAtlasConfig <- function( atlasXMLconfigFile ) {
 	
 	# Read the XML file.
 	xmlTree <- xmlInternalTreeParse( atlasXMLconfigFile )
@@ -129,7 +129,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	}
 
 	# Parse the XML file.
-	experimentXMLlist <- parseAtlasXML( atlasExperimentXMLfile )
+	experimentXMLlist <- parseAtlasConfig( atlasExperimentXMLfile )
 
 	# Get the pipeline code from the experiment accession e.g. MTAB, MEXP
 	pipeline <- gsub( "E-", "", experimentAccession )

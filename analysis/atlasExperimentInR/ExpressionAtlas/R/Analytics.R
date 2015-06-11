@@ -1,5 +1,5 @@
 # Analytics class
-setClass( "Analytics", slots = c( platform = "character", assay_groups = "list" ) )
+setClass( "Analytics", slots = c( platform = "character", assay_groups = "list", atlas_contrasts = "list" ) )
 
 
 ####################
@@ -10,6 +10,9 @@ setGeneric( "platform", function( object ) standardGeneric( "platform" ) )
 
 # assay_groups getter
 setGeneric( "assay_groups", function( object ) standardGeneric( "assay_groups" ) )
+
+# atlas_contrasts getter
+setGeneric( "atlas_contrasts", function( object ) standardGeneric( "atlas_contrasts" ) )
 
 # getAllAssays
 setGeneric( "getAllAssays", function( object ) standardGeneric( "getAllAssays" ) )
@@ -61,8 +64,30 @@ setMethod( "initialize", "Analytics", function( .Object, atlasExperimentType, an
 		}
 	)
 
+	# Get the atlas_contrasts node.
+	contrastsList <- xmlElementsByTagName( analyticsNode, "contrasts" )
+	contrastsNode <- contrastsList$contrasts
+
+	# Get all the contrasts.
+	allContrasts <- xmlElementsByTagName( contrastsNode, "contrast" )
+
+	# Make a list containing Contrast objects.
+	# Go through the contrast nodes.
+	contrastObjects <- lapply( allContrasts, function( contrastNode ) {
+
+		# Create a new contrast object.
+		contrastObject <- new( "Contrast", contrastNode )
+	})
+
+	names( contrastObjects ) <- sapply( contrastObjects,
+		function( contrast ) {
+			contrast_id( contrast )
+		}
+	)
+
 	.Object@platform <- platform
 	.Object@assay_groups <- assayGroupObjects
+	.Object@atlas_contrasts <- contrastObjects
 	return( .Object )
 })
 
@@ -72,6 +97,9 @@ setMethod( "platform", "Analytics", function( object ) object@platform )
 
 # assay_groups getter
 setMethod( "assay_groups", "Analytics", function( object ) object@assay_groups )
+
+# atlas_contrasts getter
+setMethod( "atlas_contrasts", "Analytics", function( object ) object@atlas_contrasts )
 
 # getAllAssays
 setMethod( "getAllAssays", "Analytics", function( object ) {
