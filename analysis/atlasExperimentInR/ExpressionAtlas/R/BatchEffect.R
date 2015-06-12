@@ -67,3 +67,9 @@ setMethod( "initialize", "BatchEffect", function( .Object, batchEffectNode ) {
 
 	return( batches )
 })
+
+# batches getter method
+setMethod( "batches", "BatchEffect", function( object ) object@batches )
+
+# batch_name getter method
+setMethod( "batch_name", "BatchEffect", function( object ) object@batch_name )
