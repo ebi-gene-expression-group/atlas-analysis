@@ -102,7 +102,7 @@ setMethod( "initialize", "Analytics", function( .Object, atlasExperimentType, an
 	.Object@atlas_contrasts <- contrastObjects
 	
 	# Add batch effects if any.
-	if( !is.null( batchEffectsObjects ) ) {
+	if( !is.null( batchEffectObjects ) ) {
 		.Object@batch_effects <- batchEffectObjects
 	}
 
