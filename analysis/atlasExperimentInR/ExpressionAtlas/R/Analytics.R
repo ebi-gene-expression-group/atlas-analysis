@@ -1,5 +1,12 @@
 # Analytics class
-setClass( "Analytics", slots = c( platform = "character", assay_groups = "list", atlas_contrasts = "list" ) )
+setClass( 
+		 "Analytics", 
+		 slots = c( 
+				   platform = "character", 
+				   assay_groups = "list", 
+				   atlas_contrasts = "list", 
+				   batch_effects = "list" 
+) )
 
 
 ####################
@@ -85,9 +92,20 @@ setMethod( "initialize", "Analytics", function( .Object, atlasExperimentType, an
 		}
 	)
 
+	# Try for batch effects -- if there are any then create the object(s) and
+	# add them as well.
+	batchEffectObjects <- .create_batch_effect_objects( analyticsNode )
+
+	# Add everything we found to the object.
 	.Object@platform <- platform
 	.Object@assay_groups <- assayGroupObjects
 	.Object@atlas_contrasts <- contrastObjects
+	
+	# Add batch effects if any.
+	if( !is.null( batchEffectsObjects ) ) {
+		.Object@batch_effects <- batchEffectObjects
+	}
+
 	return( .Object )
 })
 
@@ -121,3 +139,30 @@ setMethod( "getAllAssays", "Analytics", function( object ) {
 	return( assay_names )
 })
 
+
+# Look at the analytics node and create BatchEffect objects if any batch
+# effects are found.
+.create_batch_effect_objects <- function( analyticsNode ) {
+	
+	# Get the batch_effects node, if it exists.
+	batchEffectsNode <- xmlElementsByTagName( analyticsNode, "batch_effects" )$batch_effects
+	
+	# If a batch_effects node was found, make objects and return them.
+	if( !is.null( batchEffectsNode ) ) {
+
+		allBatchEffectNodes <- xmlElementsByTagName( batchEffectsNode, "batch_effect" )
+
+		batchEffectObjects <- lapply( allBatchEffectNodes, 
+			function( batchEffectNode ) {
+				batchEffectObject <- new( "BatchEffect", batchEffectNode )
+			}
+		)
+
+		return( batchEffectObjects )
+
+	} else {
+		
+		# If no batch_effects object was found, just return null.
+		return( NULL )
+	}
+}
