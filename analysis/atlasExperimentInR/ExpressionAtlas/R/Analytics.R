@@ -21,6 +21,9 @@ setGeneric( "assay_groups", function( object ) standardGeneric( "assay_groups" )
 # atlas_contrasts getter
 setGeneric( "atlas_contrasts", function( object ) standardGeneric( "atlas_contrasts" ) )
 
+# batch_effects getter
+setGeneric( "batch_effects", function( object ) standardGeneric( "batch_effects" ) )
+
 # getAllAssays
 setGeneric( "getAllAssays", function( object ) standardGeneric( "getAllAssays" ) )
 
@@ -118,6 +121,9 @@ setMethod( "assay_groups", "Analytics", function( object ) object@assay_groups )
 
 # atlas_contrasts getter
 setMethod( "atlas_contrasts", "Analytics", function( object ) object@atlas_contrasts )
+
+# batch_effects getter
+setMethod( "batch_effects", "Analytics", function( object ) object@batch_effects )
 
 # getAllAssays
 setMethod( "getAllAssays", "Analytics", function( object ) {
