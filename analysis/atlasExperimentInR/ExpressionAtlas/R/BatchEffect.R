@@ -65,7 +65,7 @@ setMethod( "initialize", "BatchEffect", function( .Object, batchEffectNode ) {
 	.Object@batch_name <- batchName
 	.Object@batches <- allBatches
 
-	return( batches )
+	return( .Object )
 })
 
 # batches getter method
