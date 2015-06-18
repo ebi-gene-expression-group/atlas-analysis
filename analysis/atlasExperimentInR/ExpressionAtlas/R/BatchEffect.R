@@ -1,5 +1,5 @@
 # BatchEffect class
-setClass( "BatchEffect", slots = c( batches = "list", batch_name = "character" ) )
+setClass( "BatchEffect", slots = c( batches = "list", effect_name = "character" ) )
 
 ######################
 # BatchEffect Generics
@@ -7,8 +7,8 @@ setClass( "BatchEffect", slots = c( batches = "list", batch_name = "character" )
 # batches getter
 setGeneric( "batches", function( object ) standardGeneric( "batches" ) )
 
-# batch_name getter
-setGeneric( "batch_name", function( object ) standardGeneric( "batch_name" ) )
+# effect_name getter
+setGeneric( "effect_name", function( object ) standardGeneric( "effect_name" ) )
 
 #####################
 # BatchEffect Methods
@@ -62,7 +62,7 @@ setMethod( "initialize", "BatchEffect", function( .Object, batchEffectNode ) {
 	names( allBatches ) <- sub( "^batch.", "", names( allBatches ) )
 	
 	# Add the batch name and batches list to the object and return it.
-	.Object@batch_name <- batchName
+	.Object@effect_name <- batchName
 	.Object@batches <- allBatches
 
 	return( .Object )
@@ -71,5 +71,5 @@ setMethod( "initialize", "BatchEffect", function( .Object, batchEffectNode ) {
 # batches getter method
 setMethod( "batches", "BatchEffect", function( object ) object@batches )
 
-# batch_name getter method
-setMethod( "batch_name", "BatchEffect", function( object ) object@batch_name )
+# effect_name getter method
+setMethod( "effect_name", "BatchEffect", function( object ) object@effect_name )
