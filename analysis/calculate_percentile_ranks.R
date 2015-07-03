@@ -12,7 +12,7 @@ get_filename_start <- function( analyticsFilename ) {
 
     analyticsBasename <- basename( analyticsFilename )
 
-    filenameStart <- sub( "-analytics.tsv.undecorated", "", analyticsBasename )
+    filenameStart <- sub( "-analytics.tsv", "", analyticsBasename )
 
     return( filenameStart )
 }
