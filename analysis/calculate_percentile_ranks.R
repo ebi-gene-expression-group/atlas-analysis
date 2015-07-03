@@ -113,7 +113,7 @@ percentilesDataFrames <- lapply( contrastIDs, function( contrastID ) {
     percentilesDF$Gene.ID <- NULL
 
     # Change the column name of the percentiles to include the contrast ID
-    percentilesColname <- paste( contrastID, ".logFCpercentile", sep = "" )
+    percentilesColname <- contrastID
     colnames( percentilesDF ) <- percentilesColname
     
     # Sort the data frame rows based on the gene IDs.
