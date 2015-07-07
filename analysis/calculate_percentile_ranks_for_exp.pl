@@ -173,7 +173,7 @@ if( @percentileRankFiles > 1 ) {
 }
 # Otherwise, if this is a microarray exp, just change the filename of the
 # original file to remove the array design accession.
-elsif( $percentileRankFiles[ 0 ] =~ /A-\w{4}-d+/ ) {
+elsif( $percentileRankFiles[ 0 ] =~ /A-\w{4}-\d+/ ) {
     `mv $percentileRankFiles[ 0 ] $allRanksFile`;
 }
 
