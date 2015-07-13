@@ -20,6 +20,7 @@ use File::Spec;
 use File::Basename;
 use Scalar::Util qw(looks_like_number);
 use IPC::Cmd qw( can_run );
+use Cwd;
 
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
 use Atlas::AtlasConfig::Common qw( map_technical_replicate_ids_to_assays );
@@ -67,7 +68,7 @@ print "Experiment accession: $exptAcc\n";
 # plots.
 if( $atlasExperimentType =~ /array/ ) {
 	
-	&runMicroarrayDifferentialExpression( $experimentConfig );
+	runMicroarrayDifferentialExpression( $exptAcc, $atlasXML );
 }
 
 # For RNA-seq experiments, take results from iRAP's DESeq results files, write
@@ -76,10 +77,10 @@ elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	
 	# Read the iRAP config file to get the paths to the DESeq results files for
 	# each contrast.
-	my $contrastIDsToDESeqFiles = &readIrapConf( $irapConfig, $exptAcc );
+	my $contrastIDsToDESeqFiles = readIrapConf( $irapConfig, $exptAcc );
 	
 	# Get the results, write them out, make MvA plots.
-	&getRNAseqResults( $contrastIDsToDESeqFiles, $experimentConfig );
+	getRNAseqResults( $contrastIDsToDESeqFiles, $experimentConfig );
 }
 
 # If we're passed an experiment type we don't recognise, die.
@@ -124,7 +125,17 @@ sub init {
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub runMicroarrayDifferentialExpression {
 
-	my ( $experimentConfig ) = @_;
+	my ( $exptAcc, $atlasXML ) = @_;
+
+	my $atlasProcessingDriectory = Cwd::cwd();
+	
+	my $R_limmaOutput = `$limmaScript $exptAcc $atlasXML $atlasProcessingDirectory`;
+
+
+
+
+
+
 
 	# Log about one- or two-colour design.
 	if( $experimentConfig->get_atlas_experiment_type =~ /1colour/ ) {
@@ -186,8 +197,8 @@ sub runMicroarrayDifferentialExpression {
 				}
 
 				# Join the assay names with <SEP> (and e.g. <T1_SEP> for tech reps).
-				my $joinedRefAssayNames = "\"" . &joinAssayNames( $referenceAssays ) . "\"";
-				my $joinedTestAssayNames = "\"" . &joinAssayNames( $testAssays ) . "\"";
+				my $joinedRefAssayNames = "\"" . joinAssayNames( $referenceAssays ) . "\"";
+				my $joinedTestAssayNames = "\"" . joinAssayNames( $testAssays ) . "\"";
 
 				print "Computing differential expression statistics for contrast: ", $contrastName, " ...";
 				
@@ -222,8 +233,8 @@ sub runMicroarrayDifferentialExpression {
 				}
 
 				# Join the assay names with <SEP> (and e.g. <T1_SEP> for tech reps).
-				my $joinedRefAssayNames = "\"" . &joinAssayNames( $referenceAssays ) . "\"";
-				my $joinedTestAssayNames = "\"" . &joinAssayNames( $testAssays ) . "\"";
+				my $joinedRefAssayNames = "\"" . joinAssayNames( $referenceAssays ) . "\"";
+				my $joinedTestAssayNames = "\"" . joinAssayNames( $testAssays ) . "\"";
 
 				print "Computing differential expression statistics for contrast \"", $contrastName, "\"...";
 
@@ -241,16 +252,16 @@ sub runMicroarrayDifferentialExpression {
 				}
 			}
 			# Get the differential expression results into the hash of all analytics results.
-			$analyticsDEResults = &readLimmaResults( $limmaResTempFile, $contrastID, $analyticsDEResults );
+			$analyticsDEResults = readLimmaResults( $limmaResTempFile, $contrastID, $analyticsDEResults );
 
 			# Filename for MvA plot.
 			my $plotFile = $experimentAccession."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
 			# Create MvA.
-			&makeMvaPlot( "microarray", $plotFile, $plotDataTempFile, $contrastName, $mvaScript );
+			makeMvaPlot( "microarray", $plotFile, $plotDataTempFile, $contrastName, $mvaScript );
 		}
 
 		# Now we have results for all the contrasts in this analytics element. Write them to a file.
-		&writeResults( $analyticsDEResults, $experimentAccession, $analytics );
+		writeResults( $analyticsDEResults, $experimentAccession, $analytics );
 	}
 }
 
