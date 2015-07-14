@@ -71,7 +71,10 @@ diffAtlas_DE_limma <- function( expAcc, xmlConfigFilename, atlasProcessingDirect
 }
 		
 
-
+# select_assay_groups_for_contrast
+# 	- Given a list of experiment assay groups, a test ID and a reference ID,
+# 	return a list containing just the requested test and reference assay
+# 	groups.
 select_assay_groups_for_contrast <- function( expAssayGroups, refAssayGroupID, testAssayGroupID ) {
 
 	# Get the assay groups.
@@ -88,6 +91,11 @@ select_assay_groups_for_contrast <- function( expAssayGroups, refAssayGroupID, t
 }
 
 
+# make_biorep_annotations
+# 	- Given the contrast's assay groups, the list of batch effects (if any),
+# 	and optional twoColour flag, create a data frame representing the
+# 	biological replicates and their corresponding assay names and which group
+# 	(test or ref) they belong to.
 make_biorep_annotations <- function( contrastAssayGroups, expBatchEffects, twoColour ) {
 
 	if( missing( twoColour ) ) { twoColour <- 0 }
@@ -139,6 +147,11 @@ make_biorep_annotations <- function( contrastAssayGroups, expBatchEffects, twoCo
 }
 
 
+# make_assays_to_bioreps_df
+# 	- Given a list of biological replicate objects and optional twoColour flag,
+# 	create a data frame mapping assay names to their biological replicate
+# 	names. These will either be the same as the assay name (no technical
+# 	replicates), or the technical replicate group ID (technical replicates).
 make_assays_to_bioreps_df <- function( bioReps, twoColour ) {
 
 	if( missing( twoColour ) ) { twoColour <- 0 }
@@ -177,6 +190,9 @@ make_assays_to_bioreps_df <- function( bioReps, twoColour ) {
 }
 
 
+# batch_effect_to_df
+# 	- Given a batch effect object and a vector of assay names, create a data
+# 	frame mapping the batch names to the corresponding assay names.
 batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 
 	assayBatches <- batches( batchEffect )
@@ -209,6 +225,13 @@ batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 }
 
 
+# add_tech_rep_averages
+# 	- Given a data frame of expression values (normalized intensities, logFCs,
+# 	average intensities), the data frame of biological replicate annotations,
+# 	technical replicates group IDs, and optional twoColour flag, calculate the
+# 	mean for each set of technical replicate columns in the data frame, and
+# 	replace the original columns with the new column(s) containing the
+# 	averages.
 add_tech_rep_averages <- function( expressionData, bioRepAnnotations, techRepGroupIDs, twoColour ) {
 
 	if( missing( twoColour ) ) { twoColour <- 0 }
@@ -284,6 +307,10 @@ add_tech_rep_averages <- function( expressionData, bioRepAnnotations, techRepGro
 }
 	
 
+# filter_and_adjust_pvalues
+# 	- Given row variances of the expression data, and the raw (unadjusted)
+# 	p-values, run independent filtering via genefilter package. Return vector
+# 	of BH-adjusted p-values.
 filter_and_adjust_pvalues <- function( normDataRowVars, rawPvalues ) {
 
 	# Independent filtering.
@@ -322,6 +349,9 @@ filter_and_adjust_pvalues <- function( normDataRowVars, rawPvalues ) {
 }
 
 
+# make_eset_for_contrast
+# 	- Given a data frame of normalized expressions and the data frame of
+# 	biological replicate annotations, create an ExpressionSet object.
 make_eset_for_contrast <- function( normalizedData, bioRepAnnotations ) {
 
 	# Turn normalized data into a matrix.
@@ -351,6 +381,9 @@ make_eset_for_contrast <- function( normalizedData, bioRepAnnotations ) {
 }
 
 
+# check_twocolour_assaynames
+# 	- Given the list of assay groups for a two-colour contrast, make sure that
+# 	the assay names match between the test and reference groups.
 check_twocolour_assaynames <- function( contrastAssayGroups ) {
 
 	# Get the test and reference assay groups.
@@ -372,6 +405,10 @@ check_twocolour_assaynames <- function( contrastAssayGroups ) {
 }
 
 
+# select_twocolour_columns
+# 	- Given a data frame of expression data and the list of assay groups for a
+# 	two-colour contrast, select just the columns of data for those assay
+# 	groups.
 select_twocolour_columns <- function( allData, contrastAssayGroups ) {
 
 	assayNamesNoCy <- gsub( ".Cy\\d$", "", assay_names( contrastAssayGroups$testAssayGroup ) )
@@ -382,6 +419,11 @@ select_twocolour_columns <- function( allData, contrastAssayGroups ) {
 }
 
 
+# run_one_colour_analysis
+# 	- For a one-colour experiment, given an experiment accession, the list of
+# 	analytics objects, and the Atlas processing directory, run the differential
+# 	expression analysis defined in the contrasts contained in the analytics
+# 	objects.
 run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirectory ) {
 
 	# Go through the analytics and do the analysis...
@@ -445,7 +487,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			# If there are any technical replicates...
 			if( length( techRepGroupIDs ) > 0 ) {
 				# Replace the columns for technical replicates with their averages in the normalized data.
-				normalizedData <- add_tech_rep_averages_1colour( normalizedData, bioRepAnnotations, techRepGroupIDs )
+				normalizedData <- add_tech_rep_averages( normalizedData, bioRepAnnotations, techRepGroupIDs )
 			}
 			
 			# Remove the AssayName column from the annotations data frame now we no longer need it.
@@ -541,9 +583,13 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			plotDataFile <- paste( expAcc, contrastID, "plotdata", "tsv", sep = "." )
 			plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", plotDataFile )
 			
+			cat( paste( "Writing results to", resFile, "...\n" ) )
+			
 			# Write the files.
 			write.table( contrastResults, file=resFile, row.names=FALSE, quote=FALSE, sep="\t" )
 			write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
+			
+			cat( paste( "Successully completed differential expression analysis for", expAcc, "\n" ) )
 
 		} )
 
@@ -551,6 +597,11 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 }
 
 
+# run_two_colour_analysis
+# 	- For a two-colour experiment, given an experiment accession, the list of
+# 	analytics objects, and the Atlas processing directory, run the differential
+# 	expression analysis defined in the contrasts contained in the analytics
+# 	objects.
 run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirectory ) {
 
 	# Go through the analytics and do the analysis...
