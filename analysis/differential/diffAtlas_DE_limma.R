@@ -317,7 +317,7 @@ filter_and_adjust_pvalues <- function( normDataRowVars, rawPvalues ) {
 	# hypothesis.
 	maxRejectionsIndex <- which.max( numRej )
 
-	# Return the column of adjusted p-values at this index to fitEbayes.
+	# Return the column of adjusted p-values at this index to the fit.
 	return( filteredAdjustedPvalues[ , maxRejectionsIndex ] )
 }
 
@@ -522,15 +522,15 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 				designElements = featureNames( esetForContrast ), 
 				adjPval = fit$adjPvals, 
 				t = fit$t[ , "groupstest" ], 
-				logFC = fitEbayes$coefficients[ , "groupstest" ]
+				logFC = fit$coefficients[ , "groupstest" ]
 			)
 
 			# results to be used for MvA plot creation (as above but with average intensities and without t-stats):
 			plotData <- data.frame(
 				designElements = featureNames(esetForContrast), 
 				adjPval = fit$adjPvals, 
-				logFC = fitEbayes$coefficients[ , "groupstest" ], 
-				avgExpr = fitEbayes$Amean[ , "groupstest" ]
+				logFC = fit$coefficients[ , "groupstest" ], 
+				avgExpr = fit$Amean[ , "groupstest" ]
 			)
 			
 			# Create filenames to write to.
