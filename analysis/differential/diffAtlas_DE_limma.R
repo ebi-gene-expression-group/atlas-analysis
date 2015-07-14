@@ -20,9 +20,13 @@ suppressMessages( library( ExpressionAtlas ) )
 #	- plotDataFile <- filename for data for MvA plot.
 #	- aValuesFile <- filename for matrix of A-values; only needed for 2-colour designs. Default is NULL.
 #diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, plotDataFile, aValuesFile = NULL ) {
-diffAtlas_DE_limma <- function( expAcc, xmlConfigFilename, atlasProcessingDirectory ) {
+diffAtlas_DE_limma <- function( expAcc, atlasProcessingDirectory ) {
 
 	e <- try({
+
+		# Make the config filename.
+		xmlConfigFilename <- paste( expAcc, "-configuration.xml", sep = "" )
+		xmlConfigFilename <- file.path( atlasProcessingDirectory, xmlConfigFilename )
 
 		# First we need to parse the config file.
 		cat( paste( "Reading XML config from", xmlConfigFilename, "..." ) )
