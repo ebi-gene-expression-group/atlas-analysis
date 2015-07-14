@@ -676,7 +676,7 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			avgIntsForContrast <- averageIntensities[ , rownames( targetsDF ) ]
 
 			maList <- list(
-						   genes = rownaes( logFCsForContrast ),
+						   genes = rownames( logFCsForContrast ),
 						   M = logFCsForContrast,
 						   A = avgIntsForContrast
 						   )
