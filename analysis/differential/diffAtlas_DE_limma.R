@@ -27,7 +27,7 @@ diffAtlas_DE_limma <<- function( expAcc, xmlConfigFileName, atlasProcessingDirec
 		# First we need to parse the config file.
 		cat( paste( "Reading XML config from", xmlConfigFilename, "..." ) )
 		experimentConfig <- parseAtlasConfig( xmlConfigFilename )
-		cat( paste( "Successfully read XML config." ) )
+		cat( "Successfully read XML config.\n" )
 
 		# Get the experiment type.
 		experimentType <- experimentConfig$experimentType
@@ -670,7 +670,7 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			targetsDF <- data.frame( Cy3 = cy3df$groups, Cy5 = cy5df$groups )
 			rownames( targetsDF ) <- cy3df$BioRepName
 
-			designMatrix <- modelMatrix( targets, ref = "ref" )
+			designMatrix <- modelMatrix( targetsDF, ref = "ref" )
 
 			logFCsForContrast <- logFoldChanges[ , rownames( targetsDF ) ]
 			avgIntsForContrast <- averageIntensities[ , rownames( targetsDF ) ]
