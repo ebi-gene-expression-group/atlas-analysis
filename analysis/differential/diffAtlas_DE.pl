@@ -60,15 +60,15 @@ if( $atlasExperimentType =~ /baseline/ ) {
 }
 
 # Get the experiment accession.
-my $exptAcc = $experimentConfig->get_experiment_accession;
+my $expAcc = $experimentConfig->get_experiment_accession;
 
-print "Experiment accession: $exptAcc\n";
+print "Experiment accession: $expAcc\n";
 
 # For microarray experiments, run limma analysis, write results, and create MvA
 # plots.
 if( $atlasExperimentType =~ /array/ ) {
 	
-	runMicroarrayDifferentialExpression( $exptAcc, $atlasXML );
+	runMicroarrayDifferentialExpression( $expAcc );
 }
 
 # For RNA-seq experiments, take results from iRAP's DESeq results files, write
@@ -77,7 +77,7 @@ elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	
 	# Read the iRAP config file to get the paths to the DESeq results files for
 	# each contrast.
-	my $contrastIDsToDESeqFiles = readIrapConf( $irapConfig, $exptAcc );
+	my $contrastIDsToDESeqFiles = readIrapConf( $irapConfig, $expAcc );
 	
 	# Get the results, write them out, make MvA plots.
 	getRNAseqResults( $contrastIDsToDESeqFiles, $experimentConfig );
@@ -125,144 +125,44 @@ sub init {
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub runMicroarrayDifferentialExpression {
 
-	my ( $exptAcc, $atlasXML ) = @_;
+	my ( $expAcc ) = @_;
 
-	my $atlasProcessingDriectory = Cwd::cwd();
+	my $atlasProcessingDirectory = Cwd::cwd();
+
+	# Ensure that XML config file exists in processing directory.
+	my $configFile = File::Spec->catfile( $atlasProcessingDirectory, $expAcc . "-configuration.xml" );
+	unless( -r $configFile ) {
+		die( "Cannot find XML config file for $expAcc in $atlasProcessingDirectory\n" );
+	}
 	
-	my $R_limmaOutput = `$limmaScript $exptAcc $atlasXML $atlasProcessingDirectory`;
+	print( "Running differential expression analysis in R...\n" );
 
+	# Run R script.
+	my $R_limmaOutput = `$limmaScript $expAcc $atlasProcessingDirectory`;
 
-
-
-
-
-
-	# Log about one- or two-colour design.
-	if( $experimentConfig->get_atlas_experiment_type =~ /1colour/ ) {
-		print "Experiment has one-colour design.\n";
+	# Check R output for errors.
+	if( $R_limmaOutput =~ /error/i ) {
+		
+		# Can't continue without results from limma so may as well quit.
+		die("\nError during differential expression analysis, outout from R below.\n------------\n$R_limmaOutput\n------------\n");
+	 
 	} else {
-		print "Experiment has two-colour design.\n";
+		print "Differential expression analysis successful\n";
 	}
+			
+	# Get the differential expression results into the hash of all analytics results.
+	# Files are read out of the users ~/tmp directory where the R script wrote
+	# them to.
+	$analyticsDEResults = readLimmaResults( $expAcc );
 
-	# Get the experiment accession.
-	my $experimentAccession = $experimentConfig->get_experiment_accession;
+	# Filename for MvA plot.
+	my $plotFile = $experimentAccession."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
+	# Create MvA.
+	makeMvaPlot( "microarray", $plotFile, $plotDataTempFile, $contrastName, $mvaScript );
+
+	# Now we have results for all the contrasts in this analytics element. Write them to a file.
+	writeResults( $analyticsDEResults, $experimentAccession, $analytics );
 	
-	# Get all the analytics elements in this experiment.
-	my $allAnalytics = $experimentConfig->get_atlas_analytics;
-
-	# Go through each one...
-	foreach my $analytics ( @{ $allAnalytics } ) {
-
-		# Get the array design accession.
-		my $arrayDesignAccession = $analytics->get_platform;
-
-		# Temp file for MvA plot data.
-		my $plotDataTempFile = "/tmp/plotData.$$.txt";
-
-		# Temp file for limma results
-		my $limmaResTempFile = "/tmp/limma_res.$$.txt";
-		print "\n";
-		
-		# Empty hash for results.
-		my $analyticsDEResults = {};
-
-		# Get the contrasts for this analytics element.
-		my $contrasts = $analytics->get_atlas_contrasts;
-		
-		# Go through the contrasts...
-		foreach my $contrast ( @{ $contrasts } ) {
-			
-			# Get the contrast name.
-			my $contrastName = $contrast->get_contrast_name;
-
-			# Get the contrast ID.
-			my $contrastID = $contrast->get_contrast_id;
-
-			# Get the reference and test assays as Assay4Atlas objects.
-			my $referenceAssays = $contrast->get_reference_assay_group->get_assays;
-			my $testAssays = $contrast->get_test_assay_group->get_assays;
-			
-			# Variable to store R output.
-			my $R_limmaOutput;
-
-			# For one-colour array data:
-			if( $experimentConfig->get_atlas_experiment_type =~ /1colour/ ) {
-			
-				# Create the normalized expressions file name.
-				my $normalizedExpressionsFile = $experimentAccession . "_" . $arrayDesignAccession . "-normalized-expressions.tsv.undecorated";
-
-				# Check that it exists.
-				unless( -e $normalizedExpressionsFile ) {
-					die( "$normalizedExpressionsFile not found, cannot continue.\n" );
-				}
-
-				# Join the assay names with <SEP> (and e.g. <T1_SEP> for tech reps).
-				my $joinedRefAssayNames = "\"" . joinAssayNames( $referenceAssays ) . "\"";
-				my $joinedTestAssayNames = "\"" . joinAssayNames( $testAssays ) . "\"";
-
-				print "Computing differential expression statistics for contrast: ", $contrastName, " ...";
-				
-				# Run limma script.
-			 	$R_limmaOutput = `$limmaScript $normalizedExpressionsFile $joinedRefAssayNames $joinedTestAssayNames $limmaResTempFile $plotDataTempFile 2>&1`;
-				
-				# Check R output for errors.
-				if( $R_limmaOutput =~ /error/i ) {
-				 	
-					# Can't continue without results from limma so may as well quit.
-				 	die("\nError during differential expression analysis, outout from R below.\n------------\n$R_limmaOutput\n------------\n");
-				 
-				} else {
-				 	print "done\n";
-				}
-			}
-			# For two-colour array data:
-			else {
-
-				# Create log2(fold-change) filename.
-				my $log2foldChangesFile = $experimentAccession . "_" . $arrayDesignAccession . "-log-fold-changes.tsv.undecorated";
-				# Check it exists.
-				unless( -e $log2foldChangesFile ) {
-					die( "$log2foldChangesFile not found, cannot continue.\n" );
-				}
-
-				# Create average intensities filename.
-				my $averageIntensitiesFile = $experimentAccession . "_" . $arrayDesignAccession . "-average-intensities.tsv.undecorated";
-				# Check it exists.
-				unless( -e $averageIntensitiesFile ) {
-					die( "$averageIntensitiesFile not found, cannot continue.\n" );
-				}
-
-				# Join the assay names with <SEP> (and e.g. <T1_SEP> for tech reps).
-				my $joinedRefAssayNames = "\"" . joinAssayNames( $referenceAssays ) . "\"";
-				my $joinedTestAssayNames = "\"" . joinAssayNames( $testAssays ) . "\"";
-
-				print "Computing differential expression statistics for contrast \"", $contrastName, "\"...";
-
-				# Run limma script.
-				$R_limmaOutput = `$limmaScript $log2foldChangesFile $joinedRefAssayNames $joinedTestAssayNames $limmaResTempFile $plotDataTempFile $averageIntensitiesFile 2>&1`;
-				
-				# Check R output for errors.
-				if( $R_limmaOutput =~ /error/i ) {
-
-					# Can't continue without results from limma so may as well quit.
-					die( "\nError during differential expression analysis, output from R below.\n------------\n$R_limmaOutput\n------------\n" );
-				
-				} else {
-					print "done\n";
-				}
-			}
-			# Get the differential expression results into the hash of all analytics results.
-			$analyticsDEResults = readLimmaResults( $limmaResTempFile, $contrastID, $analyticsDEResults );
-
-			# Filename for MvA plot.
-			my $plotFile = $experimentAccession."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
-			# Create MvA.
-			makeMvaPlot( "microarray", $plotFile, $plotDataTempFile, $contrastName, $mvaScript );
-		}
-
-		# Now we have results for all the contrasts in this analytics element. Write them to a file.
-		writeResults( $analyticsDEResults, $experimentAccession, $analytics );
-	}
 }
 
 
@@ -336,31 +236,42 @@ sub joinAssayNames {
 # 	- parses output from limma script and adds them to a hash.
 sub readLimmaResults {
 
-	my ( $limmaResTempFile, $contrastID, $analyticsDEResults ) = @_;
+	my ( $expAcc ) = @_;
+
+	my $analyticsDERsules = {};
+
+	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+
+	my @limmaResultsFiles = glob( "$tempDir/$expAcc.g*_g*.*analytics.tsv" );
+
+	foreach my $limmaResultsFile ( @limmaResultsFiles ) {
+
+		( my $contrastID = basename( $limmaResultsFile ) ) =~ s/.*\.(g\d+_d\d+)\.analytics.*/$1/;
 	
-	# Add results to hash.
-	open(LIMMARES, "<$limmaResTempFile") or die("Can't open file $limmaResTempFile: $!\n");
-	while(defined(my $line = <LIMMARES>)) {
-	 	
-	 	# potentially don't need headers in the limma results file?
-	 	unless($line =~ /^designElements/) {
-	 		
-	 		chomp $line;
-	 		
-	 		# Split on tabs
-	 		my @lineSplit = split "\t", $line;
-	 		
-	 		# Design element (probeset) ID is the first element, take it off.
-	 		my $designElement = shift @lineSplit;
-	 		
-	 		# Add array [p-value, t-statistic, logFoldChange] to hash for this
-	 		# design element for this contrast.
-	 		$analyticsDEResults->{ $designElement }->{ $contrastID } = \@lineSplit;
-	 	}
+		# Add results to hash.
+		open(LIMMARES, "<$limmaResultsFile") or die("Can't open file $limmaResultsFile: $!\n");
+		while(defined(my $line = <LIMMARES>)) {
+			
+			# potentially don't need headers in the limma results file?
+			unless($line =~ /^designElements/) {
+				
+				chomp $line;
+				
+				# Split on tabs
+				my @lineSplit = split "\t", $line;
+				
+				# Design element (probeset) ID is the first element, take it off.
+				my $designElement = shift @lineSplit;
+				
+				# Add array [p-value, t-statistic, logFoldChange] to hash for this
+				# design element for this contrast.
+				$analyticsDEResults->{ $designElement }->{ $contrastID } = \@lineSplit;
+			}
+		}
+		close(LIMMARES);
+		# clean up
+		`rm $limmaResultsFile`;
 	}
-	close(LIMMARES);
-	# clean up
-	`rm $limmaResTempFile`;
 
 	return $analyticsDEResults;
 }
@@ -387,7 +298,7 @@ sub stripCy {
 #  - add filename for DESeq results file for each contrast to $contrastHash.
 sub readIrapConf {
 
-	my ( $irapConfig, $exptAcc ) = @_;
+	my ( $irapConfig, $expAcc ) = @_;
 
 	# Directory of config file is the same as the beginning of path to
 	# DESeq files.
@@ -409,8 +320,8 @@ sub readIrapConf {
 		
 			# Check experiment accession from iRAP config matches that in filename of
 			# Atlas contrasts file.
-			unless( $irapExptAcc eq $exptAcc ) {
-				die "\niRAP experiment accession is: $irapExptAcc -- does not match Atlas experiment accession ($exptAcc)\n";
+			unless( $irapExptAcc eq $expAcc ) {
+				die "\niRAP experiment accession is: $irapExptAcc -- does not match Atlas experiment accession ($expAcc)\n";
 			}
 		}
 		
@@ -421,7 +332,7 @@ sub readIrapConf {
 	close( CONF );
 
 	# Build path to DESeq results directory.
-	my $DESeqDirPath = File::Spec->catdir( $irapDir, $exptAcc, $mapper, $qMethod, $deMethod );
+	my $DESeqDirPath = File::Spec->catdir( $irapDir, $expAcc, $mapper, $qMethod, $deMethod );
 
 	# Get all the DESeq results files.
 	my @DESeqResultsFiles = glob( "$DESeqDirPath/*.genes_de.tsv" );
@@ -553,7 +464,7 @@ sub getRNAseqResults {
 		print "done\n";
 
 		# Filename for MvA plot
-		my $plotFile = "$exptAcc-".$contrastID."-mvaPlot.png";
+		my $plotFile = "$expAcc-".$contrastID."-mvaPlot.png";
 
 		# Get the human-readable contrast name from the hash.
 		my $atlasName = $contrastIDsToNames->{ $contrastID };
@@ -604,7 +515,7 @@ sub writeResults {
 	my $platform = $analytics->get_platform;
 
 	# Results file needs array design accession if it's microarray.
-	my $resFile = ( $platform eq "rnaseq" ? $exptAcc."-analytics.tsv.undecorated" : $exptAcc."_".$platform."-analytics.tsv.undecorated" );
+	my $resFile = ( $platform eq "rnaseq" ? $expAcc."-analytics.tsv.undecorated" : $expAcc."_".$platform."-analytics.tsv.undecorated" );
 
 	# Get all the contrast IDs for this analytics element.
 	my $analyticsContrastIDs = [];
