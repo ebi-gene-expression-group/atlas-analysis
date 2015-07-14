@@ -20,7 +20,7 @@ suppressMessages( library( ExpressionAtlas ) )
 #	- plotDataFile <- filename for data for MvA plot.
 #	- aValuesFile <- filename for matrix of A-values; only needed for 2-colour designs. Default is NULL.
 #diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, plotDataFile, aValuesFile = NULL ) {
-diffAtlas_DE_limma <- function( expAcc, xmlConfigFileName, atlasProcessingDirectory ) {
+diffAtlas_DE_limma <- function( expAcc, xmlConfigFilename, atlasProcessingDirectory ) {
 
 	e <- try({
 
