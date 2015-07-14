@@ -278,7 +278,7 @@ add_tech_rep_averages <- function( expressionData, bioRepAnnotations, techRepGro
 }
 	
 
-filter_and_adjust_pvalues <- function( rawPvalues, normDataRowVars ) {
+filter_and_adjust_pvalues <- function( normDataRowVars, rawPvalues ) {
 
 	# Independent filtering.
 	# Make a data frame containing the row variances of the normalized data
@@ -687,7 +687,7 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			fit <- eBayes( fit )
 
 			# Adjust the p-values and perform independent filtering, add to the fit object.
-			fit$adjPvals <- filter_and_adjust_pvalues( rowVars( logFCsForContrast ), fit$p.value )
+			fit$adjPvals <- filter_and_adjust_pvalues( rowVars( logFCsForContrast ), fit$p.value[ , 1 ] )
 
 			contrastResults <- data.frame(
 										  designElements = fit$genes,
