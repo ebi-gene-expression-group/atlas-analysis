@@ -32,6 +32,8 @@ diffAtlas_DE_limma <<- function( expAcc, xmlConfigFileName, atlasProcessingDirec
 		# Get the experiment type.
 		experimentType <- experimentConfig$experimentType
 
+		cat( paste( "Experiment type is", experimentType, "\n" ) )
+
 		# Check that this is not an RNA-seq experiment.
 		if( !grepl( "array", experimentType ) ) {
 			stop( paste(
@@ -47,9 +49,13 @@ diffAtlas_DE_limma <<- function( expAcc, xmlConfigFileName, atlasProcessingDirec
 		# Steps are different for 1-colour and 2-colour data.
 		if( grepl( "1colour", experimentType ) ) {
 
+			cat( "Running one-colour analysis...\n" )
+
 			run_one_colour_analysis( expAcc, allAnalytics, atlasProcessingDirectory )
 
 		} else if( grepl( "2colour", experimentType ) ) {
+
+			cat( "Running two-colour analysis...\n" )
 
 			run_two_colour_analysis( expAcc, allAnalytics, atlasProcessingDirectory )
 
