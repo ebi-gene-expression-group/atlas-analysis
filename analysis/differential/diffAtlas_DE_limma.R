@@ -530,7 +530,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 				designElements = featureNames(esetForContrast), 
 				adjPval = fit$adjPvals, 
 				logFC = fit$coefficients[ , "groupstest" ], 
-				avgExpr = fit$Amean[ , "groupstest" ]
+				avgExpr = fit$Amean
 			)
 			
 			# Create filenames to write to.
