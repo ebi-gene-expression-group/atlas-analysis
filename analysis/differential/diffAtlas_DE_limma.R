@@ -709,10 +709,14 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			# Data for MvA plot:
 			plotDataFile <- paste( expAcc, contrastID, "plotdata", "tsv", sep = "." )
 			plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", plotDataFile )
+
+			cat( paste( "Writing results to", resFile, "...\n" ) )
 			
 			# Write the files.
 			write.table( contrastResults, file=resFile, row.names=FALSE, quote=FALSE, sep="\t" )
 			write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
+
+			cat( paste( "Successully completed differential expression analysis for", expAcc, "\n" ) )
 		
 		} )
 
