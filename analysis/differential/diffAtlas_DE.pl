@@ -68,7 +68,7 @@ print "Experiment accession: $expAcc\n";
 # plots.
 if( $atlasExperimentType =~ /array/ ) {
 	
-	runMicroarrayDifferentialExpression( $expAcc );
+	runMicroarrayDifferentialExpression( $expAcc, $experimentConfig );
 }
 
 # For RNA-seq experiments, take results from iRAP's DESeq results files, write
@@ -125,7 +125,7 @@ sub init {
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub runMicroarrayDifferentialExpression {
 
-	my ( $expAcc ) = @_;
+	my ( $expAcc, $experimentConfig ) = @_;
 
 	my $atlasProcessingDirectory = Cwd::cwd();
 
@@ -155,14 +155,56 @@ sub runMicroarrayDifferentialExpression {
 	# them to.
 	$analyticsDEResults = readLimmaResults( $expAcc );
 
-	# Filename for MvA plot.
-	my $plotFile = $experimentAccession."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
-	# Create MvA.
-	makeMvaPlot( "microarray", $plotFile, $plotDataTempFile, $contrastName, $mvaScript );
+	# Map contrast IDs to contrast names.
+	my $contrastIDs2names = map_contrast_ids_to_names( $experimentConfig );
+	
+	# Get the names of the MvA plot data files.
+	my @plotDataFiles = glob( "$tempDir/$expAcc.g*_g*.plotdata.tsv" );
+
+	foreach my $plotDataFile ( @plotDataFiles ) {
+
+		( my $contrastID = basename( $plotDataFile ) ) =~ s/.*\.(g\d+_d\d+)\.plotdata.*/$1/;
+
+		my $contrastName = $contrastIDs2names->{ $contrastID };
+
+		# Filename for MvA plot.
+		my $plotFile = $experimentAccession."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
+
+		# TODO: get contrast names
+		# Create MvA.
+		makeMvaPlot( "microarray", $plotFile, $plotDataFile, $contrastName, $mvaScript );
+
+		`rm $plotDataFile`;
+	}
 
 	# Now we have results for all the contrasts in this analytics element. Write them to a file.
 	writeResults( $analyticsDEResults, $experimentAccession, $analytics );
 	
+}
+
+
+sub map_contrast_ids_to_names {
+
+	my ( $experimentConfig ) = @_;
+
+	my $allAnalytics = $experimentConfig->get_atlas_analytics;
+
+	my $contrastIDs2names = {};
+
+	foreach my $analytics ( @{ $allAnalytics } ) {
+
+		my $contrasts = $analytics->get_atlas_contrasts;
+
+		foreach my $contrast ( @{ $contrasts } ) {
+
+			my $contrastID = $contrast->get_contrast_id;
+			my $contrastName = $contrast->get_contrast_name;
+
+			$contrastIDs2names->{ $contrastID } = $contrastName;
+		}
+	}
+
+	return $contrastIDs2names;
 }
 
 
@@ -242,7 +284,7 @@ sub readLimmaResults {
 
 	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
 
-	my @limmaResultsFiles = glob( "$tempDir/$expAcc.g*_g*.*analytics.tsv" );
+	my @limmaResultsFiles = glob( "$tempDir/$expAcc.g*_g*.analytics.tsv" );
 
 	foreach my $limmaResultsFile ( @limmaResultsFiles ) {
 
