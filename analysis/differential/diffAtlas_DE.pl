@@ -153,10 +153,12 @@ sub runMicroarrayDifferentialExpression {
 	# Get the differential expression results into the hash of all analytics results.
 	# Files are read out of the users ~/tmp directory where the R script wrote
 	# them to.
-	$analyticsDEResults = readLimmaResults( $expAcc );
+	my $analyticsDEResults = readLimmaResults( $expAcc );
 
 	# Map contrast IDs to contrast names.
 	my $contrastIDs2names = map_contrast_ids_to_names( $experimentConfig );
+
+	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
 	
 	# Get the names of the MvA plot data files.
 	my @plotDataFiles = glob( "$tempDir/$expAcc.g*_g*.plotdata.tsv" );
