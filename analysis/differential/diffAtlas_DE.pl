@@ -271,12 +271,9 @@ sub run_microarray_differential_expression {
 	# Get the names of the MvA plot data files.
 	my @plotDataFiles = glob( "$tempDir/$expAcc.g*_g*.plotdata.tsv" );
 
-	use Data::Dumper;
-	print Dumper( \@plotDataFiles );
-
 	foreach my $plotDataFile ( @plotDataFiles ) {
 
-		( my $contrastID = basename( $plotDataFile ) ) =~ s/.*\.(g\d+_d\d+)\.plotdata.*/$1/;
+		( my $contrastID = basename( $plotDataFile ) ) =~ s/.*\.(g\d+_g\d+)\.plotdata.*/$1/;
 
 		my $contrastName = $contrastIDs2names->{ $contrastID };
 		my $arrayDesignAccession = $contrastIDs2arrayDesigns->{ $contrastID };
