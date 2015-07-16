@@ -139,8 +139,8 @@ sub run_microarray_differential_expression {
 	my $R_limmaOutput = `$Rinstall $limmaScript $expAcc $atlasProcessingDirectory`;
 
 	# Check R output for errors.
-	if( $R_limmaOutput =~ /error/i ) {
-		
+	if( $? ) {
+
 		# Can't continue without results from limma so may as well quit.
 		die("\nError during differential expression analysis, outout from R below.\n------------\n$R_limmaOutput\n------------\n");
 	 
