@@ -165,7 +165,7 @@ elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	my $contrastIDsToDESeqFiles = read_irap_conf( $args->{ "irap_config" }, $args->{ "experiment_accession" } );
 	
 	# Get the results, write them out, make MvA plots.
-	get_rnaseq_results( $contrastIDsToDESeqFiles, $experimentConfig );
+	get_rnaseq_results( $contrastIDsToDESeqFiles, $experimentConfig, $args->{ "experiment_accession" } );
 }
 # If we're passed an experiment type we don't recognise, die.
 else {
@@ -456,7 +456,7 @@ sub read_irap_conf {
 # 	- For each contrast, create MvA plots using MvA plotting script.
 sub get_rnaseq_results {
 
-	my ( $contrastIDsToDESeqFiles, $experimentConfig ) = @_;
+	my ( $contrastIDsToDESeqFiles, $experimentConfig, $expAcc ) = @_;
 
 	# Get the RNA-seq analytics section from the experiment config.
 	my $allAnalytics = $experimentConfig->get_atlas_analytics;
