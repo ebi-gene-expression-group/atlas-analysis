@@ -240,24 +240,15 @@ sub run_microarray_differential_expression {
 
 	$logger->info( "Running differential expression analysis in R..." );
 	
-	# FIXME for testing
-	my $mango = "MANGO!";
-
 	# Run R script.
-	my $Routput = `$RscriptInstall $limmaScript $mango $expAcc $atlasProcessingDirectory 2>&1`;
-	#--------------------------------------------------
-	# `$RscriptInstall $limmaScript $mango $expAcc $atlasProcessingDirectory 2>&1`;
-	#-------------------------------------------------- 
+	my $Routput = `$RscriptInstall $limmaScript $expAcc $atlasProcessingDirectory 2>&1`;
 
 	# Check R output for errors.
 	if( $? ) {
 
 		# Can't continue without results from limma so may as well quit.
 		$logger->logdie( "Problems during differential expression analysis:\n\n$Routput" );
-		#--------------------------------------------------
-		# $logger->logdie( "Problems during differential expression analysis" );
-		#-------------------------------------------------- 
-	 
+
 	} else {
 		$logger->info( "Differential expression analysis successful" );
 	}
