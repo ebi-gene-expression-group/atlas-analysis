@@ -271,6 +271,9 @@ sub run_microarray_differential_expression {
 	# Get the names of the MvA plot data files.
 	my @plotDataFiles = glob( "$tempDir/$expAcc.g*_g*.plotdata.tsv" );
 
+	use Data::Dumper;
+	print Dumper( \@plotDataFiles );
+
 	foreach my $plotDataFile ( @plotDataFiles ) {
 
 		( my $contrastID = basename( $plotDataFile ) ) =~ s/.*\.(g\d+_d\d+)\.plotdata.*/$1/;
@@ -284,8 +287,6 @@ sub run_microarray_differential_expression {
 		# TODO: get contrast names
 		# Create MvA.
 		make_mva_plot( "microarray", $plotFile, $plotDataFile, $contrastName, $mvaScript );
-
-		`rm $plotDataFile`;
 	}
 
 	# Now we have results for all the contrasts in this analytics element. Write them to a file.
@@ -314,9 +315,6 @@ sub map_contrast_ids_to_arraydesigns {
 			$contrastIDs2arrayDesigns->{ $contrastID } = $platform;
 		}
 	}
-
-	use Data::Dumper;
-	print Dumper( $contrastIDs2arrayDesigns );
 
 	return $contrastIDs2arrayDesigns;
 }
