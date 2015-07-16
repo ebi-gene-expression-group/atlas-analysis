@@ -157,6 +157,7 @@ sub run_microarray_differential_expression {
 
 	# Map contrast IDs to contrast names.
 	my $contrastIDs2names = map_contrast_ids_to_names( $experimentConfig );
+	my $contrastIDs2arrayDesigns = map_contrast_ids_to_arraydesigns( $experimentConfig );
 
 	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
 	
@@ -170,7 +171,7 @@ sub run_microarray_differential_expression {
 		my $contrastName = $contrastIDs2names->{ $contrastID };
 
 		# Filename for MvA plot.
-		my $plotFile = $experimentAccession."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
+		my $plotFile = $expAcc."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
 
 		# TODO: get contrast names
 		# Create MvA.
@@ -182,6 +183,31 @@ sub run_microarray_differential_expression {
 	# Now we have results for all the contrasts in this analytics element. Write them to a file.
 	write_results( $analyticsDEResults, $expAcc, $experimentConfig );
 	
+}
+
+
+sub map_contrast_ids_to_names {
+
+	my ( $experimentConfig ) = @_;
+
+	my $allAnalytics = $experimentConfig->get_atlas_analytics;
+
+	my $contrastIDs2arrayDesigns = {};
+
+	foreach my $analytics ( @{ $allAnalytics } ) {
+
+		my $contrasts = $analytics->get_atlas_contrasts;
+		my $plaform = $analytics->get_platform;
+
+		foreach my $contrast ( @{ $contrasts } ) {
+
+			my $contrastID = $contrast->get_contrast_id;
+
+			$contrastIDs2arrayDesigns->{ $contrastID } = $arrayDesign;
+		}
+	}
+
+	return $contrastIDs2arrayDesigns;
 }
 
 
@@ -282,7 +308,7 @@ sub read_limma_results {
 
 	my ( $expAcc ) = @_;
 
-	my $analyticsDERsules = {};
+	my $analyticsDEResults = {};
 
 	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
 
