@@ -102,7 +102,7 @@ my $limmaScript = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/a
 #FIXME: testing only
 my $RscriptInstall = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/R_install/bin/Rscript";
 # Check that R is installed.
-unless( can_run( $Rinstall ) ) {
+unless( can_run( $RscriptInstall ) ) {
     $logger->logdie( "R not found. Please ensure it is installed and you can run it." );
 }
 
@@ -153,7 +153,7 @@ if( $atlasExperimentType =~ /array/ ) {
 		$args->{ "experiment_accession" }, 
 		$experimentConfig, 
 		$args->{ "processing_directory" }, 
-		$Rinstall 
+		$RscriptInstall 
 	);
 }
 # For RNA-seq experiments, take results from iRAP's DESeq results files, write
