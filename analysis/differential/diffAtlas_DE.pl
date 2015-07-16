@@ -68,7 +68,7 @@ print "Experiment accession: $expAcc\n";
 # plots.
 if( $atlasExperimentType =~ /array/ ) {
 	
-	runMicroarrayDifferentialExpression( $expAcc, $experimentConfig );
+	run_microarray_differential_expression( $expAcc, $experimentConfig );
 }
 
 # For RNA-seq experiments, take results from iRAP's DESeq results files, write
@@ -77,10 +77,10 @@ elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	
 	# Read the iRAP config file to get the paths to the DESeq results files for
 	# each contrast.
-	my $contrastIDsToDESeqFiles = readIrapConf( $irapConfig, $expAcc );
+	my $contrastIDsToDESeqFiles = read_irap_conf( $irapConfig, $expAcc );
 	
 	# Get the results, write them out, make MvA plots.
-	getRNAseqResults( $contrastIDsToDESeqFiles, $experimentConfig );
+	get_rnaseq_results( $contrastIDsToDESeqFiles, $experimentConfig );
 }
 
 # If we're passed an experiment type we don't recognise, die.
@@ -116,14 +116,14 @@ sub init {
 }
 
 
-# runMicroarrayDifferentialExpression
+# run_microarray_differential_expression
 # 	- For each array design, for each contrast, run differential expression
 # 	analysis using limma script.
 # 	- For each array design, combine results for all contrasts and write
 # 	adjusted p-values, moderated t-statistics, and log2(fold-change)s to one
 # 	file.
 # 	- Create MvA plots for each contrast using MvA plotting script.
-sub runMicroarrayDifferentialExpression {
+sub run_microarray_differential_expression {
 
 	my ( $expAcc, $experimentConfig ) = @_;
 
@@ -153,7 +153,7 @@ sub runMicroarrayDifferentialExpression {
 	# Get the differential expression results into the hash of all analytics results.
 	# Files are read out of the users ~/tmp directory where the R script wrote
 	# them to.
-	my $analyticsDEResults = readLimmaResults( $expAcc );
+	my $analyticsDEResults = read_limma_results( $expAcc );
 
 	# Map contrast IDs to contrast names.
 	my $contrastIDs2names = map_contrast_ids_to_names( $experimentConfig );
@@ -174,13 +174,13 @@ sub runMicroarrayDifferentialExpression {
 
 		# TODO: get contrast names
 		# Create MvA.
-		makeMvaPlot( "microarray", $plotFile, $plotDataFile, $contrastName, $mvaScript );
+		make_mva_plot( "microarray", $plotFile, $plotDataFile, $contrastName, $mvaScript );
 
 		`rm $plotDataFile`;
 	}
 
 	# Now we have results for all the contrasts in this analytics element. Write them to a file.
-	writeResults( $analyticsDEResults, $experimentAccession, $analytics );
+	write_results( $analyticsDEResults, $expAcc, $experimentConfig );
 	
 }
 
@@ -210,10 +210,10 @@ sub map_contrast_ids_to_names {
 }
 
 
-# joinAssayNames
+# join_assay_names
 # 	- Join assay names using "<SEP>" ( or e.g. "<T1_SEP>" for technical
 # 	replicates ).
-sub joinAssayNames {
+sub join_assay_names {
 
 	my ( $assays ) = @_;
 
@@ -276,9 +276,9 @@ sub joinAssayNames {
 }
 
 
-# readLimmaResults
+# read_limma_results
 # 	- parses output from limma script and adds them to a hash.
-sub readLimmaResults {
+sub read_limma_results {
 
 	my ( $expAcc ) = @_;
 
@@ -321,9 +321,9 @@ sub readLimmaResults {
 }
 
 
-# stripCy
+# strip_cy
 # 	- remove ".Cy3" or ".Cy5" from ends of assay names.
-sub stripCy {
+sub strip_cy {
 				
 	my @assayNames = @_;
 	my @assayNamesNoCy = ();
@@ -336,11 +336,11 @@ sub stripCy {
 }
 
 
-# readIrapConf
+# read_irap_conf
 #  - read iRAP config file to get filename for DESeq results for each contrast.
 #  - check experiment accession in iRAP config matches that of Atlas contrasts XML.
 #  - add filename for DESeq results file for each contrast to $contrastHash.
-sub readIrapConf {
+sub read_irap_conf {
 
 	my ( $irapConfig, $expAcc ) = @_;
 
@@ -398,12 +398,12 @@ sub readIrapConf {
 }
 
 
-# getRNAseqResults
+# get_rnaseq_results
 # 	- For each contrast, parse the DESeq results file to get log2(fold-change)s
 # 	and adjusted p-values.
 # 	- Write all contrast results into one single file.
 # 	- For each contrast, create MvA plots using MvA plotting script.
-sub getRNAseqResults {
+sub get_rnaseq_results {
 
 	my ( $contrastIDsToDESeqFiles, $experimentConfig ) = @_;
 
@@ -514,17 +514,17 @@ sub getRNAseqResults {
 		my $atlasName = $contrastIDsToNames->{ $contrastID };
 
 		# Create MvA
-		makeMvaPlot("rnaseq", $plotFile, $plotDataTempFile, $atlasName, $mvaScript);
+		make_mva_plot("rnaseq", $plotFile, $plotDataTempFile, $atlasName, $mvaScript);
 	}
 	
 	# Write the results to a file.
-	&writeResults( $rnaSeqDEResults, $experimentConfig->get_experiment_accession, $rnaSeqAnalytics );
+	write_results( $rnaSeqDEResults, $experimentConfig->get_experiment_accession, $experimentConfig );
 }
 
 
-# makeMvaPlot
+# make_mva_plot
 # 	- Create MvA plot using MvA plot script.
-sub makeMvaPlot {
+sub make_mva_plot {
 
 	$_ = shift for my ($platform, $plotFile, $plotDataTempFile, $contrastName, $mvaScript);
 
@@ -548,66 +548,70 @@ sub makeMvaPlot {
 }
 
 
-# writeResults
+# write_results
 #	- write all results for a single platform (e.g. "A-AFFY-35" or "rnaseq") to
 #	a tab-delimited text file.
-sub writeResults {
+sub write_results {
 
-	$_ = shift for my ( $analyticsDEResults, $experimentAccession, $analytics);
+	$_ = shift for my ( $analyticsDEResults, $experimentAccession, $experimentConfig);
 	
-	# Get the platform from the analytics element.
-	my $platform = $analytics->get_platform;
+	foreach my $analytics ( @{ $experimentConfig->get_atlas_analytics } ) {
 
-	# Results file needs array design accession if it's microarray.
-	my $resFile = ( $platform eq "rnaseq" ? $expAcc."-analytics.tsv.undecorated" : $expAcc."_".$platform."-analytics.tsv.undecorated" );
+		# Get the platform from the analytics element.
+		my $platform = $analytics->get_platform;
 
-	# Get all the contrast IDs for this analytics element.
-	my $analyticsContrastIDs = [];
-	
-	foreach my $contrast ( @{ $analytics->get_atlas_contrasts } ) {
+		# Results file needs array design accession if it's microarray.
+		my $resFile = ( $platform eq "rnaseq" ? $expAcc."-analytics.tsv.undecorated" : $expAcc."_".$platform."-analytics.tsv.undecorated" );
 
-		push @{ $analyticsContrastIDs }, $contrast->get_contrast_id;
-	}
-	
-	print "\nWriting results to $resFile\n";
+		# Get all the contrast IDs for this analytics element.
+		my $analyticsContrastIDs = [];
+		
+		foreach my $contrast ( @{ $analytics->get_atlas_contrasts } ) {
 
-	open(RESFILE, ">$resFile") or die "Can't open $resFile: $!\n";
-
-	# Write column headers
-	if($platform eq "rnaseq") { printf(RESFILE "Gene ID"); }
-	else { printf(RESFILE "Design Element"); }
-	foreach my $contrastID ( @{ $analyticsContrastIDs }) {
-		printf(RESFILE "\t$contrastID.p-value");
-		unless($platform eq "rnaseq") { printf(RESFILE "\t$contrastID.t-statistic"); }
-		printf(RESFILE "\t$contrastID.log2foldchange");
-	}
-
-	# Write statistics
-	foreach my $id (keys %{ $analyticsDEResults }) {
-
-		printf(RESFILE "\n$id");
-
-		# Use ordering of assay group pairs from %contrastHash so stats are in
-		# the same order as the headers.
-		foreach my $contrastID ( @{ $analyticsContrastIDs }) {
-
-			my $statsString = "";
-			if(exists($analyticsDEResults->{ $id }->{ $contrastID })) {
-				$statsString = join "\t", @{ $analyticsDEResults->{ $id }->{ $contrastID }};
-			} else {
-
-				# Some genes are excluded if their counts are zero across all
-				# assays. If there is more than one contrast in the experiment,
-				# assays in one contrast may have non-zero counts while assays
-				# in another contrast all have zero counts. In this case, we
-				# have DESeq statistics results for one contrast and none for
-				# the other. Where we don't have any results, we will put "NA"
-				# values into the results file.
-				if($platform eq "rnaseq") { $statsString = "NA\tNA"; }
-				else { $statsString = "NA\tNA\tNA"; }
-			}
-			printf(RESFILE "\t$statsString");
+			push @{ $analyticsContrastIDs }, $contrast->get_contrast_id;
 		}
+		
+		print "\nWriting results to $resFile\n";
+
+		open(RESFILE, ">$resFile") or die "Can't open $resFile: $!\n";
+
+		# Write column headers
+		if($platform eq "rnaseq") { printf(RESFILE "Gene ID"); }
+		else { printf(RESFILE "Design Element"); }
+		foreach my $contrastID ( @{ $analyticsContrastIDs }) {
+			printf(RESFILE "\t$contrastID.p-value");
+			unless($platform eq "rnaseq") { printf(RESFILE "\t$contrastID.t-statistic"); }
+			printf(RESFILE "\t$contrastID.log2foldchange");
+		}
+
+		# Write statistics
+		foreach my $id (keys %{ $analyticsDEResults }) {
+
+			printf(RESFILE "\n$id");
+
+			# Use ordering of assay group pairs from %contrastHash so stats are in
+			# the same order as the headers.
+			foreach my $contrastID ( @{ $analyticsContrastIDs }) {
+
+				my $statsString = "";
+				if(exists($analyticsDEResults->{ $id }->{ $contrastID })) {
+					$statsString = join "\t", @{ $analyticsDEResults->{ $id }->{ $contrastID }};
+				} else {
+
+					# Some genes are excluded if their counts are zero across all
+					# assays. If there is more than one contrast in the experiment,
+					# assays in one contrast may have non-zero counts while assays
+					# in another contrast all have zero counts. In this case, we
+					# have DESeq statistics results for one contrast and none for
+					# the other. Where we don't have any results, we will put "NA"
+					# values into the results file.
+					if($platform eq "rnaseq") { $statsString = "NA\tNA"; }
+					else { $statsString = "NA\tNA\tNA"; }
+				}
+				printf(RESFILE "\t$statsString");
+			}
+		}
+		close( RESFILE );
 	}
 }
 			
