@@ -604,7 +604,7 @@ sub make_mva_plot {
 #	a tab-delimited text file.
 sub write_results {
 
-	$_ = shift for my ( $analyticsDEResults, $experimentAccession, $experimentConfig);
+	$_ = shift for my ( $analyticsDEResults, $expAcc, $experimentConfig);
 	
 	foreach my $analytics ( @{ $experimentConfig->get_atlas_analytics } ) {
 
