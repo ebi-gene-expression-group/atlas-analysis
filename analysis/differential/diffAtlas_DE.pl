@@ -187,7 +187,7 @@ sub run_microarray_differential_expression {
 }
 
 
-sub map_contrast_ids_to_names {
+sub map_contrast_ids_to_arraydesigns {
 
 	my ( $experimentConfig ) = @_;
 
