@@ -100,7 +100,7 @@ my $mvaScript = "diffAtlas_mvaPlot.R";
 my $limmaScript = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/atlasprod/analysis/differential/diffAtlas_DE_limma.R";
 
 #FIXME: testing only
-my $Rinstall = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/R_install/bin/R";
+my $RscriptInstall = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/R_install/bin/Rscript";
 # Check that R is installed.
 unless( can_run( $Rinstall ) ) {
     $logger->logdie( "R not found. Please ensure it is installed and you can run it." );
@@ -236,7 +236,7 @@ sub parse_args {
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub run_microarray_differential_expression {
 
-	my ( $expAcc, $experimentConfig, $atlasProcessingDirectory, $Rinstall ) = @_;
+	my ( $expAcc, $experimentConfig, $atlasProcessingDirectory, $RscriptInstall ) = @_;
 
 	$logger->info( "Running differential expression analysis in R..." );
 	
@@ -245,7 +245,7 @@ sub run_microarray_differential_expression {
 
 	# Run R script.
 	#my $Routput = `$Rinstall $limmaScript $mango $expAcc $atlasProcessingDirectory 2>&1`;
-	`$Rinstall $limmaScript $mango $expAcc $atlasProcessingDirectory 2>&1`;
+	`$RscriptInstall $limmaScript $mango $expAcc $atlasProcessingDirectory 2>&1`;
 
 	# Check R output for errors.
 	if( $? ) {
