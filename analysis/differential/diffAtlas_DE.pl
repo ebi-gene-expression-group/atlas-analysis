@@ -169,6 +169,7 @@ sub run_microarray_differential_expression {
 		( my $contrastID = basename( $plotDataFile ) ) =~ s/.*\.(g\d+_d\d+)\.plotdata.*/$1/;
 
 		my $contrastName = $contrastIDs2names->{ $contrastID };
+		my $arrayDesignAccession = $contrastIDs2arrayDesigns->{ $contrastID };
 
 		# Filename for MvA plot.
 		my $plotFile = $expAcc."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
@@ -203,7 +204,7 @@ sub map_contrast_ids_to_names {
 
 			my $contrastID = $contrast->get_contrast_id;
 
-			$contrastIDs2arrayDesigns->{ $contrastID } = $arrayDesign;
+			$contrastIDs2arrayDesigns->{ $contrastID } = $platform;
 		}
 	}
 
