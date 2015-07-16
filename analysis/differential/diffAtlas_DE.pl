@@ -72,7 +72,7 @@ print "Experiment accession: $expAcc\n";
 # plots.
 if( $atlasExperimentType =~ /array/ ) {
 	
-	run_microarray_differential_expression( $expAcc, $experimentConfig );
+	run_microarray_differential_expression( $expAcc, $experimentConfig, $Rinstall );
 }
 
 # For RNA-seq experiments, take results from iRAP's DESeq results files, write
@@ -129,14 +129,14 @@ sub init {
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub run_microarray_differential_expression {
 
-	my ( $expAcc, $experimentConfig ) = @_;
+	my ( $expAcc, $experimentConfig, $Rinstall ) = @_;
 
 	my $atlasProcessingDirectory = Cwd::cwd();
 
 	print( "Running differential expression analysis in R...\n" );
 
 	# Run R script.
-	my $R_limmaOutput = `$limmaScript $expAcc $atlasProcessingDirectory`;
+	my $R_limmaOutput = `$Rinstall $limmaScript $expAcc $atlasProcessingDirectory`;
 
 	# Check R output for errors.
 	if( $R_limmaOutput =~ /error/i ) {
