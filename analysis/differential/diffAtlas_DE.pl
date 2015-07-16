@@ -13,20 +13,85 @@
 # 	and then summarize statistics results for all contrasts into a single
 # 	tab-delimited text file.
 
+=pod
+
+=head1 NAME
+
+diffAtlas_DE.pl - do differential expression analysis for Expression Atlas.
+
+=head1 SYNOPSIS
+
+diffAtlas_DE.pl --experiment E-MTAB-1066 --directory path/to/processing/directory
+
+diffAtlas_DE.pl --experiment E-GEOD-38400 --irapconf E-MTAB-38400.conf
+
+=head1 DESCRIPTION
+
+This script currently either (a) runs differential expression analysis via
+limma for microarray experiments, or (b) reads in iRAP's DESeq results files
+and compiles them for an RNA-seq experiment.
+
+=head1 OPTIONS
+
+=over 2
+
+=item -e --experiment
+
+Required. ArrayExpress accession of experiment.
+
+=item -d --directory
+
+Required. Path to Atlas processing directory containin XML config and
+normalized data files (for microarray).
+
+=item -i --irapconf
+
+Required for RNA-seq experiments. Full path to iRAP config file.
+
+=item -h --help
+
+Optional. Print a helpful message.
+
+=back
+
+=head1 AUTHOR
+
+Expression Atlas team <arrayexpress-atlas@ebi.ac.uk
+
+=cut
+
+
 use strict;
 use warnings;
 
+use Cwd;
 use File::Spec;
 use File::Basename;
-use Scalar::Util qw(looks_like_number);
+use Getopt::Long;
 use IPC::Cmd qw( can_run );
-use Cwd;
+use Log::Log4perl;
+use Pod::Usage;
+use Scalar::Util qw(looks_like_number);
 
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
 use Atlas::AtlasConfig::Common qw( map_technical_replicate_ids_to_assays );
 
+
 # Flush after every print not every newline
 $| = 1;
+
+my $logger_config = q(
+	log4perl.rootlogger			         = INFO, SCREEN
+	log4perl.appender.SCREEN             = Log::Log4perl::Appender::Screen
+	log4perl.appender.SCREEN.stderr      = 0
+	log4perl.appender.SCREEN.layout      = Log::Log4perl::Layout::PatternLayout
+	log4perl.appender.SCREEN.layout.ConversionPattern = %-5p - %m%n
+);
+
+# Initialise logger.
+Log::Log4perl::init(\$logger_config);
+my $logger = Log::Log4perl::get_logger;
+
 
 # assumes R scripts directory is in PATH
 my $mvaScript = "diffAtlas_mvaPlot.R";
@@ -38,58 +103,73 @@ my $limmaScript = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/a
 my $Rinstall = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/R_install/bin/R";
 # Check that R is installed.
 unless( can_run( $Rinstall ) ) {
-    die( "R not found. Please ensure it is installed and you can run it.\n" );
+    $logger->logdie( "R not found. Please ensure it is installed and you can run it." );
 }
 
 # Check the R scripts can be run.
 foreach my $Rscript ( $mvaScript, $limmaScript ) {
 
     unless( can_run( $Rscript ) ) {
-        die( "$Rscript not found. Please ensure it is installed and you can run it.\n" );
+        $logger->logdie( "$Rscript not found. Please ensure it is installed and you can run it." );
     }
 }
 
 # Get commandline arguments
-my ($atlasXML, $irapConfig) = init();
+my $args = parse_args();
 
+my $atlasXML = File::Spec->catfile( 
+	$args->{ "processing_directory" }, 
+	$args->{ "experiment_accession" } . "-configuration.xml" 
+);
 
 # Read XML config into Atlas::AtlasConfig::ExperimentConfig object.
 my $experimentConfig = parseAtlasConfig( $atlasXML );
 
 my $atlasExperimentType = $experimentConfig->get_atlas_experiment_type;
 
-# Make sure we haven't been given a baseline experiment.
-if( $atlasExperimentType =~ /baseline/ ) {
-	die( "Experiments with type \"", $experimentConfig->get_atlas_experiment_type, "\" cannot be processed as differential.\n" );
+# If this is an RNA-seq experiment, make sure we got the path to the iRAP config file.
+if( $atlasExperimentType =~ "rnaseq" ) {
+	unless( $args->{ "irap_config" } ) {
+		$logger->logdie( 
+			$args->{ "experiment_accession" }, 
+			" is an RNA-seq experiment but no iRAP config file was specified. Cannot continue."
+		);
+	}
 }
 
-# Get the experiment accession.
-my $expAcc = $experimentConfig->get_experiment_accession;
+# Make sure we haven't been given a baseline experiment.
+if( $atlasExperimentType =~ /baseline/ ) {
+	$logger->logdie( "Experiments with type \"", $experimentConfig->get_atlas_experiment_type, "\" cannot be processed as differential." );
+}
 
-print "Experiment accession: $expAcc\n";
 
+########################################
+# If everything is OK, begin processing!
 # For microarray experiments, run limma analysis, write results, and create MvA
 # plots.
 if( $atlasExperimentType =~ /array/ ) {
 	
-	run_microarray_differential_expression( $expAcc, $experimentConfig, $Rinstall );
+	run_microarray_differential_expression( 
+		$args->{ "experiment_accession" }, 
+		$experimentConfig, 
+		$args->{ "processing_directory" }, 
+		$Rinstall 
+	);
 }
-
 # For RNA-seq experiments, take results from iRAP's DESeq results files, write
 # them into one file, and create MvA plots.
 elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	
 	# Read the iRAP config file to get the paths to the DESeq results files for
 	# each contrast.
-	my $contrastIDsToDESeqFiles = read_irap_conf( $irapConfig, $expAcc );
+	my $contrastIDsToDESeqFiles = read_irap_conf( $args->{ "irap_config" }, $args->{ "experiment_accession" } );
 	
 	# Get the results, write them out, make MvA plots.
 	get_rnaseq_results( $contrastIDsToDESeqFiles, $experimentConfig );
 }
-
 # If we're passed an experiment type we don't recognise, die.
 else {
-	die( "Don't know what to do with experiment of type \"", $atlasExperimentType, "\"\n" );
+	$logger->logdie( "Don't know what to do with experiment of type \"", $atlasExperimentType, "\"\n" );
 }
 
 
@@ -101,22 +181,49 @@ else {
 # 	Get commandline arguments using Getopt::Long.
 # 		--atlasxml <Atlas contrasts XML file> (required)
 # 		--irapconf <iRAP config file> (for RNA-seq)
-sub init {
+sub parse_args {
 	
-	use vars qw/ %opt /;
-	use Getopt::Long;
+	my %args;
 
-	my ($atlasXML, $irapConfig);
+	my $want_help;
+
 	GetOptions(
-		'atlasxml=s' => \$atlasXML,
-		'irapconf=s' => \$irapConfig,
+		"h|help"			=> \$want_help,
+		"e|experiment=s"	=> \$args{ "experiment_accession" }, 
+		"d|directory=s"		=> \$args{ "processing_directory" },
+		"i|irapconf=s"		=> \$args{ "irap_config" },
 	);
 
-	unless($atlasXML) {
-		die "Cannot proceed without Atlas contrasts XML file. Please provide it with \"--atlasxml <filename>\"\nFor RNA-seq experiments please also provide \"--irapconf <iRAP config filename>\"\n";
+	# Print help if requested.
+	if( $want_help ) {
+		pod2usage(
+			-exitval	=> 255,
+			-output		=> \*STDOUT,
+			-verbose	=> 1
+		);
 	}
-	
-	return ($atlasXML, $irapConfig);
+
+	# Check that we have the minimum requirements.
+	unless( $args{ "experiment_accession" } && $args{ "processing_directory" } ) {
+		pod2usage(
+			-message	=> "You must specify an experiment accession and a processing directory.\n",
+			-exitval	=> 255,
+			-output		=> \*STDOUT,
+			-verbose	=> 1
+		);
+	}
+
+	# Check that the experiment accession is a valid one.
+	unless( $args{ "experiment_accession" } =~ /^E-\w{4}-\d+$/ ) {
+		pod2usage(
+			-message	=> $args{ "experiment_accession" } . " does not look like an ArrayExpress experiment accession.\n",
+			-exitval	=> 255,
+			-output		=> \*STDOUT.
+			-verbose	=> 1
+		);
+	}
+
+	return \%args;
 }
 
 
@@ -129,26 +236,24 @@ sub init {
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub run_microarray_differential_expression {
 
-	my ( $expAcc, $experimentConfig, $Rinstall ) = @_;
+	my ( $expAcc, $experimentConfig, $atlasProcessingDirectory, $Rinstall ) = @_;
 
-	my $atlasProcessingDirectory = Cwd::cwd();
-
-	print( "Running differential expression analysis in R...\n" );
+	$logger->info( "Running differential expression analysis in R..." );
 	
 	# FIXME for testing
 	my $mango = "MANGO!";
 
 	# Run R script.
-	my $R_limmaOutput = `$Rinstall $limmaScript $mango $expAcc $atlasProcessingDirectory`;
+	my $Routput = `$Rinstall $limmaScript $mango $expAcc $atlasProcessingDirectory 2>&1`;
 
 	# Check R output for errors.
 	if( $? ) {
 
 		# Can't continue without results from limma so may as well quit.
-		die("\nError during differential expression analysis, outout from R below.\n------------\n$R_limmaOutput\n------------\n");
+		$logger->logdie( "Problems during differential expression analysis:\n\n$Routput" );
 	 
 	} else {
-		print "Differential expression analysis successful\n";
+		$logger->info( "Differential expression analysis successful" );
 	}
 			
 	# Get the differential expression results into the hash of all analytics results.
@@ -237,73 +342,6 @@ sub map_contrast_ids_to_names {
 	return $contrastIDs2names;
 }
 
-
-# join_assay_names
-# 	- Join assay names using "<SEP>" ( or e.g. "<T1_SEP>" for technical
-# 	replicates ).
-sub join_assay_names {
-
-	my ( $assays ) = @_;
-
-	# First map assays to their technical replicate IDs (or
-	# "no_technical_replicate_id" if they don't have one).
-	my $techRepIDsToAssays = map_technical_replicate_ids_to_assays( $assays );
-
-	# Array for assay names to join with "<SEP>"
-	my $assayNamesToJoin = [];
-
-	# Now go through the technical replicate IDs...
-	foreach my $techRepID ( keys %{ $techRepIDsToAssays } ) {
-
-		# For assays that aren't technical replicates...
-		if( $techRepID eq "no_technical_replicate_id" ) {
-			
-			# Go through the assays
-			foreach my $assay ( @{ $techRepIDsToAssays->{ $techRepID } } ) {
-				
-				# Get the assay name
-				my $assayName = $assay->get_name;
-				
-				# Add it to the array of assay names to join.
-				push @{ $assayNamesToJoin }, $assayName;
-			}
-		}
-		# For assays that are technical replicates...
-		else {
-
-			# Create separator from technical replicate group ID, e.g.
-			# "<T1_SEP>", "T2_SEP>", ...
-			my $techRepSeparator = "<" . uc( $techRepID ) . "_SEP>";
-
-			# Array for assay names for this technical replicate group.
-			my $techRepAssays = [];
-
-			# Get all the assay names for this technical replicate group.
-			foreach my $assay ( @{ $techRepIDsToAssays->{ $techRepID } } ) {
-
-				# Get the assay name.
-				my $assayName = $assay->get_name;
-
-				# Add it to the array of assay names for this technical replicate group.
-				push @{ $techRepAssays }, $assayName;
-			}
-
-			# Now join the assay names with the separator.
-			my $joinedTechRepAssayNames = join $techRepSeparator, @{ $techRepAssays };
-
-			# Add this to the array of assay names to be joined
-			push @{ $assayNamesToJoin }, $joinedTechRepAssayNames;
-		}
-	}
-
-	# Now we've filled the array of assay names, with and without technical
-	# replicates. Join them together with "<SEP>".
-	my $joinedAssayNames = join "<SEP>", @{ $assayNamesToJoin };
-
-	return $joinedAssayNames;
-}
-
-
 # read_limma_results
 # 	- parses output from limma script and adds them to a hash.
 sub read_limma_results {
@@ -321,7 +359,7 @@ sub read_limma_results {
 		( my $contrastID = basename( $limmaResultsFile ) ) =~ s/.*\.(g\d+_d\d+)\.analytics.*/$1/;
 	
 		# Add results to hash.
-		open(LIMMARES, "<$limmaResultsFile") or die("Can't open file $limmaResultsFile: $!\n");
+		open(LIMMARES, "<$limmaResultsFile") or $logger->logdie( "Can't open file $limmaResultsFile: $!" );
 		while(defined(my $line = <LIMMARES>)) {
 			
 			# potentially don't need headers in the limma results file?
@@ -342,25 +380,10 @@ sub read_limma_results {
 		}
 		close(LIMMARES);
 		# clean up
-		`rm $limmaResultsFile`;
+		#`rm $limmaResultsFile`; #FIXME
 	}
 
 	return $analyticsDEResults;
-}
-
-
-# strip_cy
-# 	- remove ".Cy3" or ".Cy5" from ends of assay names.
-sub strip_cy {
-				
-	my @assayNames = @_;
-	my @assayNamesNoCy = ();
-	foreach my $assayName (@assayNames) {
-
-		$assayName =~ s/\.Cy\d$//;
-		push @assayNamesNoCy, $assayName;
-	}
-	return @assayNamesNoCy;
 }
 
 
@@ -382,7 +405,7 @@ sub read_irap_conf {
 	
 	open( CONF, $irapConfig ) or die( "Can't open $irapConfig: $!\n" );
 
-	print "\nReading iRAP config: $irapConfig...\n";
+	$logger->info( "\nReading iRAP config: $irapConfig..." );
 	while( defined( my $line = <CONF> ) ) {
 
 		chomp $line;
@@ -393,7 +416,7 @@ sub read_irap_conf {
 			# Check experiment accession from iRAP config matches that in filename of
 			# Atlas contrasts file.
 			unless( $irapExptAcc eq $expAcc ) {
-				die "\niRAP experiment accession is: $irapExptAcc -- does not match Atlas experiment accession ($expAcc)\n";
+				$logger->logdie( "\niRAP experiment accession is: $irapExptAcc -- does not match Atlas experiment accession ($expAcc)" );
 			}
 		}
 		
@@ -464,12 +487,12 @@ sub get_rnaseq_results {
 	# Empty hash to store differential expression results before writing.
 	my $rnaSeqDEResults = {};
 
-	print "\nCollecting DESeq results...\n";
+	$logger->info( "\nCollecting DESeq results..." );
 	
 	# Go through the contrasts...
 	foreach my $contrastID (keys %{ $contrastIDsToDESeqFiles } ) {
 
-		print "Collecting results for contrast: ", $contrastIDsToNames->{ $contrastID }, "\n";
+		$logger->info( "Collecting results for contrast: ", $contrastIDsToNames->{ $contrastID } );
 		
 		# Get the path to the DESeq results file.
 		my $deseqFile = $contrastIDsToDESeqFiles->{ $contrastID };
@@ -477,12 +500,12 @@ sub get_rnaseq_results {
 		# Need to get column indices of "baseMean", "log2FoldChange", and "padj" in DESeq results.
 		my ($basemeanIdx, $logfcIdx, $adjpvalIdx);
 
-		open(DESEQRES, $deseqFile) or die("Can't open $deseqFile: $!\n");
+		open(DESEQRES, $deseqFile) or $logger->logdie( "Can't open $deseqFile: $!" );
 
 		# Temp file for MvA plot data.
 		my $plotDataTempFile = "/tmp/plotData.$$.txt";
 		
-		open(PLOTDATA, ">$plotDataTempFile") or die("Can't open file to write temporary plot data to: $!\n");
+		open(PLOTDATA, ">$plotDataTempFile") or $logger->logdie( "Can't open file to write temporary plot data to: $!" );
 		printf(PLOTDATA "ID\tavgExpr\tlogFC\tadjPval");
 
 		print "Reading DESeq results from $deseqFile...";
@@ -499,7 +522,7 @@ sub get_rnaseq_results {
 				$adjpvalIdx = (grep { $lineSplit[$_] eq "padj" } 0..$#lineSplit)[0];
 
 				if($basemeanIdx == 0 || $logfcIdx == 0 || $adjpvalIdx == 0) {
-					die("Couldn't get column indices for all required columns.\n");
+					$logger->logdie( "Couldn't get column indices for all required columns." );
 				}
 			}
 			else {
@@ -514,15 +537,15 @@ sub get_rnaseq_results {
 				# Ensure we get numbers for the things that are supposed to
 				# be numbers (weird prob with DESeq output).
 				unless(looks_like_number($baseMean)) {
-					die "\nDid not get numeric value for baseMean:\nGene ID: $geneID\nbaseMean: $baseMean\n";
+					$logger->logdie( "\nDid not get numeric value for baseMean:\nGene ID: $geneID\nbaseMean: $baseMean" );
 				}
 				# Allow "NA" adjusted p-values through.
 				unless(looks_like_number($adjPval) || $adjPval eq "NA") {
-					die "\nDid not get numeric value for adjusted p-value:\nGene ID: $geneID\nadjusted p-value: $adjPval\n";
+					$logger->logdie( "\nDid not get numeric value for adjusted p-value:\nGene ID: $geneID\nadjusted p-value: $adjPval" );
 				}
 				# Allow "NA" log fold-changes through.
 				unless(looks_like_number($logFC) || $logFC eq "NA") {
-					die "\nDid not get numeric value for log2FoldChange:\nGene ID: $geneID\nlog2FoldChange: $logFC\n";
+					$logger->logdie( "\nDid not get numeric value for log2FoldChange:\nGene ID: $geneID\nlog2FoldChange: $logFC" );
 				}
 				
 				# Add to hash for file of all contrasts' results.
@@ -533,7 +556,7 @@ sub get_rnaseq_results {
 		}
 		close(PLOTDATA);
 		close(DESEQRES);
-		print "done\n";
+		$logger->info( "done" );
 
 		# Filename for MvA plot
 		my $plotFile = "$expAcc-".$contrastID."-mvaPlot.png";
@@ -556,19 +579,19 @@ sub make_mva_plot {
 
 	$_ = shift for my ($platform, $plotFile, $plotDataTempFile, $contrastName, $mvaScript);
 
-	print "Making MvA plot...";
+	$logger->info( "Making MvA plot..." );
 	# Create MvA plot with MvA plot script
 	my $R_mvaOutput = `$mvaScript $plotDataTempFile \"$contrastName\" $plotFile $platform 2>&1`;
 	
 	# Check for errors (this doesn't catch warnings).
-	if($R_mvaOutput =~ /error/i) {
+	if( $? ) {
 
 		# Report the error but don't worry about dying as we can live
 		# without the MvA plot.
-		print "\nError creating MvA plot, output from R below.\n------------\n$R_mvaOutput\n------------\n";
+		$logger->logdie( "Problems creating MvA plot:\n$R_mvaOutput" );
 
 	} else {
-		print "done.\n";
+		$logger->info( "done." );
 	}
 	# clean up
 	`rm $plotDataTempFile`;
@@ -599,9 +622,9 @@ sub write_results {
 			push @{ $analyticsContrastIDs }, $contrast->get_contrast_id;
 		}
 		
-		print "\nWriting results to $resFile\n";
+		$logger->info( "Writing results to $resFile" );
 
-		open(RESFILE, ">$resFile") or die "Can't open $resFile: $!\n";
+		open(RESFILE, ">$resFile") or $logger->logdie( "Can't open $resFile: $!" );
 
 		# Write column headers
 		if($platform eq "rnaseq") { printf(RESFILE "Gene ID"); }
