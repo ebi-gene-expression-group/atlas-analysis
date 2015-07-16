@@ -139,7 +139,7 @@ sub run_microarray_differential_expression {
 	my $mango = "MANGO!";
 
 	# Run R script.
-	my $R_limmaOutput = `$Rinstall $limmaScript $expAcc $atlasProcessingDirectory`;
+	my $R_limmaOutput = `$Rinstall $limmaScript $mango $expAcc $atlasProcessingDirectory`;
 
 	# Check R output for errors.
 	if( $? ) {
