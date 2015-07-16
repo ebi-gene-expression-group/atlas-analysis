@@ -134,6 +134,9 @@ sub run_microarray_differential_expression {
 	my $atlasProcessingDirectory = Cwd::cwd();
 
 	print( "Running differential expression analysis in R...\n" );
+	
+	# FIXME for testing
+	my $mango = "MANGO!";
 
 	# Run R script.
 	my $R_limmaOutput = `$Rinstall $limmaScript $expAcc $atlasProcessingDirectory`;
