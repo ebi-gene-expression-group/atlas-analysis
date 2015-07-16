@@ -30,10 +30,14 @@ $| = 1;
 
 # assumes R scripts directory is in PATH
 my $mvaScript = "diffAtlas_mvaPlot.R";
-my $limmaScript = "diffAtlas_DE_limma.R";
+#my $limmaScript = "diffAtlas_DE_limma.R";
+# FIXME: testing only
+my $limmaScript = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/atlasprod/analysis/differential/diffAtlas_DE_limma.R";
 
+#FIXME: testing only
+my $Rinstall = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/R_install/bin/R";
 # Check that R is installed.
-unless( can_run( "R" ) ) {
+unless( can_run( $Rinstall ) ) {
     die( "R not found. Please ensure it is installed and you can run it.\n" );
 }
 
@@ -129,12 +133,6 @@ sub run_microarray_differential_expression {
 
 	my $atlasProcessingDirectory = Cwd::cwd();
 
-	# Ensure that XML config file exists in processing directory.
-	my $configFile = File::Spec->catfile( $atlasProcessingDirectory, $expAcc . "-configuration.xml" );
-	unless( -r $configFile ) {
-		die( "Cannot find XML config file for $expAcc in $atlasProcessingDirectory\n" );
-	}
-	
 	print( "Running differential expression analysis in R...\n" );
 
 	# Run R script.
