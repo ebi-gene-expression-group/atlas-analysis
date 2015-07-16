@@ -198,7 +198,7 @@ sub map_contrast_ids_to_names {
 	foreach my $analytics ( @{ $allAnalytics } ) {
 
 		my $contrasts = $analytics->get_atlas_contrasts;
-		my $plaform = $analytics->get_platform;
+		my $platform = $analytics->get_platform;
 
 		foreach my $contrast ( @{ $contrasts } ) {
 
