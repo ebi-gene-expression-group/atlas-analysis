@@ -263,6 +263,10 @@ sub run_microarray_differential_expression {
 	my $contrastIDs2arrayDesigns = map_contrast_ids_to_arraydesigns( $experimentConfig );
 
 	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+
+	unless( -d $tempDir ) {
+		$logger->logdie( "No $tempDir found. Please create it and try again." );
+	}
 	
 	# Get the names of the MvA plot data files.
 	my @plotDataFiles = glob( "$tempDir/$expAcc.g*_g*.plotdata.tsv" );
@@ -311,6 +315,9 @@ sub map_contrast_ids_to_arraydesigns {
 		}
 	}
 
+	use Data::Dumper;
+	print Dumper( $contrastIDs2arrayDesigns );
+
 	return $contrastIDs2arrayDesigns;
 }
 
@@ -348,6 +355,10 @@ sub read_limma_results {
 	my $analyticsDEResults = {};
 
 	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+	
+	unless( -d $tempDir ) {
+		$logger->logdie( "No $tempDir found. Please create it and try again." );
+	}
 
 	my @limmaResultsFiles = glob( "$tempDir/$expAcc.g*_g*.analytics.tsv" );
 
