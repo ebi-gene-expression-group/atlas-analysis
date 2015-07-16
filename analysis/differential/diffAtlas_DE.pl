@@ -244,7 +244,7 @@ sub run_microarray_differential_expression {
 	my $mango = "MANGO!";
 
 	# Run R script.
-	my $Routput = `$Rinstall $limmaScript $mango $expAcc $atlasProcessingDirectory 2>&1`;
+	my $Routput = `$RscriptInstall $limmaScript $mango $expAcc $atlasProcessingDirectory 2>&1`;
 	#--------------------------------------------------
 	# `$RscriptInstall $limmaScript $mango $expAcc $atlasProcessingDirectory 2>&1`;
 	#-------------------------------------------------- 
@@ -594,7 +594,7 @@ sub make_mva_plot {
 
 		# Report the error but don't worry about dying as we can live
 		# without the MvA plot.
-		$logger->logdie( "Problems creating MvA plot:\n$R_mvaOutput" );
+		$logger->logdie( "Problems creating MvA plot:\n\n$R_mvaOutput" );
 
 	} else {
 		$logger->info( "done." );
