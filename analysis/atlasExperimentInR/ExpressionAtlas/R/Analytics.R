@@ -73,27 +73,33 @@ setMethod( "initialize", "Analytics", function( .Object, atlasExperimentType, an
 			assay_group_id( assayGroup )
 		}
 	)
+	
+	# Contrasts, for differential experiments only.
+	if( grepl( "differential", atlasExperimentType ) ) {
 
-	# Get the atlas_contrasts node.
-	contrastsList <- xmlElementsByTagName( analyticsNode, "contrasts" )
-	contrastsNode <- contrastsList$contrasts
+		# Get the atlas_contrasts node.
+		contrastsList <- xmlElementsByTagName( analyticsNode, "contrasts" )
+		contrastsNode <- contrastsList$contrasts
 
-	# Get all the contrasts.
-	allContrasts <- xmlElementsByTagName( contrastsNode, "contrast" )
+		# Get all the contrasts.
+		allContrasts <- xmlElementsByTagName( contrastsNode, "contrast" )
 
-	# Make a list containing Contrast objects.
-	# Go through the contrast nodes.
-	contrastObjects <- lapply( allContrasts, function( contrastNode ) {
+		# Make a list containing Contrast objects.
+		# Go through the contrast nodes.
+		contrastObjects <- lapply( allContrasts, function( contrastNode ) {
 
-		# Create a new contrast object.
-		contrastObject <- new( "Contrast", contrastNode )
-	})
+			# Create a new contrast object.
+			contrastObject <- new( "Contrast", contrastNode )
+		})
 
-	names( contrastObjects ) <- sapply( contrastObjects,
-		function( contrast ) {
-			contrast_id( contrast )
-		}
-	)
+		names( contrastObjects ) <- sapply( contrastObjects,
+			function( contrast ) {
+				contrast_id( contrast )
+			}
+		)
+	} else {
+		contrastObjects <- NULL
+	}
 
 	# Try for batch effects -- if there are any then create the object(s) and
 	# add them as well.
@@ -102,7 +108,11 @@ setMethod( "initialize", "Analytics", function( .Object, atlasExperimentType, an
 	# Add everything we found to the object.
 	.Object@platform <- platform
 	.Object@assay_groups <- assayGroupObjects
-	.Object@atlas_contrasts <- contrastObjects
+	
+	# Add contrasts if any.
+	if( !is.null( contrastObjects ) ) {
+		.Object@atlas_contrasts <- contrastObjects
+	}
 	
 	# Add batch effects if any.
 	if( !is.null( batchEffectObjects ) ) {
