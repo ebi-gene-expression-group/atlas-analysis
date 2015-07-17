@@ -7,7 +7,7 @@
 # data).
 
 # Load ExpressionAtlas package
-library( ExpressionAtlas )
+suppressMessages( library( ExpressionAtlas ) )
 
 # Get commandline arguments.
 args <- commandArgs( TRUE )
