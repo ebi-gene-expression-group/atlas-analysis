@@ -98,10 +98,8 @@ my $logger = Log::Log4perl::get_logger;
 my $mvaScript = "diffAtlas_mvaPlot.R";
 my $limmaScript = "diffAtlas_DE_limma.R";
 
-# Rscript (can change for testing).
-my $RscriptInstall = "Rscript";
 # Check that R is installed.
-unless( can_run( $RscriptInstall ) ) {
+unless( can_run( "Rscript" ) ) {
     $logger->logdie( "R not found. Please ensure it is installed and you can run it." );
 }
 
@@ -152,7 +150,6 @@ if( $atlasExperimentType =~ /array/ ) {
 		$args->{ "experiment_accession" }, 
 		$experimentConfig, 
 		$args->{ "processing_directory" }, 
-		$RscriptInstall 
 	);
 }
 # For RNA-seq experiments, take results from iRAP's DESeq results files, write
@@ -235,12 +232,12 @@ sub parse_args {
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub run_microarray_differential_expression {
 
-	my ( $expAcc, $experimentConfig, $atlasProcessingDirectory, $RscriptInstall ) = @_;
+	my ( $expAcc, $experimentConfig, $atlasProcessingDirectory ) = @_;
 
 	$logger->info( "Running differential expression analysis in R..." );
 	
 	# Run R script.
-	my $Routput = `$RscriptInstall $limmaScript $expAcc $atlasProcessingDirectory 2>&1`;
+	my $Routput = `$limmaScript $expAcc $atlasProcessingDirectory 2>&1`;
 
 	# Check R output for errors.
 	if( $? ) {
