@@ -259,10 +259,6 @@ sub run_microarray_differential_expression {
 	# them to.
 	my $analyticsDEResults = read_limma_results( $expAcc );
 
-	use Data::Dumper;
-	say Dumper( $analyticsDEResults );
-	exit;
-
 	# Map contrast IDs to contrast names.
 	my $contrastIDs2names = map_contrast_ids_to_names( $experimentConfig );
 	my $contrastIDs2arrayDesigns = map_contrast_ids_to_arraydesigns( $experimentConfig );
@@ -364,7 +360,7 @@ sub read_limma_results {
 
 	foreach my $limmaResultsFile ( @limmaResultsFiles ) {
 
-		( my $contrastID = basename( $limmaResultsFile ) ) =~ s/.*\.(g\d+_d\d+)\.analytics.*/$1/;
+		( my $contrastID = basename( $limmaResultsFile ) ) =~ s/.*\.(g\d+_g\d+)\.analytics.*/$1/;
 	
 		# Add results to hash.
 		open(LIMMARES, "<$limmaResultsFile") or $logger->logdie( "Can't open file $limmaResultsFile: $!" );
