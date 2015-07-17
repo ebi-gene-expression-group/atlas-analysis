@@ -568,7 +568,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			# If we have batch effects...
 			if( length( expBatchEffects ) > 0 ) {
 
-				cat( past( length( expBatchEffects, "batch effects found.\n" ) )
+				cat( paste( length( expBatchEffects, "batch effects found.\n" ) ) )
 				
 				# Check that some batch effects exist in the
 				# ExpressionSet's info, if not something went wrong.
