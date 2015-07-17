@@ -96,12 +96,10 @@ my $logger = Log::Log4perl::get_logger;
 
 # assumes R scripts directory is in PATH
 my $mvaScript = "diffAtlas_mvaPlot.R";
-#my $limmaScript = "diffAtlas_DE_limma.R";
-# FIXME: testing only
-my $limmaScript = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/atlasprod/analysis/differential/diffAtlas_DE_limma.R";
+my $limmaScript = "diffAtlas_DE_limma.R";
 
-#FIXME: testing only
-my $RscriptInstall = "/ebi/microarray/home/atlas3-production/sw/atlasinstall_test/R_install/bin/Rscript";
+# Rscript (can change for testing).
+my $RscriptInstall = "Rscript";
 # Check that R is installed.
 unless( can_run( $RscriptInstall ) ) {
     $logger->logdie( "R not found. Please ensure it is installed and you can run it." );
@@ -384,7 +382,7 @@ sub read_limma_results {
 		}
 		close(LIMMARES);
 		# clean up
-		#`rm $limmaResultsFile`; #FIXME
+		`rm $limmaResultsFile`;
 	}
 
 	return $analyticsDEResults;
