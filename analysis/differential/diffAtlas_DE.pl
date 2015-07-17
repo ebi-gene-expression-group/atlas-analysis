@@ -258,6 +258,10 @@ sub run_microarray_differential_expression {
 	# them to.
 	my $analyticsDEResults = read_limma_results( $expAcc );
 
+	use Data::Dumper;
+	say Dumper( $analyticsDEResults );
+	exit;
+
 	# Map contrast IDs to contrast names.
 	my $contrastIDs2names = map_contrast_ids_to_names( $experimentConfig );
 	my $contrastIDs2arrayDesigns = map_contrast_ids_to_arraydesigns( $experimentConfig );
