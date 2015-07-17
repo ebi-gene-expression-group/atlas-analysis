@@ -430,11 +430,15 @@ select_twocolour_columns <- function( allData, contrastAssayGroups ) {
 # 	objects.
 run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirectory ) {
 
+	cat( paste( length( allAnalytics ), "array designs found.\n" ) )
+
 	# Go through the analytics and do the analysis...
 	invisible( sapply( allAnalytics, function( analytics ) {
 
 		# Get the platform (array design).
 		arrayDesign <- platform( analytics )
+
+		cat( paste( "Calculating differential expression statistics for array design", arrayDesign, "...\n" ) )
 
 		# Create the normalized data file name.
 		normalizedDataFilename <- paste( 
@@ -447,6 +451,8 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 		normalizedDataFilename <- file.path( atlasProcessingDirectory, normalizedDataFilename )
 
+		cat( paste( "Reading normalized data from", normalizedDataFilename, "...\n" ) )
+
 		# Read in the normalized data.
 		normalizedData <- read.delim( 
 									 normalizedDataFilename, 
@@ -454,11 +460,15 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 									 stringsAsFactors = FALSE,
 									 row.names = 1
 									 )
-
+		
+		cat( "Successfully read normalized data.\n" )
+		
 		# Get the contrasts, assay groups, and batch effects.
 		expContrasts <- atlas_contrasts( analytics )
 		expAssayGroups <- assay_groups( analytics )
 		expBatchEffects <- batch_effects( analytics )
+		
+		cat( paste( "Found", length( expContrasts ), "contrasts and", length( expAssayGroups ), "for this array design.\n" ) )
 
 		# Go through the contrasts...
 		sapply( expContrasts, function( expContrast ) {
@@ -469,6 +479,14 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			refAssayGroupID <- reference_assay_group_id( expContrast )
 			testAssayGroupID <- test_assay_group_id( expContrast )
 
+			cat( paste( 
+					   "Processing contrast",
+					   contrastID,
+					   "(",
+					   contrastName,
+					   ")...\n"
+			) )
+
 			# Get the two assay groups for this contrast as a list.
 			contrastAssayGroups <- select_assay_groups_for_contrast( 
 																 expAssayGroups, 
@@ -476,24 +494,41 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 																 testAssayGroupID 
 																 )
 			
+			cat( "Creating biological replicate annotations...\n" )
+
 			# Create the data frame containing annotations for each
 			# biological replicate, grouping technical replicates.
 			bioRepAnnotations <- make_biorep_annotations( contrastAssayGroups, expBatchEffects )
+
+			cat( "Annotations created successfully.\n" )
+
+			cat( "Subsetting normalized data for this contrast...\n" )
 
 			# Next, subset the normalized data frame so that it
 			# contains only the columns of data for this contrast.
 			normalizedData <- normalizedData[ , bioRepAnnotations$AssayName ]
 			
+			cat( "Subsetting successful.\n" )
+
+			cat( "Checking for technical replicates...\n" )
+
 			# Get the technical replicate group IDs -- these are the
 			# ones in the BioRepName column that are duplicated.
 			techRepGroupIDs <- unique( bioRepAnnotations$BioRepName[ which( duplicated( bioRepAnnotations$BioRepName ) ) ] )
 
 			# If there are any technical replicates...
 			if( length( techRepGroupIDs ) > 0 ) {
+				
+				cat( "Technical replicates found. Calculating mean of each set of technical replicates...\n" )
+
 				# Replace the columns for technical replicates with their averages in the normalized data.
 				normalizedData <- add_tech_rep_averages( normalizedData, bioRepAnnotations, techRepGroupIDs )
+
+				cat( "Technical replicate averaging successful.\n" )
 			}
 			
+			cat( "Setting up biological replicate annotations for ExpressionSet object...\n" )
+
 			# Remove the AssayName column from the annotations data frame now we no longer need it.
 			bioRepAnnotations$AssayName <- NULL
 
@@ -508,18 +543,32 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 			# Make the column names R-safe.
 			colnames( bioRepAnnotations ) <- make.names( colnames( bioRepAnnotations ) )
+			
+			cat( "Annotations modified successfully.\n" )
+
+			cat( "Adding design elements as row names for this contrast's normalized data...\n" )
 
 			# Put the columns of the normalized data into the same
 			# order as the rows in the bio rep annotations.
 			normalizedData <- normalizedData[ , rownames( bioRepAnnotations ) ]
+
+			cat( "Row names added successfully.\n" )
 			
+			cat( "Creating ExpressionSet object...\n" )
+
 			# Create the ExpressionSet object.
 			esetForContrast <- make_eset_for_contrast( normalizedData, bioRepAnnotations )
+
+			cat( "ExpressionSet created successfully.\n" )
+
+			cat( "Checking for batch effects...\n" )
 
 			# Make the formula to create the design matrix, adding
 			# batch effects if necessary.
 			# If we have batch effects...
 			if( length( expBatchEffects ) > 0 ) {
+
+				cat( past( length( expBatchEffects, "batch effects found.\n" ) )
 				
 				# Check that some batch effects exist in the
 				# ExpressionSet's info, if not something went wrong.
@@ -527,9 +576,13 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 					stop( "Expecting batch effect information in ExpressionSet but none was found." )
 				}
 				
+				cat( "Making R-safe batch effect names...\n" )
+
 				# Get the batch effect names -- these should be the same as
 				# the column headings in the ExpressionSet's info.
 				batchEffectNames <- make.names( sapply( expBatchEffects, function( batchEffect ) { effect_name( batchEffect ) } ) )
+				
+				cat( "Successfully created R-safe batch effect names.\n" )
 
 				# Check that the batch effect names match the column
 				# headings in the ExpressionSet.
@@ -537,31 +590,57 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 					nameString <- paste( batchEffectNames, collapse = ", " )
 					stop( paste( "Did not find all batch effect names in ExpressionSet object. Names are:", nameString ) )
 				}
+				
+				cat( "Creating formula for design matrix...\n" )
 
 				# Create the formula string.
 				formulaString <- paste( "~", paste( batchEffectNames, collapse = " + " ), "+ groups" )
+
+				cat( paste( "Formula is:", formulaString, "\n" ) )
 			
 			} else {
+				
+				cat( "No batch effects found.\n" )
 
 				# If we don't have any batch effects, create the formula string without them.
 				formulaString <- "~ groups"
+
+				cat( paste( "Formula is:", formulaString, "\n" ) )
 			}
+
+			cat( "Creating design matrix...\n" )
 
 			# Now create the design matrix.
 			designMatrix <- model.matrix( as.formula( formulaString ) , data = esetForContrast )
 
+			cat( "Design matrix created successfully.\n" )
+
+			cat( "Fitting linear model...\n" )
+
 			# Fit the linear model.
 			fit <- lmFit( esetForContrast, design = designMatrix )
 			
+			cat( "Fit successful.\n" )
+
+			cat( "Calculating differential expression statistics...\n" )
+
 			# Run empirical Bayes method to get differential expression statistics.
 			fit <- eBayes( fit )
+
+			cat( "Calculation successful.\n" )
 			
 			# Check that we have a column called "groupstest" in the
 			# results. If not then things didn't work out as expected.
 			stopifnot( "groupstest" %in% colnames( fit$p.value ) )
 			
+			cat( "Performing independent filtering and adjusting p-values...\n" )
+
 			# Adjust the p-values and perform independent filtering, add to the fit object.
 			fit$adjPvals <- filter_and_adjust_pvalues( rowVars( normalizedData ), fit$p.value[ , "groupstest" ] )
+
+			cat( "Filtering and adjustment successful.\n" )
+
+			cat( "Creating results data frames...\n" )
 
 			# results for heatmap matrix display:
 			contrastResults <- data.frame(
@@ -579,6 +658,8 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 				avgExpr = fit$Amean
 			)
 			
+			cat( "Results data frames created successfully.\n" )
+
 			# Create filenames to write to.
 			# Stats results:
 			resFile <- paste( expAcc, contrastID, "analytics", "tsv", sep = "." )
@@ -587,11 +668,18 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			plotDataFile <- paste( expAcc, contrastID, "plotdata", "tsv", sep = "." )
 			plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", plotDataFile )
 			
-			cat( paste( "Writing results to", resFile, "...\n" ) )
+			cat( paste( "Writing differential expression results to", resFile, "...\n" ) )
 			
 			# Write the files.
 			write.table( contrastResults, file=resFile, row.names=FALSE, quote=FALSE, sep="\t" )
+
+			cat( paste( "Results written successfully.\n" ) )
+
+			cat( paste( "Writing data for MvA plot to", plotDataFile, "...\n" ) )
+
 			write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
+
+			cat( "Plot data written successfully\n" )
 			
 			cat( paste( "Successully completed differential expression analysis for", expAcc, "\n" ) )
 
@@ -608,12 +696,16 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 # 	objects.
 run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirectory ) {
 
+	cat( paste( length( allAnalytics ), "array designs found.\n" ) )
+	
 	# Go through the analytics and do the analysis...
 	invisible( sapply( allAnalytics, function( analytics ) {
 
 		# Get the platform (array design).
 		arrayDesign <- platform( analytics )
 
+		cat( paste( "Calculating differential expression statistics for array design", arrayDesign, "...\n" ) )
+		
 		# Create the log2 fold-changes file name.
 		logfcsFilename <- paste( 
 								expAcc, 
@@ -625,6 +717,8 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 		logfcsFilename <- file.path( atlasProcessingDirectory, logfcsFilename )
 
+		cat( paste( "Reading log2 fold-changes from", logfcsFilename, "...\n" ) )
+		
 		# Read in the log fold-changes.
 		logFoldChanges <- read.delim( 
 								 logfcsFilename, 
@@ -632,6 +726,8 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 								 stringsAsFactors = FALSE,
 								 row.names = 1
 								 )
+
+		cat( "Log fold-changes read successfully.\n" )
 
 		# Create the average intensities file name.
 		aveIntsFilename <- paste(
@@ -643,6 +739,8 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 								 )
 		aveIntsFilename <- file.path( atlasProcessingDirectory, aveIntsFilename )
 
+		cat( paste( "Reading average intensities from", aveIntsFilename, "...\n" ) )
+
 		# Read in the average intensities.
 		averageIntensities <- read.delim(
 										 aveIntsFilename,
@@ -651,10 +749,15 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 										 row.names = 1
 										 )
 
+		cat( "Average intensities read successfully.\n" )
+
 		# Get the contrasts, assay groups, and batch effects.
 		expContrasts <- atlas_contrasts( analytics )
 		expAssayGroups <- assay_groups( analytics )
 		expBatchEffects <- batch_effects( analytics )
+		
+		cat( paste( "Found", length( expContrasts ), "contrasts and", length( expAssayGroups ), "for this array design.\n" ) )
+		
 		# We shouldn't have any batch effect info for 2-colour array data as
 		# can't handle this yet.
 		if( length( expBatchEffects ) > 0 ) {
@@ -670,6 +773,14 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			refAssayGroupID <- reference_assay_group_id( expContrast )
 			testAssayGroupID <- test_assay_group_id( expContrast )
 
+			cat( paste( 
+					   "Processing contrast",
+					   contrastID,
+					   "(",
+					   contrastName,
+					   ")...\n"
+			) )
+			
 			# Get the two assay groups for this contrast as a list.
 			contrastAssayGroups <- select_assay_groups_for_contrast( 
 																 expAssayGroups, 
@@ -677,28 +788,50 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 																 testAssayGroupID 
 																 )
 
+			cat( "Checking that assay names match in test and reference assay groups...\n" )
+
 			# Make sure the assay names for test and ref groups are identical
 			# once the dye names are removed. Dies here if not.
 			check_twocolour_assaynames( contrastAssayGroups )
 
+			cat( "Assay names match.\n" )
+
+			cat( "Selecting data columns for this contrast...\n" )
+
 			# Select only the columns we need from the log fold-changes and average intensities.
 			logFoldChanges <- select_twocolour_columns( logFoldChanges, contrastAssayGroups )
 			averageIntensities <- select_twocolour_columns( averageIntensities, contrastAssayGroups )
+
+			cat( "Data columns selected successfully.\n" )
 			
+			cat( "Creating biological replicate annotations...\n" )
+		
 			# Make the biological replicate annotations data frame.
 			bioRepAnnotations <- make_biorep_annotations( contrastAssayGroups, expBatchEffects, 1 )
 		
+			cat( "Annotations created successfully.\n" )
+			
+			cat( "Checking for technical replicates...\n" )
+
 			# Get the technical replicate group IDs -- these are the
 			# ones in the BioRepName column that are duplicated.
 			techRepGroupIDs <- unique( bioRepAnnotations$BioRepName[ which( duplicated( bioRepAnnotations$BioRepName ) ) ] )
 
 			if( length( techRepGroupIDs ) > 0 ) {
+				
+
+				cat( "Technical replicates found. Calculating mean of each set of technical replicates...\n" )
+
 				# Replace the columns for technical replicates with their
 				# averages in the log fold-changes and average intensities.
 				logFoldChanges <- add_tech_rep_averages( logFoldChanges, bioRepAnnotations, techRepGroupIDs, 1 )
 				averageIntensities <- add_tech_rep_averages( averageIntensities, bioRepAnnotations, techRepGroupIDs, 1 )
+				
+				cat( "Technical replicate averaging successful.\n" )
 			}
 
+			cat( "Setting up biological replicate annotations for creation of MAList object...\n" )
+			
 			# Remove the AssayName column from the annotations data frame now we no longer need it.
 			bioRepAnnotations$AssayName <- NULL
 
@@ -710,6 +843,10 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 			# Make the column names R-safe.
 			colnames( bioRepAnnotations ) <- make.names( colnames( bioRepAnnotations ) )
+
+			cat( "Annotations modified successfully.\n" )
+			
+			cat( "Creating targets data frame...\n" )
 
 			cy3indices <- grep( "Cy3", bioRepAnnotations$BioRepName )
 			cy5indices <- grep( "Cy5", bioRepAnnotations$BioRepName )
@@ -731,10 +868,22 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			targetsDF <- data.frame( Cy3 = cy3df$groups, Cy5 = cy5df$groups )
 			rownames( targetsDF ) <- cy3df$BioRepName
 
+			cat( "Targets data frame created successfully.\n" )
+
+			cat( "Creating design matrix...\n" )
+
 			designMatrix <- modelMatrix( targetsDF, ref = "ref" )
+
+			cat( "Design matrix created successfully.\n" )
+
+			cat( "Re-ordering data columns for this contrast...\n" )
 
 			logFCsForContrast <- logFoldChanges[ , rownames( targetsDF ) ]
 			avgIntsForContrast <- averageIntensities[ , rownames( targetsDF ) ]
+
+			cat( "Data columns re-ordered successfully.\n" )
+
+			cat( "Creating MAList object...\n" )
 
 			maList <- list(
 						   genes = rownames( logFCsForContrast ),
@@ -743,13 +892,29 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 						   )
 			maList <- new( "MAList", maList )
 
+			cat( "MAList created successfully.\n" )
+
+			cat( "Fitting linear model...\n" )
+
 			fit <- lmFit( maList, designMatrix )
+
+			cat( "Fit successful.\n" )
+
+			cat( "Calculating differential expression statistics...\n" )
 
 			fit <- eBayes( fit )
 
+			cat( "Calculation successful.\n" )
+
+			cat( "Performing independent filtering and adjusting p-values...\n" )
+
 			# Adjust the p-values and perform independent filtering, add to the fit object.
 			fit$adjPvals <- filter_and_adjust_pvalues( rowVars( logFCsForContrast ), fit$p.value[ , 1 ] )
+			
+			cat( "Filtering and adjustment successful.\n" )
 
+			cat( "Creating results data frames...\n" )
+			
 			contrastResults <- data.frame(
 										  designElements = fit$genes,
 										  adjPval = fit$adjPvals,
@@ -763,6 +928,8 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 								   avgExpr = fit$Amean
 								   )
 
+			cat( "Results data frames created successfully.\n" )
+			
 			# Create filenames to write to.
 			# Stats results:
 			resFile <- paste( expAcc, contrastID, "analytics", "tsv", sep = "." )
@@ -771,11 +938,18 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			plotDataFile <- paste( expAcc, contrastID, "plotdata", "tsv", sep = "." )
 			plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", plotDataFile )
 
-			cat( paste( "Writing results to", resFile, "...\n" ) )
+			cat( paste( "Writing differential expression results to", resFile, "...\n" ) )
 			
 			# Write the files.
 			write.table( contrastResults, file=resFile, row.names=FALSE, quote=FALSE, sep="\t" )
+
+			cat( "Results written successfully.\n" )
+
+			cat( paste( "Writing data for MvA plot to", plotDataFile, "...\n" ) )
+			
 			write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
+			
+			cat( "Plot data written successfully\n" )
 
 			cat( paste( "Successully completed differential expression analysis for", expAcc, "\n" ) )
 		
