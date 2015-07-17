@@ -618,6 +618,8 @@ sub write_results {
 		# Results file needs array design accession if it's microarray.
 		my $resFile = ( $platform eq "rnaseq" ? $expAcc."-analytics.tsv.undecorated" : $expAcc."_".$platform."-analytics.tsv.undecorated" );
 
+		$resFile = File::Spec->catfile( $atlasProcessingDirectory, $resFile );
+
 		# Get all the contrast IDs for this analytics element.
 		my $analyticsContrastIDs = [];
 		
