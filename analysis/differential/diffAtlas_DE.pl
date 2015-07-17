@@ -166,7 +166,7 @@ elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	my $contrastIDsToDESeqFiles = read_irap_conf( $args->{ "irap_config" }, $args->{ "experiment_accession" } );
 	
 	# Get the results, write them out, make MvA plots.
-	get_rnaseq_results( $contrastIDsToDESeqFiles, $experimentConfig, $args->{ "experiment_accession" } );
+	get_rnaseq_results( $contrastIDsToDESeqFiles, $experimentConfig, $args->{ "experiment_accession" }, $args->{ "processing_directory" } );
 }
 # If we're passed an experiment type we don't recognise, die.
 else {
@@ -288,7 +288,7 @@ sub run_microarray_differential_expression {
 	}
 
 	# Now we have results for all the contrasts in this analytics element. Write them to a file.
-	write_results( $analyticsDEResults, $expAcc, $experimentConfig );
+	write_results( $analyticsDEResults, $expAcc, $experimentConfig, $atlasProcessingDirectory );
 	
 }
 
@@ -460,7 +460,7 @@ sub read_irap_conf {
 # 	- For each contrast, create MvA plots using MvA plotting script.
 sub get_rnaseq_results {
 
-	my ( $contrastIDsToDESeqFiles, $experimentConfig, $expAcc ) = @_;
+	my ( $contrastIDsToDESeqFiles, $experimentConfig, $expAcc, $atlasProcessingDirectory ) = @_;
 
 	# Get the RNA-seq analytics section from the experiment config.
 	my $allAnalytics = $experimentConfig->get_atlas_analytics;
@@ -573,7 +573,7 @@ sub get_rnaseq_results {
 	}
 	
 	# Write the results to a file.
-	write_results( $rnaSeqDEResults, $experimentConfig->get_experiment_accession, $experimentConfig );
+	write_results( $rnaSeqDEResults, $experimentConfig->get_experiment_accession, $experimentConfig, $atlasProcessingDirectory );
 }
 
 
@@ -608,7 +608,7 @@ sub make_mva_plot {
 #	a tab-delimited text file.
 sub write_results {
 
-	$_ = shift for my ( $analyticsDEResults, $expAcc, $experimentConfig);
+	$_ = shift for my ( $analyticsDEResults, $expAcc, $experimentConfig, $atlasProcessingDirectory );
 	
 	foreach my $analytics ( @{ $experimentConfig->get_atlas_analytics } ) {
 
@@ -640,7 +640,7 @@ sub write_results {
 		}
 
 		# Write statistics
-		foreach my $id (keys %{ $analyticsDEResults }) {
+		foreach my $id (sort keys %{ $analyticsDEResults }) {
 
 			printf(RESFILE "\n$id");
 
