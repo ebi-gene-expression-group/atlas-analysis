@@ -72,6 +72,10 @@ diffAtlas_DE_limma <- function( expAcc, atlasProcessingDirectory ) {
 		}
 
 	} )
+
+    if( e ) {
+        stop( e )
+    }
 }
 		
 

@@ -236,6 +236,12 @@ sub run_microarray_differential_expression {
 
 	$logger->info( "Running differential expression analysis in R..." );
 	
+    my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+
+	unless( -d $tempDir ) {
+		$logger->logdie( "No $tempDir found. Please create it and try again." );
+	}
+	
 	# Run R script.
 	my $Routput = `$limmaScript $expAcc $atlasProcessingDirectory 2>&1`;
 
@@ -258,12 +264,6 @@ sub run_microarray_differential_expression {
 	my $contrastIDs2names = map_contrast_ids_to_names( $experimentConfig );
 	my $contrastIDs2arrayDesigns = map_contrast_ids_to_arraydesigns( $experimentConfig );
 
-	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
-
-	unless( -d $tempDir ) {
-		$logger->logdie( "No $tempDir found. Please create it and try again." );
-	}
-	
 	# Get the names of the MvA plot data files.
 	my @plotDataFiles = glob( "$tempDir/$expAcc.g*_g*.plotdata.tsv" );
 
