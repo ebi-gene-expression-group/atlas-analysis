@@ -470,13 +470,15 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 									 )
 		
 		cat( "Successfully read normalized data.\n" )
-		
+	
+        print( head( normalizedData ) )
+
 		# Get the contrasts, assay groups, and batch effects.
 		expContrasts <- atlas_contrasts( analytics )
 		expAssayGroups <- assay_groups( analytics )
 		expBatchEffects <- batch_effects( analytics )
 		
-		cat( paste( "Found", length( expContrasts ), "contrasts and", length( expAssayGroups ), "for this array design.\n" ) )
+		cat( paste( "Found", length( expContrasts ), "contrasts and", length( expAssayGroups ), "assay groups for this array design.\n" ) )
 
 		# Go through the contrasts...
 		sapply( expContrasts, function( expContrast ) {
