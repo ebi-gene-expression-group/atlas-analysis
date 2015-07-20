@@ -267,6 +267,10 @@ sub run_microarray_differential_expression {
 	# Get the names of the MvA plot data files.
 	my @plotDataFiles = glob( "$tempDir/$expAcc.g*_g*.plotdata.tsv" );
 
+    unless( @plotDataFiles ) {
+        $logger->logdie( "No MvA plot data files found in $tempDir , please check." );
+    }
+
 	foreach my $plotDataFile ( @plotDataFiles ) {
 
 		( my $contrastID = basename( $plotDataFile ) ) =~ s/.*\.(g\d+_g\d+)\.plotdata.*/$1/;
@@ -352,6 +356,10 @@ sub read_limma_results {
 	}
 
 	my @limmaResultsFiles = glob( "$tempDir/$expAcc.g*_g*.analytics.tsv" );
+
+    unless( @limmaResultsFiles ) {
+        $logger->logdie( "No limma results files found in $tempDir , please check." );
+    }
 
 	foreach my $limmaResultsFile ( @limmaResultsFiles ) {
 
