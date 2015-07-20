@@ -138,11 +138,11 @@ make_biorep_annotations <- function( contrastAssayGroups, expBatchEffects, twoCo
 		})
 		
 		# Combine all batch effect data frames into one.
-		batchEffectsDf <- do.call( "cbind", allBatchEffectDfs )
+        batchEffectsDf <- do.call( "cbind", allBatchEffectDfs )
 
 		# Sort the rows of batchEffectsDf in the same order as the assay names in
 		# allAssaysToBioReps.
-		batchEffectsDf <- batchEffectsDf[ allAssaysToBioReps$AssayName , ]
+		batchEffectsDf <- batchEffectsDf[ allAssaysToBioReps$AssayName , , drop = FALSE ]
 
 		# Combine the batch effects data frame and the assays-to-bioreps data frame
 		# to make the final data frame.
@@ -471,8 +471,6 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 		
 		cat( "Successfully read normalized data.\n" )
 	
-        print( head( normalizedData ) )
-
 		# Get the contrasts, assay groups, and batch effects.
 		expContrasts <- atlas_contrasts( analytics )
 		expAssayGroups <- assay_groups( analytics )
