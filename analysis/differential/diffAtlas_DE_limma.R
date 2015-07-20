@@ -455,6 +455,10 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 		normalizedDataFilename <- file.path( atlasProcessingDirectory, normalizedDataFilename )
 
+        if( !file.exists( normalizedDataFilename ) ) {
+            stop( paste( "Cannot find:", normalizedDataFilename ) )
+        }
+
 		cat( paste( "Reading normalized data from", normalizedDataFilename, "...\n" ) )
 
 		# Read in the normalized data.
