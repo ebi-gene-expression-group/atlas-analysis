@@ -73,7 +73,7 @@ diffAtlas_DE_limma <- function( expAcc, atlasProcessingDirectory ) {
 
 	} )
 
-    if( e ) {
+    if( class( e ) == "try-error" ) {
         stop( e )
     }
 }
