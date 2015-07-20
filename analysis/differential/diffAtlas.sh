@@ -4,7 +4,7 @@
 scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source ${scriptDir}/../../db/scripts/experiment_loading_routines.sh
 
-# A wrapper script to allow for re-computing of differential expression for a microarraye experiment - so that this can be called from decorate_all_experiments.sh
+# A wrapper script to allow for re-computing of differential expression for a microarray experiment - so that this can be called from decorate_all_experiments.sh
 expAcc=$1
 expTargetDir=$2
 
@@ -15,7 +15,7 @@ fi
 
 # Calculate analytics
 pushd ${expTargetDir}
-diffAtlas_DE.pl -atlasXML=${expAcc}-configuration.xml
+diffAtlas_DE.pl --experient ${expAcc} --directory ${expTargetDir}
 if [ $? -ne 0 ]; then
      echo "ERROR: Failed to calculate analytics for ${expAcc}" >&2
      exit 1

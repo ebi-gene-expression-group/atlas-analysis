@@ -1,5 +1,5 @@
-\name{parseAtlasXML}
-\alias{parseAtlasXML}
+\name{parseAtlasConfig}
+\alias{parseAtlasConfig}
 \title{Read XML config from an Expression Atlas experiment}
 \description{
 	Read an XML config from an Expression Atlas experiment and create a list
@@ -7,7 +7,7 @@
 	therein.
 }
 \usage{
-	parseAtlasXML( atlasXMLconfigFile )
+	parseAtlasConfig( atlasXMLconfigFile )
 }
 \arguments{
 	\item{ atlasXMLconfigFile }{
@@ -24,7 +24,7 @@
 	atlasXMLconfigFile <- system.file( "extdata", "E-MTAB-1066-configuration.xml", package = "ExpressionAtlas" )
 
 	# Parse the config file into a list
-	parsedXMLlist <- parseAtlasXML( atlasXMLconfigFile )
+	parsedXMLlist <- parseAtlasConfig( atlasXMLconfigFile )
 
 	# Get the experiment type
 	atlasExperimentType <- parsedXMLlist$experimentType

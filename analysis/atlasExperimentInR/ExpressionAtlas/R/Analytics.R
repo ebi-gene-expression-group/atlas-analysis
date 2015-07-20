@@ -1,5 +1,12 @@
 # Analytics class
-setClass( "Analytics", slots = c( platform = "character", assay_groups = "list" ) )
+setClass( 
+		 "Analytics", 
+		 slots = c( 
+				   platform = "character", 
+				   assay_groups = "list", 
+				   atlas_contrasts = "list", 
+				   batch_effects = "list" 
+) )
 
 
 ####################
@@ -10,6 +17,12 @@ setGeneric( "platform", function( object ) standardGeneric( "platform" ) )
 
 # assay_groups getter
 setGeneric( "assay_groups", function( object ) standardGeneric( "assay_groups" ) )
+
+# atlas_contrasts getter
+setGeneric( "atlas_contrasts", function( object ) standardGeneric( "atlas_contrasts" ) )
+
+# batch_effects getter
+setGeneric( "batch_effects", function( object ) standardGeneric( "batch_effects" ) )
 
 # getAllAssays
 setGeneric( "getAllAssays", function( object ) standardGeneric( "getAllAssays" ) )
@@ -60,9 +73,52 @@ setMethod( "initialize", "Analytics", function( .Object, atlasExperimentType, an
 			assay_group_id( assayGroup )
 		}
 	)
+	
+	# Contrasts, for differential experiments only.
+	if( grepl( "differential", atlasExperimentType ) ) {
 
+		# Get the atlas_contrasts node.
+		contrastsList <- xmlElementsByTagName( analyticsNode, "contrasts" )
+		contrastsNode <- contrastsList$contrasts
+
+		# Get all the contrasts.
+		allContrasts <- xmlElementsByTagName( contrastsNode, "contrast" )
+
+		# Make a list containing Contrast objects.
+		# Go through the contrast nodes.
+		contrastObjects <- lapply( allContrasts, function( contrastNode ) {
+
+			# Create a new contrast object.
+			contrastObject <- new( "Contrast", contrastNode )
+		})
+
+		names( contrastObjects ) <- sapply( contrastObjects,
+			function( contrast ) {
+				contrast_id( contrast )
+			}
+		)
+	} else {
+		contrastObjects <- NULL
+	}
+
+	# Try for batch effects -- if there are any then create the object(s) and
+	# add them as well.
+	batchEffectObjects <- .create_batch_effect_objects( analyticsNode )
+
+	# Add everything we found to the object.
 	.Object@platform <- platform
 	.Object@assay_groups <- assayGroupObjects
+	
+	# Add contrasts if any.
+	if( !is.null( contrastObjects ) ) {
+		.Object@atlas_contrasts <- contrastObjects
+	}
+	
+	# Add batch effects if any.
+	if( !is.null( batchEffectObjects ) ) {
+		.Object@batch_effects <- batchEffectObjects
+	}
+
 	return( .Object )
 })
 
@@ -72,6 +128,12 @@ setMethod( "platform", "Analytics", function( object ) object@platform )
 
 # assay_groups getter
 setMethod( "assay_groups", "Analytics", function( object ) object@assay_groups )
+
+# atlas_contrasts getter
+setMethod( "atlas_contrasts", "Analytics", function( object ) object@atlas_contrasts )
+
+# batch_effects getter
+setMethod( "batch_effects", "Analytics", function( object ) object@batch_effects )
 
 # getAllAssays
 setMethod( "getAllAssays", "Analytics", function( object ) {
@@ -93,3 +155,30 @@ setMethod( "getAllAssays", "Analytics", function( object ) {
 	return( assay_names )
 })
 
+
+# Look at the analytics node and create BatchEffect objects if any batch
+# effects are found.
+.create_batch_effect_objects <- function( analyticsNode ) {
+	
+	# Get the batch_effects node, if it exists.
+	batchEffectsNode <- xmlElementsByTagName( analyticsNode, "batch_effects" )$batch_effects
+	
+	# If a batch_effects node was found, make objects and return them.
+	if( !is.null( batchEffectsNode ) ) {
+
+		allBatchEffectNodes <- xmlElementsByTagName( batchEffectsNode, "batch_effect" )
+
+		batchEffectObjects <- lapply( allBatchEffectNodes, 
+			function( batchEffectNode ) {
+				batchEffectObject <- new( "BatchEffect", batchEffectNode )
+			}
+		)
+
+		return( batchEffectObjects )
+
+	} else {
+		
+		# If no batch_effects object was found, just return null.
+		return( NULL )
+	}
+}

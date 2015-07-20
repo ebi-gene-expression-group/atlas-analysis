@@ -236,7 +236,7 @@ check_file_exists( experimentConfigFile )
 
 # Parse XML config to a list.
 cat( paste( "Reading experiment XML config from", experimentConfigFile, "...\n" ) )
-experimentConfigList <- parseAtlasXML( experimentConfigFile )
+experimentConfigList <- parseAtlasConfig( experimentConfigFile )
 cat( "Successfully read experiment XML config\n" )
 
 # Get the AssayGroup objects from the experiment config ready to use later.

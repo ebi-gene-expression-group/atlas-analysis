@@ -1,5 +1,5 @@
 Package: ExpressionAtlas
-Version: 1.0
+Version: 1.1
 Date: 2015/04/06
 Title: Functions and classes for EMBL-EBI Expression Atlas data.
 Author: EMBL-EBI Expression Atlas team
@@ -7,6 +7,6 @@ Maintainer: Maria Keays <mkeays@ebi.ac.uk>
 Description: A package exporting functions and classes used in the
 	representation and analysis of EMBL-EBI Expression Atlas data.
 Depends: XML, yaml, plyr, Biobase, GenomicRanges, limma, methods
-Collate: AssayGroup.R Analytics.R functions.R
+Collate: BiologicalReplicate.R AssayGroup.R Contrast.R BatchEffect.R Analytics.R functions.R
 License: GPL (>= 3)
 LazyLoad: yes

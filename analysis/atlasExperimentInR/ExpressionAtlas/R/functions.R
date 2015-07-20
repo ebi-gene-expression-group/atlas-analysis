@@ -1,10 +1,10 @@
 
-# parseAtlasXML
+# parseAtlasConfig
 # 	- Read Atlas XML config file and return a list of Analytics objects, as
 # 	well as the experiment type.
 # 	- The function returns a list with two elements: the list of Analytics
 # 	objects, and the experiment type from the XML.
-parseAtlasXML <- function( atlasXMLconfigFile ) {
+parseAtlasConfig <- function( atlasXMLconfigFile ) {
 	
 	# Read the XML file.
 	xmlTree <- xmlInternalTreeParse( atlasXMLconfigFile )
@@ -129,7 +129,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	}
 
 	# Parse the XML file.
-	experimentXMLlist <- parseAtlasXML( atlasExperimentXMLfile )
+	experimentXMLlist <- parseAtlasConfig( atlasExperimentXMLfile )
 
 	# Get the pipeline code from the experiment accession e.g. MTAB, MEXP
 	pipeline <- gsub( "E-", "", experimentAccession )
@@ -210,6 +210,10 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	# Get the Factor column indices, an any unit columns next to them.
 	factorColIndices <- grep( "Factor\\s?Value", completeSDRF[ 1, ] )
 	factorColIndices <- .addUnitCols( factorColIndices, completeSDRF )
+
+	# Get the index of the Comment[technical replicate group] column, if there
+	# is one.
+	techRepGroupColIndex <- grep( "Comment\\s?\\[\\s?technical[ _]replicate[ _]group\\s?\\]", completeSDRF[ 1, ] )
 	
 	# Get the column index for assay names. For microarray data, this is "Assay
 	# Name" or "Hybridization Name". For RNA-seq data, this is "Comment[ENA_RUN]"
@@ -252,13 +256,25 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		
 		subsetSDRF <- completeSDRF[ , c( assayNameColIndex, charColIndices, factorColIndices ) ]
 	}
-	
+
+	# If we got a technical replicate group column, add this at the end of the
+	# subsetSDRF.
+	if( length( techRepGroupColIndex ) > 0 ) {
+		subsetSDRF <- cbind( subsetSDRF, completeSDRF[ , techRepGroupColIndex ] )
+	}
+
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
 	newColNames <- gsub( "Factor\\s?Value\\s?\\[", "", newColNames )
 	newColNames <- gsub( "Unit\\s?\\[", "", newColNames )
 	newColNames <- gsub( "\\s?\\]", "", newColNames )
 	newColNames[ 1 ] <- "AssayName"
+
+	# Replace the last column name with one for the technical replicate group
+	# column, if there is one.
+	if( length( techRepGroupColIndex ) > 0 ) {
+		newColNames[ length( newColNames ) ] <- "technical_replicate_group"
+	}
 	
 	# Replace spaces with underscores.
 	newColNames <- gsub( " ", "_", newColNames )
@@ -276,7 +292,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	
 	# Remove the first row of the SDRF (this is the old column headings)
 	subsetSDRF <- subsetSDRF[ -1, ]
-
+	
 	# Add the new column names as the column headings.
 	colnames( subsetSDRF ) <- newColNames
 	
@@ -367,13 +383,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		}
 		
 		# Read the expressions file.
-		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
-		
-		# Add design elements as row names.
-		rownames( expressions ) <- expressions[,1]
-		
-		# Remove design elements column as not needed.
-		expressions[,1] <- NULL
+		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE, row.names = 1 )
 		
 		# Create an ExpressionSet.
 		biocObject <- .createExpressionSet( expressions, analyticsSDRF, analysisMethodsFile )
@@ -396,15 +406,9 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		aValuesFile <- file.path( atlasExperimentDirectory, aValuesFile )
 		
 		# Read files.
-		mValues <- read.delim( mValuesFile, header = TRUE, stringsAsFactors = FALSE )
-		aValues <- read.delim( aValuesFile, header = TRUE, stringsAsFactors = FALSE )
+		mValues <- read.delim( mValuesFile, header = TRUE, stringsAsFactors = FALSE, row.names = 1 )
+		aValues <- read.delim( aValuesFile, header = TRUE, stringsAsFactors = FALSE, row.names = 1 )
 
-		# Add row names.
-		rownames( mValues ) <- mValues[ , 1 ]
-		mValues[ , 1 ] <- NULL
-		rownames( aValues ) <- aValues[ , 1 ]
-		aValues[ , 1 ] <- NULL
-		
 		# Create an MAList
 		maList <- list(
 			genes = rownames( mValues ),
@@ -431,13 +435,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		}
 		
 		# Read the expressions file.
-		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE )
-		
-		# Add gene IDs as row names.
-		rownames( expressions ) <- expressions[,1]
-		
-		# Remove now unwanted column.
-		expressions[,1] <- NULL
+		expressions <- read.delim( expressionsFile, header=TRUE, stringsAsFactors=FALSE, row.names = 1 )
 		
 		# Create a SummarizedExperiment.
 		biocObject <- .createSummarizedExperiment( expressions, analyticsSDRF, analysisMethodsFile )
@@ -468,6 +466,11 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 		# Get the assay names.
 		assayNames <- assay_names( assayGroup )
 
+		# Sanity checking.
+		if( length( assayNames ) == 0 ) { 
+			stop( "ERROR - Did not find any assay names for an assay group. Cannot continue." )
+		}
+
 		# TODO: strip .Cy* from 2-colour assay names? Check diffAtlas_DE_limma.R
 
 		# Get the SDRF rows for these assays.
@@ -486,7 +489,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 
 	# Sort the rows by assay name.
 	analyticsSDRF <- analyticsSDRF[ sort( rownames( analyticsSDRF ) ) , ]
-
+	
 	return( analyticsSDRF )
 }
 
@@ -511,7 +514,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	
 	# Add sample names (assay names).
 	sampleNames( expressionData ) <- colnames( expressionsMatrix )
-	
+
 	# Add the SDRF data.
 	phenoData <- new( "AnnotatedDataFrame", data = analyticsSDRF )
 	

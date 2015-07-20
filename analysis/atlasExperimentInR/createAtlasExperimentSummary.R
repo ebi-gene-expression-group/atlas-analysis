@@ -7,7 +7,7 @@
 # data).
 
 # Load ExpressionAtlas package
-library( ExpressionAtlas )
+suppressMessages( library( ExpressionAtlas ) )
 
 # Get commandline arguments.
 args <- commandArgs( TRUE )
@@ -52,3 +52,5 @@ experimentSummaryFile <- file.path( atlasExperimentDirectory, experimentSummaryF
 
 # Save the object to a file.
 save( experimentSummary, file = experimentSummaryFile )
+
+cat( paste( "Experiment summary written to", experimentSummaryFile, "\n\n" ) )
