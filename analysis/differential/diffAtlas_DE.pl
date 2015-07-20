@@ -273,6 +273,8 @@ sub run_microarray_differential_expression {
 
 	foreach my $plotDataFile ( @plotDataFiles ) {
 
+        $logger->info( "Reading file $plotDataFile ..." );
+
 		( my $contrastID = basename( $plotDataFile ) ) =~ s/.*\.(g\d+_g\d+)\.plotdata.*/$1/;
 
 		my $contrastName = $contrastIDs2names->{ $contrastID };
@@ -284,6 +286,8 @@ sub run_microarray_differential_expression {
 		# TODO: get contrast names
 		# Create MvA.
 		make_mva_plot( "microarray", $plotFile, $plotDataFile, $contrastName, $mvaScript );
+
+        $logger->info( "Finished with file $plotDataFile" );
 	}
 
 	# Now we have results for all the contrasts in this analytics element. Write them to a file.
@@ -363,6 +367,8 @@ sub read_limma_results {
 
 	foreach my $limmaResultsFile ( @limmaResultsFiles ) {
 
+        $logger->info( "Reading file $limmaResultsFile ..." );
+
 		( my $contrastID = basename( $limmaResultsFile ) ) =~ s/.*\.(g\d+_g\d+)\.analytics.*/$1/;
 	
 		# Add results to hash.
@@ -386,8 +392,13 @@ sub read_limma_results {
 			}
 		}
 		close(LIMMARES);
+        
+        $logger->info( "Finished with $limmaResultsFile , deleting..." );
+
 		# clean up
 		`rm $limmaResultsFile`;
+
+        $logger->info( "Done." );
 	}
 
 	return $analyticsDEResults;
