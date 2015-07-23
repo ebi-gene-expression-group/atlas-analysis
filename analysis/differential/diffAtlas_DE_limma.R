@@ -1,8 +1,7 @@
 #!/usr/bin/env Rscript
 
 # diffAtlas_DE_limma.R
-# Microarray differential expression statistics computation for the
-# Differential Atlas.
+# Microarray differential expression statistics computation for Expression Atlas.
 
 suppressMessages( library( limma ) )
 suppressMessages( library( Biobase ) )
@@ -13,13 +12,8 @@ suppressMessages( library( ExpressionAtlas ) )
 # diffAtlas_DE_limma()
 # - Differential expression analysis (2-group comparison) using limma.
 # Arguments:
-# 	- normExprsFile <- matrix of normalized and summarized expression values.
-#	- refAssays <- comma-separated list of assay accessions in reference assay group.
-#	- testAssays <- comma-separated list of assay accessions in test assay group.
-#	- resFile <- filename for results.
-#	- plotDataFile <- filename for data for MvA plot.
-#	- aValuesFile <- filename for matrix of A-values; only needed for 2-colour designs. Default is NULL.
-#diffAtlas_DE_limma <<- function( normExprsFile, refAssays, testAssays, resFile, plotDataFile, aValuesFile = NULL ) {
+# 	expAcc <- ArrayExpress accession of experiment.
+# 	atlasProcessingDirectory <- path to Atlas processing directory.
 diffAtlas_DE_limma <- function( expAcc, atlasProcessingDirectory ) {
 
 	e <- try({
@@ -72,7 +66,8 @@ diffAtlas_DE_limma <- function( expAcc, atlasProcessingDirectory ) {
 		}
 
 	} )
-
+	
+	# Die if we got an error.
     if( class( e ) == "try-error" ) {
         stop( e )
     }
@@ -104,7 +99,7 @@ select_assay_groups_for_contrast <- function( expAssayGroups, refAssayGroupID, t
 # 	and optional twoColour flag, create a data frame representing the
 # 	biological replicates and their corresponding assay names and which group
 # 	(test or ref) they belong to.
-make_biorep_annotations <- function( contrastAssayGroups, expBatchEffects, twoColour ) {
+make_biorep_annotations <- function( contrastAssayGroups, contrastBatchEffects, twoColour ) {
 
 	if( missing( twoColour ) ) { twoColour <- 0 }
 
@@ -130,10 +125,10 @@ make_biorep_annotations <- function( contrastAssayGroups, expBatchEffects, twoCo
 	# Add the groups column to the data frame.
 	allAssaysToBioReps$groups <- groupsCol
 
-	if( length( expBatchEffects ) > 0 ) {
+	if( length( contrastBatchEffects ) > 0 ) {
 	
 		# Get a list of data frames mapping assay names to batch effects.
-		allBatchEffectDfs <- lapply( expBatchEffects, function( batchEffect ) {
+		allBatchEffectDfs <- lapply( contrastBatchEffects, function( batchEffect ) {
 			batch_effect_to_df( batchEffect, contrastAssayNames )
 		})
 		
@@ -474,7 +469,6 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 		# Get the contrasts, assay groups, and batch effects.
 		expContrasts <- atlas_contrasts( analytics )
 		expAssayGroups <- assay_groups( analytics )
-		expBatchEffects <- batch_effects( analytics )
 		
 		cat( paste( "Found", length( expContrasts ), "contrasts and", length( expAssayGroups ), "assay groups for this array design.\n" ) )
 
@@ -486,6 +480,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			contrastName <- contrast_name( expContrast )
 			refAssayGroupID <- reference_assay_group_id( expContrast )
 			testAssayGroupID <- test_assay_group_id( expContrast )
+			contrastBatchEffects <- batch_effects( expContrast )
 
 			cat( paste( 
 					   "Processing contrast",
@@ -506,7 +501,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 			# Create the data frame containing annotations for each
 			# biological replicate, grouping technical replicates.
-			bioRepAnnotations <- make_biorep_annotations( contrastAssayGroups, expBatchEffects )
+			bioRepAnnotations <- make_biorep_annotations( contrastAssayGroups, contrastBatchEffects )
 
 			cat( "Annotations created successfully.\n" )
 
@@ -514,7 +509,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 			# Next, subset the normalized data frame so that it
 			# contains only the columns of data for this contrast.
-			normalizedData <- normalizedData[ , bioRepAnnotations$AssayName ]
+			normalizedDataForContrast <- normalizedData[ , bioRepAnnotations$AssayName ]
 			
 			cat( "Subsetting successful.\n" )
 
@@ -530,7 +525,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 				cat( "Technical replicates found. Calculating mean of each set of technical replicates...\n" )
 
 				# Replace the columns for technical replicates with their averages in the normalized data.
-				normalizedData <- add_tech_rep_averages( normalizedData, bioRepAnnotations, techRepGroupIDs )
+				normalizedDataForContrast <- add_tech_rep_averages( normalizedDataForContrast, bioRepAnnotations, techRepGroupIDs )
 
 				cat( "Technical replicate averaging successful.\n" )
 			}
@@ -554,18 +549,18 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			
 			cat( "Annotations modified successfully.\n" )
 
-			cat( "Adding design elements as row names for this contrast's normalized data...\n" )
+			cat( "Re-ordering this contrast's normalized data...\n" )
 
 			# Put the columns of the normalized data into the same
 			# order as the rows in the bio rep annotations.
-			normalizedData <- normalizedData[ , rownames( bioRepAnnotations ) ]
+			normalizedDataForContrast <- normalizedDataForContrast[ , rownames( bioRepAnnotations ) ]
 
-			cat( "Row names added successfully.\n" )
+			cat( "Data re-ordered successfully.\n" )
 			
 			cat( "Creating ExpressionSet object...\n" )
 
 			# Create the ExpressionSet object.
-			esetForContrast <- make_eset_for_contrast( normalizedData, bioRepAnnotations )
+			esetForContrast <- make_eset_for_contrast( normalizedDataForContrast, bioRepAnnotations )
 
 			cat( "ExpressionSet created successfully.\n" )
 
@@ -574,9 +569,9 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			# Make the formula to create the design matrix, adding
 			# batch effects if necessary.
 			# If we have batch effects...
-			if( length( expBatchEffects ) > 0 ) {
+			if( length( contrastBatchEffects ) > 0 ) {
 
-				cat( paste( length( expBatchEffects ), "batch effects found.\n" ) )
+				cat( paste( length( contrastBatchEffects ), "batch effects found.\n" ) )
 				
 				# Check that some batch effects exist in the
 				# ExpressionSet's info, if not something went wrong.
@@ -588,7 +583,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 				# Get the batch effect names -- these should be the same as
 				# the column headings in the ExpressionSet's info.
-				batchEffectNames <- make.names( sapply( expBatchEffects, function( batchEffect ) { effect_name( batchEffect ) } ) )
+				batchEffectNames <- make.names( sapply( contrastBatchEffects, function( batchEffect ) { effect_name( batchEffect ) } ) )
 				
 				cat( "Successfully created R-safe batch effect names.\n" )
 
@@ -644,7 +639,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			cat( "Performing independent filtering and adjusting p-values...\n" )
 
 			# Adjust the p-values and perform independent filtering, add to the fit object.
-			fit$adjPvals <- filter_and_adjust_pvalues( rowVars( normalizedData ), fit$p.value[ , "groupstest" ] )
+			fit$adjPvals <- filter_and_adjust_pvalues( rowVars( normalizedDataForContrast ), fit$p.value[ , "groupstest" ] )
 
 			cat( "Filtering and adjustment successful.\n" )
 
@@ -762,16 +757,9 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 		# Get the contrasts, assay groups, and batch effects.
 		expContrasts <- atlas_contrasts( analytics )
 		expAssayGroups <- assay_groups( analytics )
-		expBatchEffects <- batch_effects( analytics )
 		
 		cat( paste( "Found", length( expContrasts ), "contrasts and", length( expAssayGroups ), "for this array design.\n" ) )
 		
-		# We shouldn't have any batch effect info for 2-colour array data as
-		# can't handle this yet.
-		if( length( expBatchEffects ) > 0 ) {
-			stop( "Cannot handle batch effects for 2-colour microarray data." )
-		}
-
 		# Go through the contrasts...
 		sapply( expContrasts, function( expContrast ) {
 			
@@ -780,6 +768,13 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			contrastName <- contrast_name( expContrast )
 			refAssayGroupID <- reference_assay_group_id( expContrast )
 			testAssayGroupID <- test_assay_group_id( expContrast )
+			contrastBatchEffects <- batch_effects( expContrast )
+			
+			# We shouldn't have any batch effect info for 2-colour array data as
+			# can't handle this yet.
+			if( length( contrastBatchEffects ) > 0 ) {
+				stop( "Cannot handle batch effects for 2-colour microarray data." )
+			}
 
 			cat( paste( 
 					   "Processing contrast",
@@ -815,7 +810,7 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			cat( "Creating biological replicate annotations...\n" )
 		
 			# Make the biological replicate annotations data frame.
-			bioRepAnnotations <- make_biorep_annotations( contrastAssayGroups, expBatchEffects, 1 )
+			bioRepAnnotations <- make_biorep_annotations( contrastAssayGroups, contrastBatchEffects, 1 )
 		
 			cat( "Annotations created successfully.\n" )
 			
