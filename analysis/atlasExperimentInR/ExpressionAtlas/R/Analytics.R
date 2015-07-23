@@ -4,7 +4,7 @@ setClass(
 		 slots = c( 
 				   platform = "character", 
 				   assay_groups = "list", 
-				   atlas_contrasts = "list", 
+				   atlas_contrasts = "list"
 ) )
 
 
