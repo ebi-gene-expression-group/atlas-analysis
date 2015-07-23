@@ -482,8 +482,6 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			testAssayGroupID <- test_assay_group_id( expContrast )
 			contrastBatchEffects <- batch_effects( expContrast )
 
-			print( contrastBatchEffects )
-
 			cat( paste( 
 					   "Processing contrast",
 					   contrastID,
