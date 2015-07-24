@@ -555,6 +555,8 @@ sub read_deseq_results {
 
 		( my $contrastID = basename( $deseqResultsFile ) ) =~ s/.*\.(g\d+_g\d+)\.analytics.*/$1/;
 	
+		my ( $logfcIdx, $adjpvalIdx );
+		
 		# Add results to hash.
 		open( my $deseqResFH, "<$deseqResultsFile" ) or $logger->logdie( "Can't open file $deseqResultsFile: $!" );
 		while(defined(my $line = <$deseqResFH>)) {
@@ -563,8 +565,6 @@ sub read_deseq_results {
 			
 			# Split on tabs
 			my @lineSplit = split "\t", $line;
-
-			my ( $logfcIdx, $adjpvalIdx );
 
 			# On first line, get column indices
 			if($line =~ /^id\t/) {
