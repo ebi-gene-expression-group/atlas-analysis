@@ -141,6 +141,10 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory, countsMatrixF
 				countsForContrast <- add_tech_rep_averages( countsForContrast, bioRepAnnotations, techRepGroupIDs )
 
 				cat( "Technical replicate averaging successful.\n" )
+			
+			} else {
+
+				cat( "No technical replicates found.\n" )
 			}
 			
 			cat( "Setting up biological replicate annotations for DESeqDataSet object...\n" )
