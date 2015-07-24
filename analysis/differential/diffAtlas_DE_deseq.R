@@ -253,7 +253,7 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory, countsMatrixF
 			# MvA plot data:
 			plotData <- data.frame(
 								   geneID = rownames( res ),
-								   baseMean = res$baseMean,
+								   avgExpr = res$baseMean,
 								   logFC = res$log2FoldChange,
 								   adjPval = res$padj
 								   )
