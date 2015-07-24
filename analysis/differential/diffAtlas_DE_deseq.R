@@ -163,9 +163,6 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory, countsMatrixF
 			# Make the column names R-safe.
 			colnames( bioRepAnnotations ) <- make.names( colnames( bioRepAnnotations ) )
 
-			# Convert columns to factors.
-			bioRepAnnotations <- sapply( bioRepAnnotations, function( x ) { as.factor( x ) } )
-			
 			cat( "Annotations modified successfully.\n" )
 
 			cat( "Re-ordering this contrast's counts matrix...\n" )
@@ -336,7 +333,7 @@ make_biorep_annotations <- function( contrastAssayGroups, contrastBatchEffects )
 	groupsCol <- c( rep( "ref", nrow( refAssaysToBioReps ) ), rep( "test", nrow( testAssaysToBioReps ) ) )
 
 	# Add the groups column to the data frame.
-	allAssaysToBioReps$groups <- groupsCol
+	allAssaysToBioReps$groups <- as.factor( groupsCol )
 
 	if( length( contrastBatchEffects ) > 0 ) {
 	
@@ -381,6 +378,9 @@ batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 
 	# Merge the data frames in to one data frame.
 	allBatches <- do.call( "rbind", batchDataFrames )
+
+	# Make the columns into factors.
+	allBatches <- data.frame( apply( allBatches, 2, function( x ) { as.factor( x ) } ) )
 
 	# Change the column heading from "batch" to the actual effect name.
 	colnames( allBatches ) <- c( "AssayName", effectName )
