@@ -23,14 +23,14 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory, countsMatrixF
 		xmlConfigFilename <- file.path( atlasProcessingDirectory, xmlConfigFilename )
 
 		# Parse the config.
-		cat( paste( "Reading XML from", xmlConfigFilename, "..." ) )
+		cat( paste( "Reading XML from", xmlConfigFilename, "...\n" ) )
 		experimentConfig <- parseAtlasConfig( xmlConfigFilename )
 		cat( "Successfully read XML config.\n" )
 
 		# Get the experiment type.
 		experimentType <- experimentConfig$experimentType
 
-		cat( paste( "Experiment type is", experimentType ) )
+		cat( paste( "Experiment type is", experimentType, "\n" ) )
 
 		# Check this is an RNA-seq experiment.
 		if( !grepl( "rnaseq", experimentType ) ) {
@@ -274,7 +274,7 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory, countsMatrixF
 
 			cat( "Plot data written successfully.\n" )
 
-			cat( paste( "Successfully completed differential expression analysis for", contrastID, "\n" ) )
+			cat( paste( "Successfully completed differential expression analysis for contrast", contrastID, "\n" ) )
 
 		} ) )
 
