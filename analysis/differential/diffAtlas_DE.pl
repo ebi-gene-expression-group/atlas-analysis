@@ -481,7 +481,7 @@ sub run_rnaseq_differential_expression {
 	}
 	
 	# Run R script.
-	my $Routput = `$deseqScript $expAcc $atlasProcessingDirectory 2>&1`;
+	my $Routput = `$deseqScript $expAcc $atlasProcessingDir 2>&1`;
 
 	# Check R output for errors.
 	if( $? ) {
@@ -526,7 +526,7 @@ sub run_rnaseq_differential_expression {
 	}
 
 	# Now we have results for all the contrasts in this analytics element. Write them to a file.
-	write_results( $analyticsDEResults, $expAcc, $experimentConfig, $atlasProcessingDirectory );
+	write_results( $analyticsDEResults, $expAcc, $experimentConfig, $atlasProcessingDir );
 	
 }
 
@@ -571,10 +571,6 @@ sub read_deseq_results {
 
 				$logfcIdx = (grep { $lineSplit[$_] eq "log2FoldChange" } 0..$#lineSplit)[0];
 				$adjpvalIdx = (grep { $lineSplit[$_] eq "padj" } 0..$#lineSplit)[0];
-
-				if($basemeanIdx == 0 || $logfcIdx == 0 || $adjpvalIdx == 0) {
-					$logger->logdie( "Couldn't get column indices for all required columns." );
-				}
 			}
 			else {
 				
