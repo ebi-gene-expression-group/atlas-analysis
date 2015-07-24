@@ -470,7 +470,7 @@ sub get_counts_matrix_path {
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub run_rnaseq_differential_expression {
 
-	my ( $deseqScript, $expAcc, $experimentConfig, $atlasProcessingDirectory, $countsMatrixFile ) = @_;
+	my ( $deseqScript, $expAcc, $experimentConfig, $atlasProcessingDir, $countsMatrixFile ) = @_;
 
 	$logger->info( "Running differential expression analysis in R..." );
 	
@@ -563,6 +563,8 @@ sub read_deseq_results {
 			
 			# Split on tabs
 			my @lineSplit = split "\t", $line;
+
+			my ( $logfcIdx, $adjpvalIdx );
 
 			# On first line, get column indices
 			if($line =~ /^id\t/) {
