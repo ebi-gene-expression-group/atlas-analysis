@@ -162,6 +162,9 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory, countsMatrixF
 
 			# Make the column names R-safe.
 			colnames( bioRepAnnotations ) <- make.names( colnames( bioRepAnnotations ) )
+
+			# Convert columns to factors.
+			bioRepAnnotations <- sapply( bioRepAnnotations, function( x ) { as.factor( x ) } )
 			
 			cat( "Annotations modified successfully.\n" )
 
