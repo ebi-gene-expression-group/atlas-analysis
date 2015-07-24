@@ -481,7 +481,7 @@ sub run_rnaseq_differential_expression {
 	}
 	
 	# Run R script.
-	my $Routput = `$deseqScript $expAcc $atlasProcessingDir 2>&1`;
+	my $Routput = `$deseqScript $expAcc $atlasProcessingDir $countsMatrixFile 2>&1`;
 
 	# Check R output for errors.
 	if( $? ) {
