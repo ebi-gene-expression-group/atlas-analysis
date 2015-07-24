@@ -167,6 +167,8 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory, countsMatrixF
 			# Make the column names R-safe.
 			colnames( bioRepAnnotations ) <- make.names( colnames( bioRepAnnotations ) )
 
+			print( bioRepAnnotations )
+
 			cat( "Annotations modified successfully.\n" )
 
 			cat( "Re-ordering this contrast's counts matrix...\n" )
