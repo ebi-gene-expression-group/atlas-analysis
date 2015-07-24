@@ -469,3 +469,15 @@ add_tech_rep_averages <- function( expressionData, bioRepAnnotations, techRepGro
 	return( expressionData )
 }
 
+
+###################
+# RUN MAIN FUNCTION
+###################
+
+# Run with arguments if there are any, otherwise don't do anything. Having this
+# lets us source this file in an R session and load all the functions so we can
+# run them separately if desired.
+args <- commandArgs( TRUE )
+if( length( args ) > 0) {
+	do.call( diffAtlas_DE_deseq2, as.list( args ) )
+}
