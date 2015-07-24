@@ -684,7 +684,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 			cat( "Plot data written successfully\n" )
 			
-			cat( paste( "Successully completed differential expression analysis for", expAcc, "\n" ) )
+			cat( paste( "Successully completed differential expression analysis for", contrastID, "\n" ) )
 
 		} )
 

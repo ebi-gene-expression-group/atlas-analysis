@@ -97,6 +97,7 @@ my $logger = Log::Log4perl::get_logger;
 # assumes R scripts directory is in PATH
 my $mvaScript = "diffAtlas_mvaPlot.R";
 my $limmaScript = "diffAtlas_DE_limma.R";
+my $deseqScript = "diffAtlas_DE_deseq.R";
 
 # Check that R is installed.
 unless( can_run( "Rscript" ) ) {
@@ -104,7 +105,7 @@ unless( can_run( "Rscript" ) ) {
 }
 
 # Check the R scripts can be run.
-foreach my $Rscript ( $mvaScript, $limmaScript ) {
+foreach my $Rscript ( $mvaScript, $limmaScript, $deseqScript ) {
 
     unless( can_run( $Rscript ) ) {
         $logger->logdie( "$Rscript not found. Please ensure it is installed and you can run it." );
@@ -147,6 +148,7 @@ if( $atlasExperimentType =~ /baseline/ ) {
 if( $atlasExperimentType =~ /array/ ) {
 	
 	run_microarray_differential_expression( 
+		$limmaScript,
 		$args->{ "experiment_accession" }, 
 		$experimentConfig, 
 		$args->{ "processing_directory" }, 
@@ -156,12 +158,19 @@ if( $atlasExperimentType =~ /array/ ) {
 # them into one file, and create MvA plots.
 elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	
-	# Read the iRAP config file to get the paths to the DESeq results files for
-	# each contrast.
-	my $contrastIDsToDESeqFiles = read_irap_conf( $args->{ "irap_config" }, $args->{ "experiment_accession" } );
+	# Read the iRAP config file to get the path to the raw counts matrix.
+	my $countsMatrixPath = get_counts_matrix_path( $args->{ "irap_config" }, $args->{ "experiment_accession" } );
 	
+	run_rnaseq_differential_expression(
+		$deseqScript,
+		$args->{ "experiment_accession" },
+		$experimentConfig,
+		$args->{ "processing_directory" },
+		$countsMatrixFilePath
+	);
+
 	# Get the results, write them out, make MvA plots.
-	get_rnaseq_results( $contrastIDsToDESeqFiles, $experimentConfig, $args->{ "experiment_accession" }, $args->{ "processing_directory" } );
+	#get_rnaseq_results( $contrastIDsToDESeqFiles, $experimentConfig, $args->{ "experiment_accession" }, $args->{ "processing_directory" } );
 }
 # If we're passed an experiment type we don't recognise, die.
 else {
@@ -224,15 +233,14 @@ sub parse_args {
 
 
 # run_microarray_differential_expression
-# 	- For each array design, for each contrast, run differential expression
-# 	analysis using limma script.
+# 	- Run differential expression analysis using limma script.
 # 	- For each array design, combine results for all contrasts and write
 # 	adjusted p-values, moderated t-statistics, and log2(fold-change)s to one
 # 	file.
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub run_microarray_differential_expression {
 
-	my ( $expAcc, $experimentConfig, $atlasProcessingDirectory ) = @_;
+	my ( $limmaScript, $expAcc, $experimentConfig, $atlasProcessingDirectory ) = @_;
 
 	$logger->info( "Running differential expression analysis in R..." );
 	
@@ -281,9 +289,8 @@ sub run_microarray_differential_expression {
 		my $arrayDesignAccession = $contrastIDs2arrayDesigns->{ $contrastID };
 
 		# Filename for MvA plot.
-		my $plotFile = $expAcc."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png";
+		my $plotFile = File::Spec->catfile( $atlasProcessingDirectory, $expAcc."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png" );
 
-		# TODO: get contrast names
 		# Create MvA.
 		make_mva_plot( "microarray", $plotFile, $plotDataFile, $contrastName, $mvaScript );
 
@@ -372,8 +379,8 @@ sub read_limma_results {
 		( my $contrastID = basename( $limmaResultsFile ) ) =~ s/.*\.(g\d+_g\d+)\.analytics.*/$1/;
 	
 		# Add results to hash.
-		open(LIMMARES, "<$limmaResultsFile") or $logger->logdie( "Can't open file $limmaResultsFile: $!" );
-		while(defined(my $line = <LIMMARES>)) {
+		open( my $limmaResFH, "<$limmaResultsFile" ) or $logger->logdie( "Can't open file $limmaResultsFile: $!" );
+		while(defined(my $line = <$limmaResFH>)) {
 			
 			# potentially don't need headers in the limma results file?
 			unless($line =~ /^designElements/) {
@@ -391,7 +398,7 @@ sub read_limma_results {
 				$analyticsDEResults->{ $designElement }->{ $contrastID } = \@lineSplit;
 			}
 		}
-		close(LIMMARES);
+		close($limmaResFH);
         
         $logger->info( "Finished with $limmaResultsFile , deleting..." );
 
@@ -405,11 +412,9 @@ sub read_limma_results {
 }
 
 
-# read_irap_conf
-#  - read iRAP config file to get filename for DESeq results for each contrast.
-#  - check experiment accession in iRAP config matches that of Atlas contrasts XML.
-#  - add filename for DESeq results file for each contrast to $contrastHash.
-sub read_irap_conf {
+# get_counts_matrix_path
+#  - read iRAP config file to get filename for raw counts matrix.
+sub get_counts_matrix_path {
 
 	my ( $irapConfig, $expAcc ) = @_;
 
@@ -417,14 +422,14 @@ sub read_irap_conf {
 	# DESeq files.
 	my $irapDir = ( fileparse( $irapConfig ) )[1];
 
-	# Get experiment accession, mapper, quantification method and DE method
-	# from config file to create full path to DESeq results files.
-	my ( $irapExptAcc, $mapper, $qMethod, $deMethod );
+	# Get experiment accession, mapper and quantification method
+	# from config file to create full path to counts matrix file.
+	my ( $irapExptAcc, $mapper, $qMethod );
 	
-	open( CONF, $irapConfig ) or die( "Can't open $irapConfig: $!\n" );
+	open( my $confFH, $irapConfig ) or die( "Can't open $irapConfig: $!\n" );
 
-	$logger->info( "\nReading iRAP config: $irapConfig..." );
-	while( defined( my $line = <CONF> ) ) {
+	$logger->info( "Reading iRAP config: $irapConfig..." );
+	while( defined( my $line = <$confFH> ) ) {
 
 		chomp $line;
 
@@ -434,108 +439,134 @@ sub read_irap_conf {
 			# Check experiment accession from iRAP config matches that in filename of
 			# Atlas contrasts file.
 			unless( $irapExptAcc eq $expAcc ) {
-				$logger->logdie( "\niRAP experiment accession is: $irapExptAcc -- does not match Atlas experiment accession ($expAcc)" );
+				$logger->logdie( "iRAP experiment accession is: $irapExptAcc -- does not match Atlas experiment accession ($expAcc)" );
 			}
 		}
 		
 		elsif( $line =~ /^mapper=(.*)/ ) { $mapper = $1; }
 		elsif( $line =~ /^quant_method=(.*)/ ) { $qMethod = $1; }
-		elsif( $line =~ /^de_method=(.*)/ ) { $deMethod = $1; }
 	}
-	close( CONF );
+	close( $confFH );
 
-	# Build path to DESeq results directory.
-	my $DESeqDirPath = File::Spec->catdir( $irapDir, $expAcc, $mapper, $qMethod, $deMethod );
-
-	# Get all the DESeq results files.
-	my @DESeqResultsFiles = glob( "$DESeqDirPath/*.genes_de.tsv" );
-
-	# Empty hashref for DESeq results files.
-	my $contrastIDsToDESeqFiles = {};
-
-	# Go through the DESeq results files...
-	foreach my $deseqFile ( @DESeqResultsFiles ) {
-		
-		# Get the contrast ID from the file name.
-		( my $contrastID = basename( $deseqFile ) ) =~ s/\.genes_de\.tsv//;
-		
-		# Add the full path to the file to the hash under the contrast ID.
-		$contrastIDsToDESeqFiles->{ $contrastID } = $deseqFile;
+	# Build path to raw counts matrix.
+	my $countsMatrixFilePath = File::Spec->catfile( $irapDir, $expAcc, $mapper, $qMethod, "genes.raw." . $qMethod . ".tsv" );
+	
+	# Make sure the file exists and is readable.
+	unless( -r $countsMatrixFilePath ) {
+		$logger->logdie( 
+			"Cannot read counts matrix for $expAcc from $countsMatrixFilePath\nPlease verify this file exists and is readable."
+		);
 	}
-
-	return ( $contrastIDsToDESeqFiles );
+	
+	# If all's OK, return the file path.
+	return $countsMatrixFilePath;
 }
 
 
-# get_rnaseq_results
-# 	- For each contrast, parse the DESeq results file to get log2(fold-change)s
-# 	and adjusted p-values.
-# 	- Write all contrast results into one single file.
-# 	- For each contrast, create MvA plots using MvA plotting script.
-sub get_rnaseq_results {
+# run_rnaseq_differential_expression
+# 	- Run differential expression analysis using DESeq script.
+# 	- Combine results for all contrasts and write adjusted p-values, moderated
+# 	t-statistics, and log2(fold-change)s to one file.
+# 	- Create MvA plots for each contrast using MvA plotting script.
+sub run_rnaseq_differential_expression {
 
-	my ( $contrastIDsToDESeqFiles, $experimentConfig, $expAcc, $atlasProcessingDirectory ) = @_;
+	my ( $deseqScript, $expAcc, $experimentConfig, $atlasProcessingDirectory, $countsMatrixFile ) = @_;
 
-	# Get the RNA-seq analytics section from the experiment config.
-	my $allAnalytics = $experimentConfig->get_atlas_analytics;
+	$logger->info( "Running differential expression analysis in R..." );
 	
-	# Empty variable to put RNA-seq analytics object in.
-	my $rnaSeqAnalytics;
+    my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+
+	unless( -d $tempDir ) {
+		$logger->logdie( "No $tempDir found. Please create it and try again." );
+	}
 	
-	# Go through the analytics elements, get the rnaseq one.
-	foreach my $analytics ( @{ $allAnalytics } ) {
-		
-		# Get the contrasts from the rnaseq analytics element.
-		if( $analytics->get_platform eq "rnaseq" ) { $rnaSeqAnalytics = $analytics; }
-	}	
+	# Run R script.
+	my $Routput = `$deseqScript $expAcc $atlasProcessingDirectory 2>&1`;
 
-	# Get the contrasts from the RNA-seq analytics object.
-	my $rnaSeqContrasts = $rnaSeqAnalytics->get_atlas_contrasts;
+	# Check R output for errors.
+	if( $? ) {
 
-	# Make a hash for the contrasts mapping IDs to names.
-	my $contrastIDsToNames = {};
-	foreach my $contrast ( @{ $rnaSeqContrasts } ) {
+		# Can't continue without results from limma so may as well quit.
+		$logger->logdie( "Problems during differential expression analysis:\n\n$Routput" );
 
-		my $contrastID = $contrast->get_contrast_id;
-		my $contrastName = $contrast->get_contrast_name;
+	} else {
+		$logger->info( "Differential expression analysis successful" );
+	}
+			
+	# Get the differential expression results into the hash of all analytics results.
+	# Files are read out of the users ~/tmp directory where the R script wrote
+	# them to.
+	my $analyticsDEResults = read_deseq_results( $expAcc );
 
-		$contrastIDsToNames->{ $contrastID } = $contrastName;
+	# Map contrast IDs to contrast names.
+	my $contrastIDs2names = map_contrast_ids_to_names( $experimentConfig );
+
+	# Get the names of the MvA plot data files.
+	my @plotDataFiles = glob( "$tempDir/$expAcc.g*_g*.plotdata.tsv" );
+
+    unless( @plotDataFiles ) {
+        $logger->logdie( "No MvA plot data files found in $tempDir , please check." );
+    }
+
+	foreach my $plotDataFile ( @plotDataFiles ) {
+
+        $logger->info( "Reading file $plotDataFile ..." );
+
+		( my $contrastID = basename( $plotDataFile ) ) =~ s/.*\.(g\d+_g\d+)\.plotdata.*/$1/;
+
+		my $contrastName = $contrastIDs2names->{ $contrastID };
+
+		# Filename for MvA plot.
+		my $plotFile = File::Spec->catfile( $atlasProcessingDir, $expAcc."-".$contrastID."-mvaPlot.png" );
+
+		# Create MvA.
+		make_mva_plot( "rnaseq", $plotFile, $plotDataFile, $contrastName, $mvaScript );
+
+        $logger->info( "Finished with file $plotDataFile" );
 	}
 
-	# Empty hash to store differential expression results before writing.
-	my $rnaSeqDEResults = {};
-
-	$logger->info( "\nCollecting DESeq results..." );
+	# Now we have results for all the contrasts in this analytics element. Write them to a file.
+	write_results( $analyticsDEResults, $expAcc, $experimentConfig, $atlasProcessingDirectory );
 	
-	# Go through the contrasts...
-	foreach my $contrastID (keys %{ $contrastIDsToDESeqFiles } ) {
+}
 
-		$logger->info( "Collecting results for contrast: ", $contrastIDsToNames->{ $contrastID } );
-		
-		# Get the path to the DESeq results file.
-		my $deseqFile = $contrastIDsToDESeqFiles->{ $contrastID };
 
-		# Need to get column indices of "baseMean", "log2FoldChange", and "padj" in DESeq results.
-		my ($basemeanIdx, $logfcIdx, $adjpvalIdx);
+sub read_deseq_results {
 
-		open(DESEQRES, $deseqFile) or $logger->logdie( "Can't open $deseqFile: $!" );
+	my ( $expAcc ) = @_;
+	
+	my $analyticsDEResults = {};
 
-		# Temp file for MvA plot data.
-		my $plotDataTempFile = "/tmp/plotData.$$.txt";
-		
-		open(PLOTDATA, ">$plotDataTempFile") or $logger->logdie( "Can't open file to write temporary plot data to: $!" );
-		printf(PLOTDATA "ID\tavgExpr\tlogFC\tadjPval");
+	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+	
+	unless( -d $tempDir ) {
+		$logger->logdie( "No $tempDir found. Please create it and try again." );
+	}
 
-		print "Reading DESeq results from $deseqFile...";
-		while(defined(my $line = <DESEQRES>)) {
+	my @deseqResultsFiles = glob( "$tempDir/$expAcc.g*_g*.analytics.tsv" );
 
-			chomp $line;
-			my @lineSplit = split "\t", $line;
+    unless( @deseqResultsFiles ) {
+        $logger->logdie( "No DESeq results files found in $tempDir , please check." );
+    }
+
+	foreach my $deseqResultsFile ( @deseqResultsFiles ) {
+
+        $logger->info( "Reading file $deseqResultsFile ..." );
+
+		( my $contrastID = basename( $deseqResultsFile ) ) =~ s/.*\.(g\d+_g\d+)\.analytics.*/$1/;
+	
+		# Add results to hash.
+		open( my $deseqResFH, "<$deseqResultsFile" ) or $logger->logdie( "Can't open file $deseqResultsFile: $!" );
+		while(defined(my $line = <$deseqResFH>)) {
 			
+			chomp $line;
+			
+			# Split on tabs
+			my @lineSplit = split "\t", $line;
+
 			# On first line, get column indices
 			if($line =~ /^id\t/) {
 
-				$basemeanIdx = (grep { $lineSplit[$_] eq "baseMean" } 0..$#lineSplit)[0];
 				$logfcIdx = (grep { $lineSplit[$_] eq "log2FoldChange" } 0..$#lineSplit)[0];
 				$adjpvalIdx = (grep { $lineSplit[$_] eq "padj" } 0..$#lineSplit)[0];
 
@@ -549,14 +580,10 @@ sub get_rnaseq_results {
 				# very first element).
 				my $geneID = $lineSplit[0];
 
-				my $baseMean = $lineSplit[$basemeanIdx];
 				my $logFC = $lineSplit[$logfcIdx];
 				my $adjPval = $lineSplit[$adjpvalIdx];
 				# Ensure we get numbers for the things that are supposed to
 				# be numbers (weird prob with DESeq output).
-				unless(looks_like_number($baseMean)) {
-					$logger->logdie( "\nDid not get numeric value for baseMean:\nGene ID: $geneID\nbaseMean: $baseMean" );
-				}
 				# Allow "NA" adjusted p-values through.
 				unless(looks_like_number($adjPval) || $adjPval eq "NA") {
 					$logger->logdie( "\nDid not get numeric value for adjusted p-value:\nGene ID: $geneID\nadjusted p-value: $adjPval" );
@@ -567,35 +594,155 @@ sub get_rnaseq_results {
 				}
 				
 				# Add to hash for file of all contrasts' results.
-				$rnaSeqDEResults->{ $geneID }->{ $contrastID } = [ $adjPval, $logFC ];
-				# Add to file for MvA plot.
-				printf(PLOTDATA "\n$geneID\t$baseMean\t$logFC\t$adjPval");
+				$analyticsDEResults->{ $geneID }->{ $contrastID } = [ $adjPval, $logFC ];
 			}
 		}
-		close(PLOTDATA);
-		close(DESEQRES);
-		$logger->info( "done" );
 
-		# Filename for MvA plot
-		my $plotFile = "$expAcc-".$contrastID."-mvaPlot.png";
+		close($deseqResFH);
+        
+        $logger->info( "Finished with $deseqResultsFile , deleting..." );
 
-		# Get the human-readable contrast name from the hash.
-		my $atlasName = $contrastIDsToNames->{ $contrastID };
+		# clean up
+		`rm $deseqResultsFile`;
 
-		# Create MvA
-		make_mva_plot("rnaseq", $plotFile, $plotDataTempFile, $atlasName, $mvaScript);
+        $logger->info( "Done." );
 	}
-	
-	# Write the results to a file.
-	write_results( $rnaSeqDEResults, $experimentConfig->get_experiment_accession, $experimentConfig, $atlasProcessingDirectory );
+
+	return $analyticsDEResults;
 }
+
+
+# get_rnaseq_results
+# 	- For each contrast, parse the DESeq results file to get log2(fold-change)s
+# 	and adjusted p-values.
+# 	- Write all contrast results into one single file.
+# 	- For each contrast, create MvA plots using MvA plotting script.
+#--------------------------------------------------
+# sub get_rnaseq_results {
+# 
+# 	my ( $contrastIDsToDESeqFiles, $experimentConfig, $expAcc, $atlasProcessingDirectory ) = @_;
+# 
+# 	# Get the RNA-seq analytics section from the experiment config.
+# 	my $allAnalytics = $experimentConfig->get_atlas_analytics;
+# 	
+# 	# Empty variable to put RNA-seq analytics object in.
+# 	my $rnaSeqAnalytics;
+# 	
+# 	# Go through the analytics elements, get the rnaseq one.
+# 	foreach my $analytics ( @{ $allAnalytics } ) {
+# 		
+# 		# Get the contrasts from the rnaseq analytics element.
+# 		if( $analytics->get_platform eq "rnaseq" ) { $rnaSeqAnalytics = $analytics; }
+# 	}	
+# 
+# 	# Get the contrasts from the RNA-seq analytics object.
+# 	my $rnaSeqContrasts = $rnaSeqAnalytics->get_atlas_contrasts;
+# 
+# 	# Make a hash for the contrasts mapping IDs to names.
+# 	my $contrastIDsToNames = {};
+# 	foreach my $contrast ( @{ $rnaSeqContrasts } ) {
+# 
+# 		my $contrastID = $contrast->get_contrast_id;
+# 		my $contrastName = $contrast->get_contrast_name;
+# 
+# 		$contrastIDsToNames->{ $contrastID } = $contrastName;
+# 	}
+# 
+# 	# Empty hash to store differential expression results before writing.
+# 	my $rnaSeqDEResults = {};
+# 
+# 	$logger->info( "\nCollecting DESeq results..." );
+# 	
+# 	# Go through the contrasts...
+# 	foreach my $contrastID (keys %{ $contrastIDsToDESeqFiles } ) {
+# 
+# 		$logger->info( "Collecting results for contrast: ", $contrastIDsToNames->{ $contrastID } );
+# 		
+# 		# Get the path to the DESeq results file.
+# 		my $deseqFile = $contrastIDsToDESeqFiles->{ $contrastID };
+# 
+# 		# Need to get column indices of "baseMean", "log2FoldChange", and "padj" in DESeq results.
+# 		my ($basemeanIdx, $logfcIdx, $adjpvalIdx);
+# 
+# 		open(DESEQRES, $deseqFile) or $logger->logdie( "Can't open $deseqFile: $!" );
+# 
+# 		# Temp file for MvA plot data.
+# 		my $plotDataTempFile = "/tmp/plotData.$$.txt";
+# 		
+# 		open(PLOTDATA, ">$plotDataTempFile") or $logger->logdie( "Can't open file to write temporary plot data to: $!" );
+# 		printf(PLOTDATA "ID\tavgExpr\tlogFC\tadjPval");
+# 
+# 		print "Reading DESeq results from $deseqFile...";
+# 		while(defined(my $line = <DESEQRES>)) {
+# 
+# 			chomp $line;
+# 			my @lineSplit = split "\t", $line;
+# 			
+# 			# On first line, get column indices
+# 			if($line =~ /^id\t/) {
+# 
+# 				$basemeanIdx = (grep { $lineSplit[$_] eq "baseMean" } 0..$#lineSplit)[0];
+# 				$logfcIdx = (grep { $lineSplit[$_] eq "log2FoldChange" } 0..$#lineSplit)[0];
+# 				$adjpvalIdx = (grep { $lineSplit[$_] eq "padj" } 0..$#lineSplit)[0];
+# 
+# 				if($basemeanIdx == 0 || $logfcIdx == 0 || $adjpvalIdx == 0) {
+# 					$logger->logdie( "Couldn't get column indices for all required columns." );
+# 				}
+# 			}
+# 			else {
+# 				
+# 				# Use indices found above to get values (gene ID is always the
+# 				# very first element).
+# 				my $geneID = $lineSplit[0];
+# 
+# 				my $baseMean = $lineSplit[$basemeanIdx];
+# 				my $logFC = $lineSplit[$logfcIdx];
+# 				my $adjPval = $lineSplit[$adjpvalIdx];
+# 				# Ensure we get numbers for the things that are supposed to
+# 				# be numbers (weird prob with DESeq output).
+# 				unless(looks_like_number($baseMean)) {
+# 					$logger->logdie( "\nDid not get numeric value for baseMean:\nGene ID: $geneID\nbaseMean: $baseMean" );
+# 				}
+# 				# Allow "NA" adjusted p-values through.
+# 				unless(looks_like_number($adjPval) || $adjPval eq "NA") {
+# 					$logger->logdie( "\nDid not get numeric value for adjusted p-value:\nGene ID: $geneID\nadjusted p-value: $adjPval" );
+# 				}
+# 				# Allow "NA" log fold-changes through.
+# 				unless(looks_like_number($logFC) || $logFC eq "NA") {
+# 					$logger->logdie( "\nDid not get numeric value for log2FoldChange:\nGene ID: $geneID\nlog2FoldChange: $logFC" );
+# 				}
+# 				
+# 				# Add to hash for file of all contrasts' results.
+# 				$rnaSeqDEResults->{ $geneID }->{ $contrastID } = [ $adjPval, $logFC ];
+# 				# Add to file for MvA plot.
+# 				printf(PLOTDATA "\n$geneID\t$baseMean\t$logFC\t$adjPval");
+# 			}
+# 		}
+# 		close(PLOTDATA);
+# 		close(DESEQRES);
+# 		$logger->info( "done" );
+# 
+# 		# Filename for MvA plot
+# 		my $plotFile = "$expAcc-".$contrastID."-mvaPlot.png";
+# 
+# 		# Get the human-readable contrast name from the hash.
+# 		my $atlasName = $contrastIDsToNames->{ $contrastID };
+# 
+# 		# Create MvA
+# 		make_mva_plot("rnaseq", $plotFile, $plotDataTempFile, $atlasName, $mvaScript);
+# 	}
+# 	
+# 	# Write the results to a file.
+# 	write_results( $rnaSeqDEResults, $experimentConfig->get_experiment_accession, $experimentConfig, $atlasProcessingDirectory );
+# }
+#-------------------------------------------------- 
 
 
 # make_mva_plot
 # 	- Create MvA plot using MvA plot script.
 sub make_mva_plot {
 
-	$_ = shift for my ($platform, $plotFile, $plotDataTempFile, $contrastName, $mvaScript);
+	my ( $platform, $plotFile, $plotDataTempFile, $contrastName, $mvaScript ) = @_;
 
 	$logger->info( "Making MvA plot..." );
 	# Create MvA plot with MvA plot script
@@ -622,7 +769,7 @@ sub make_mva_plot {
 #	a tab-delimited text file.
 sub write_results {
 
-	$_ = shift for my ( $analyticsDEResults, $expAcc, $experimentConfig, $atlasProcessingDirectory );
+	my ( $analyticsDEResults, $expAcc, $experimentConfig, $atlasProcessingDirectory ) = @_;
 	
 	foreach my $analytics ( @{ $experimentConfig->get_atlas_analytics } ) {
 
@@ -644,21 +791,21 @@ sub write_results {
 		
 		$logger->info( "Writing results to $resFile" );
 
-		open(RESFILE, ">$resFile") or $logger->logdie( "Can't open $resFile: $!" );
+		open( my $resFH, ">$resFile") or $logger->logdie( "Can't open $resFile: $!" );
 
 		# Write column headers
-		if($platform eq "rnaseq") { printf(RESFILE "Gene ID"); }
-		else { printf(RESFILE "Design Element"); }
+		if($platform eq "rnaseq") { printf($resFH "Gene ID"); }
+		else { printf($resFH "Design Element"); }
 		foreach my $contrastID ( @{ $analyticsContrastIDs }) {
-			printf(RESFILE "\t$contrastID.p-value");
-			unless($platform eq "rnaseq") { printf(RESFILE "\t$contrastID.t-statistic"); }
-			printf(RESFILE "\t$contrastID.log2foldchange");
+			printf($resFH "\t$contrastID.p-value");
+			unless($platform eq "rnaseq") { printf($resFH "\t$contrastID.t-statistic"); }
+			printf($resFH "\t$contrastID.log2foldchange");
 		}
 
 		# Write statistics
 		foreach my $id (sort keys %{ $analyticsDEResults }) {
 
-			printf(RESFILE "\n$id");
+			printf($resFH "\n$id");
 
 			# Use ordering of assay group pairs from %contrastHash so stats are in
 			# the same order as the headers.
@@ -679,10 +826,10 @@ sub write_results {
 					if($platform eq "rnaseq") { $statsString = "NA\tNA"; }
 					else { $statsString = "NA\tNA\tNA"; }
 				}
-				printf(RESFILE "\t$statsString");
+				printf($resFH "\t$statsString");
 			}
 		}
-		close( RESFILE );
+		close( $resFH );
 	}
 }
 			
