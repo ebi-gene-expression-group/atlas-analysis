@@ -159,7 +159,7 @@ if( $atlasExperimentType =~ /array/ ) {
 elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	
 	# Read the iRAP config file to get the path to the raw counts matrix.
-	my $countsMatrixPath = get_counts_matrix_path( $args->{ "irap_config" }, $args->{ "experiment_accession" } );
+	my $countsMatrixFilePath = get_counts_matrix_path( $args->{ "irap_config" }, $args->{ "experiment_accession" } );
 	
 	run_rnaseq_differential_expression(
 		$deseqScript,
