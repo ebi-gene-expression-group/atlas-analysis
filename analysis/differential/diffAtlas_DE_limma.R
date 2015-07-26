@@ -359,6 +359,8 @@ filter_and_adjust_pvalues <- function( normDataRowVars, rawPvalues ) {
 # 	- Given a data frame of normalized expressions and the data frame of
 # 	biological replicate annotations, create an ExpressionSet object.
 make_eset_for_contrast <- function( normalizedData, bioRepAnnotations ) {
+	
+	print( bioRepAnnotations )
 
 	# Turn normalized data into a matrix.
 	exprsForContrast <- as.matrix( normalizedData )
