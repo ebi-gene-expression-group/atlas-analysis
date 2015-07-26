@@ -105,7 +105,7 @@ make_biorep_annotations <- function( contrastAssayGroups, contrastBatchEffects, 
 
 	refAssaysToBioReps <- make_assays_to_bioreps_df( biological_replicates( contrastAssayGroups$refAssayGroup ), twoColour )
 	testAssaysToBioReps <- make_assays_to_bioreps_df( biological_replicates( contrastAssayGroups$testAssayGroup ), twoColour )
-	
+
 	# Mappings of assay names to biological replicate names. Biological
 	# replicate names are most commonly the same as the assay names except in
 	# the case of technical replicates, in which case the biological replicate
@@ -138,6 +138,8 @@ make_biorep_annotations <- function( contrastAssayGroups, contrastBatchEffects, 
 		# Sort the rows of batchEffectsDf in the same order as the assay names in
 		# allAssaysToBioReps.
 		batchEffectsDf <- batchEffectsDf[ allAssaysToBioReps$AssayName , , drop = FALSE ]
+
+		print( batchEffectsDf )
 
 		# Combine the batch effects data frame and the assays-to-bioreps data frame
 		# to make the final data frame.
@@ -360,8 +362,6 @@ filter_and_adjust_pvalues <- function( normDataRowVars, rawPvalues ) {
 # 	biological replicate annotations, create an ExpressionSet object.
 make_eset_for_contrast <- function( normalizedData, bioRepAnnotations ) {
 	
-	print( bioRepAnnotations )
-
 	# Turn normalized data into a matrix.
 	exprsForContrast <- as.matrix( normalizedData )
 	
@@ -620,6 +620,16 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 
 			# Now create the design matrix.
 			designMatrix <- model.matrix( as.formula( formulaString ) , data = esetForContrast )
+
+			# Check that the design matrix is of full rank. If not, revert to a simpler one.
+			if( !is.fullrank( designMatrix ) ) {
+				
+				warning( "Design matrix is not full rank, reverting to simple design matrix." )
+
+				formulaString <- "~ groups"
+
+				designMatrix <- model.matrix( as.formula( formulaString ), data = esetForContrast )
+			}
 
 			cat( "Design matrix created successfully.\n" )
 
