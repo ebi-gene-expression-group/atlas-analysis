@@ -39,7 +39,7 @@ setMethod( "initialize", "BatchEffect", function( .Object, batchEffectNode ) {
 			# Get a vector of the assay names.
 			assayNames <- sapply( allAssayNodes, 
 				function( assayNode ) {
-					xmlValue( assayNode )
+					make.names( xmlValue( assayNode ) )
 				}
 			)
 			
