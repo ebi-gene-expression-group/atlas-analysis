@@ -227,6 +227,8 @@ batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 	rownames( allBatches ) <- allBatches$AssayName
 	allBatches$AssayName <- NULL
 
+	print( allBatches )
+
 	return( allBatches )
 }
 
@@ -360,8 +362,6 @@ filter_and_adjust_pvalues <- function( normDataRowVars, rawPvalues ) {
 # 	biological replicate annotations, create an ExpressionSet object.
 make_eset_for_contrast <- function( normalizedData, bioRepAnnotations ) {
 	
-	print( bioRepAnnotations )
-
 	# Turn normalized data into a matrix.
 	exprsForContrast <- as.matrix( normalizedData )
 	
