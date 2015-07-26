@@ -197,6 +197,8 @@ make_assays_to_bioreps_df <- function( bioReps, twoColour ) {
 # 	- Given a batch effect object and a vector of assay names, create a data
 # 	frame mapping the batch names to the corresponding assay names.
 batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
+	
+	print( contrastAssayNames )
 
 	assayBatches <- batches( batchEffect )
 	effectName <- effect_name( batchEffect )
@@ -213,7 +215,7 @@ batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 	allBatches <- do.call( "rbind", batchDataFrames )
 
 	# Make the columns into factors.
-	allBatched <- data.frame( apply( allBatches, 2, function( x ) { as.factor( x ) } ) )
+	allBatches <- data.frame( apply( allBatches, 2, function( x ) { as.factor( x ) } ) )
 
 	# Change the column heading from "batch" to the actual effect name.
 	colnames( allBatches ) <- c( "AssayName", effectName )
@@ -226,8 +228,6 @@ batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 
 	rownames( allBatches ) <- allBatches$AssayName
 	allBatches$AssayName <- NULL
-
-	print( allBatches )
 
 	return( allBatches )
 }
