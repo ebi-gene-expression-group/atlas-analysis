@@ -123,7 +123,7 @@ make_biorep_annotations <- function( contrastAssayGroups, contrastBatchEffects, 
 	groupsCol <- c( rep( "ref", nrow( refAssaysToBioReps ) ), rep( "test", nrow( testAssaysToBioReps ) ) )
 
 	# Add the groups column to the data frame.
-	allAssaysToBioReps$groups <- groupsCol
+	allAssaysToBioReps$groups <- as.factor( groupsCol )
 
 	if( length( contrastBatchEffects ) > 0 ) {
 	
@@ -211,6 +211,9 @@ batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 
 	# Merge the data frames in to one data frame.
 	allBatches <- do.call( "rbind", batchDataFrames )
+
+	# Make the columns into factors.
+	allBatched <- data.frame( apply( allBatches, 2, function( x ) { as.factor( x ) } ) )
 
 	# Change the column heading from "batch" to the actual effect name.
 	colnames( allBatches ) <- c( "AssayName", effectName )
