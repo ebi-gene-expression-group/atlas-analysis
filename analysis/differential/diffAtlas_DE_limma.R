@@ -198,8 +198,6 @@ make_assays_to_bioreps_df <- function( bioReps, twoColour ) {
 # 	frame mapping the batch names to the corresponding assay names.
 batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 	
-	print( contrastAssayNames )
-
 	assayBatches <- batches( batchEffect )
 	effectName <- effect_name( batchEffect )
 
@@ -362,6 +360,8 @@ filter_and_adjust_pvalues <- function( normDataRowVars, rawPvalues ) {
 # 	biological replicate annotations, create an ExpressionSet object.
 make_eset_for_contrast <- function( normalizedData, bioRepAnnotations ) {
 	
+	print( bioRepAnnotations )
+
 	# Turn normalized data into a matrix.
 	exprsForContrast <- as.matrix( normalizedData )
 	
