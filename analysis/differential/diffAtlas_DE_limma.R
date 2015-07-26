@@ -139,8 +139,6 @@ make_biorep_annotations <- function( contrastAssayGroups, contrastBatchEffects, 
 		# allAssaysToBioReps.
 		batchEffectsDf <- batchEffectsDf[ allAssaysToBioReps$AssayName , , drop = FALSE ]
 
-		print( batchEffectsDf )
-
 		# Combine the batch effects data frame and the assays-to-bioreps data frame
 		# to make the final data frame.
 		return( cbind( allAssaysToBioReps, batchEffectsDf ) )
@@ -210,6 +208,8 @@ batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 
 		data.frame( AssayNames = assayNames, batch = batchName, stringsAsFactors = FALSE )
 	} )
+
+	print( batchDataFrames )
 
 	# Merge the data frames in to one data frame.
 	allBatches <- do.call( "rbind", batchDataFrames )
@@ -624,7 +624,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			# Check that the design matrix is of full rank. If not, revert to a simpler one.
 			if( !is.fullrank( designMatrix ) ) {
 				
-				warning( "Design matrix is not full rank, reverting to simple design matrix." )
+				cat( "WARN  - Design matrix is not full rank, reverting to simple design matrix." )
 
 				formulaString <- "~ groups"
 
