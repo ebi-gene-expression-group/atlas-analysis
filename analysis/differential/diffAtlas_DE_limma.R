@@ -209,8 +209,6 @@ batch_effect_to_df <- function( batchEffect, contrastAssayNames ) {
 		data.frame( AssayNames = assayNames, batch = batchName, stringsAsFactors = FALSE )
 	} )
 
-	print( batchDataFrames )
-
 	# Merge the data frames in to one data frame.
 	allBatches <- do.call( "rbind", batchDataFrames )
 
