@@ -282,7 +282,7 @@ sub makeArraysToFactorValuesToFiles {
 		# Push all factor values onto an array.
 		my @A_factorValues = ();
 		foreach my $factor (keys %{ $H_factors }) {
-			push @A_factorValues, $H_factors->{ $factor };
+			push @A_factorValues, $H_factors->{ $factor }->{ "value" };
 		}
 
 		# Stick the factor values together if there's more than one. If there's
