@@ -88,9 +88,6 @@ print "Reading MAGE-TAB...\n";
 my $magetab4atlas = Atlas::Magetab4Atlas->new( "idf_filename" => $idfFilename );
 print "Read MAGE-TAB.\n";
 
-use Data::Dumper;
-print Dumper( $magetab4atlas );
-
 # Create hash mapping assay names to raw data file names for each array design:
 #
 # 	$arraysToAssaysToFiles->{ <array design 1> }->{ <assay 1> } = <file 1>
