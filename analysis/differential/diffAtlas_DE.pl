@@ -404,7 +404,7 @@ sub get_counts_matrix_path {
 	}
 	
 	# Build path to raw counts matrix.
-	my $countsMatrixFilePath = File::Spec->catfile( $irapSingleLibDir, $expAcc, "genes.raw.tsv" );
+	my $countsMatrixFilePath = File::Spec->catfile( $irapSingleLibDir, "studies", $expAcc, "genes.raw.tsv" );
 	
 	# Make sure the file exists and is readable.
 	unless( -r $countsMatrixFilePath ) {
