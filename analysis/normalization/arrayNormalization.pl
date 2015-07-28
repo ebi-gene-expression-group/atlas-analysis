@@ -217,8 +217,13 @@ sub makeArraysToAssaysToFiles {
 	# Normalization mode.
 	my $normalizationMode = 0;
 	
+    use Data::Dumper;
+
 	# Go through the assays...
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
+
+        print Dumper( $assay4atlas );
+        
 		# Get assay name
 		my $assayName = $assay4atlas->get_name;
 
