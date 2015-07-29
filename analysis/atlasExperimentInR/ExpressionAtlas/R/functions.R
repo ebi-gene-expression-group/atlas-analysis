@@ -204,22 +204,22 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	completeSDRF <- read.delim( filename, header = FALSE, stringsAsFactors = FALSE )
 
 	# Get the Characteristics column indices, and any unit columns next to them.
-	charColIndices <- grep( "Characteristics", completeSDRF[ 1, ] )
+	charColIndices <- grep( "Characteristics", ignore.case = TRUE, completeSDRF[ 1, ] )
 	charColIndices <- .addUnitCols( charColIndices, completeSDRF )
 	
 	# Get the Factor column indices, an any unit columns next to them.
-	factorColIndices <- grep( "Factor\\s?Value", completeSDRF[ 1, ] )
+	factorColIndices <- grep( "Factor\\s?Value", ignore.case = TRUE, completeSDRF[ 1, ] )
 	factorColIndices <- .addUnitCols( factorColIndices, completeSDRF )
 
 	# Get the index of the Comment[technical replicate group] column, if there
 	# is one.
-	techRepGroupColIndex <- grep( "Comment\\s?\\[\\s?technical[ _]replicate[ _]group\\s?\\]", completeSDRF[ 1, ] )
+	techRepGroupColIndex <- grep( "Comment\\s?\\[\\s?technical[ _]replicate[ _]group\\s?\\]", ignore.case = TRUE, completeSDRF[ 1, ] )
 	
 	# Get the column index for assay names. For microarray data, this is "Assay
 	# Name" or "Hybridization Name". For RNA-seq data, this is "Comment[ENA_RUN]"
 	if( grepl( "rnaseq", atlasExperimentType ) ) {
 		
-		assayNameColIndex <- grep( "Comment\\s?\\[\\s?ENA_RUN\\s?\\]", completeSDRF[ 1, ] )
+		assayNameColIndex <- grep( "Comment\\s?\\[\\s?ENA_RUN\\s?\\]", ignore.case = TRUE, completeSDRF[ 1, ] )
 
 		if( length( assayNameColIndex ) != 1 ) {
 			stop( "Did not find Comment[ ENA_RUN ] column in SDRF." )
@@ -227,11 +227,11 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	}
 	else {
 		
-		assayNameColIndex <- grep( "Assay\\s?Name", completeSDRF[ 1, ] )
+		assayNameColIndex <- grep( "Assay\\s?Name", ignore.case = TRUE, completeSDRF[ 1, ] )
 
 		if( length( assayNameColIndex ) != 1 ) {
 
-			assayNameColIndex <- grep( "Hybridi[sz]ation\\s?Name", completeSDRF[ 1, ] )
+			assayNameColIndex <- grep( "Hybridi[sz]ation\\s?Name", ignore.case = TRUE, completeSDRF[ 1, ] )
 
 			# Check that we got something.
 			if( length( assayNameColIndex ) != 1 ) {
