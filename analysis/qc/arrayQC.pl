@@ -69,6 +69,10 @@ my $experimentConfig = parseAtlasConfig( $atlasXMLfile );
 $logger->info( "[QC] Successfully read XML config." );
 
 
+use Data::Dumper;
+print Dumper( $experimentConfig );
+
+
 # R script (should be in PATH).
 my $qcRscript = "arrayQC.R";
 unless( can_run( $qcRscript ) ) {
