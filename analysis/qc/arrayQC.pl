@@ -86,15 +86,15 @@ my $exptsLoadStem = File::Spec->catdir( $CONFIG->get_AE2_LOAD_DIR, "EXPERIMENT" 
 # miRBase mapped array designs -- we need to subset probes if we find one of these.
 # Get an array of miRBase mapping files.
 my $miRBaseDirectory = File::Spec->catdir( $atlasProdDir, $atlasSiteConfig->get_mirbase_mappings_directory );
-my @A_miRBaseFiles = glob( "$miRBaseDirectory/*.A-*.tsv" );
+my @miRBaseFiles = glob( "$miRBaseDirectory/*.A-*.tsv" );
 
 # Create a hash for easy checking.
-my $H_miRBaseFileHash = {};
-foreach my $miRBaseFile (@A_miRBaseFiles) {
+my $miRBaseFileHash = {};
+foreach my $miRBaseFile (@miRBaseFiles) {
 	# Get the array design from the file name.
 	(my $arrayDesign = $miRBaseFile) =~ s/.*(A-\w{4}-\d+)\.tsv/$1/;
 	# Add the miRBase mapping file to the hash with the array design as key.
-	$H_miRBaseFileHash->{ $arrayDesign } = $miRBaseFile;
+	$miRBaseFileHash->{ $arrayDesign } = $miRBaseFile;
 }
 
 # Get the pipeline (e.g. MEXP, MTAB, GEOD, ...) for this experiment.
@@ -122,7 +122,7 @@ $logger->info( "[QC] Successfully read MAGE-TAB" );
 # 	  ...
 # Only consider assays that are in the XML config file.
 $logger->info( "[QC] Collecting factor values and raw data filenames for assays listed in XML config only..." );
-my ($H_arraysToFactorValuesToFiles, $experimentType) = &makeArraysToFactorValuesToFiles($magetab4atlas, $loadDir, $experimentConfig);
+my ($arraysToFactorValuesToFiles, $experimentType) = makeArraysToFactorValuesToFiles($magetab4atlas, $loadDir, $experimentConfig);
 $logger->info( "[QC] Successfully collected factor values and raw data filenames." );
 
 
@@ -135,12 +135,12 @@ $logger->info( "[QC] Successfully collected factor values and raw data filenames
 # arrayQualityMetrics.
 # Flag to set if any failed assays are found.
 my $failed;
-foreach my $arrayDesign (keys %{ $H_arraysToFactorValuesToFiles }) {
+foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 	
 	$logger->info( "[QC] Running QC in R for array design \"$arrayDesign\"..." );
 
 	# Write annotations (factor value(s), filenames, [labels]) to a temp file. This will be read by R and then deleted.
-	my ($tempFile, $miRBaseFile) = &writeAnnotations($arrayDesign, $H_arraysToFactorValuesToFiles, $H_miRBaseFileHash, $experimentType);
+	my ($tempFile, $miRBaseFile) = writeAnnotations($arrayDesign, $arraysToFactorValuesToFiles, $miRBaseFileHash, $experimentType);
 
 	# Create directory name for this experiment/array design.
 	my $reportDir = $exptAccession."_$arrayDesign"."_QM";
@@ -160,7 +160,7 @@ foreach my $arrayDesign (keys %{ $H_arraysToFactorValuesToFiles }) {
 	
 	# Look for assays that failed QC and remove them from the experiment config.
 	$logger->info( "[QC] Checking for assays that failed QC..." );
-	($experimentConfig, $failed) = &removeRejectedAssays($experimentConfig, $qcRscriptOutput, $arrayDesign);
+	($experimentConfig, $failed) = removeRejectedAssays($experimentConfig, $qcRscriptOutput, $arrayDesign);
 	
 	unless( $failed ) {
 		$logger->info( "[QC] All assays for \"$arrayDesign\" passed QC." );
@@ -170,7 +170,7 @@ foreach my $arrayDesign (keys %{ $H_arraysToFactorValuesToFiles }) {
 	# directory. This looks annoying and is not necessary, so remove it. The
 	# path is in index.html and arrayQualityMetrics.js.
 	$logger->info( "[QC] Removing full paths to data files from QC HTML report..." );
-	&removeLoadDirFromReport($reportDir, $loadDir);
+	removeLoadDirFromReport($reportDir, $loadDir);
 	$logger->info( "[QC] Successfully removed paths from HTML report." );
 
 	$logger->info( "[QC] Successfully finished QC for \"$arrayDesign\"" );
@@ -205,7 +205,7 @@ if($failed) {
 ###############
 
 
-# &makeArraysToFactoValuesToFiles
+# makeArraysToFactoValuesToFiles
 #  - Creates a hash sorting out the data files by array design and then factor value.
 #  - E.g.:
 # 	$H->{ <array design 1> }->{ <factor value(s) 1> }->{ <assay name 1> } = <file 1>
@@ -229,7 +229,7 @@ sub makeArraysToFactorValuesToFiles {
 
 	# Empty hash to store mappings between factor values, assays and
 	# file names.
-	my $H_xmlAssayNames = {};
+	my $xmlAssayNames = {};
 
 	# Get the analytics elements from the config.
 	my $allAnalytics = $experimentConfig->get_atlas_analytics;
@@ -245,25 +245,25 @@ sub makeArraysToFactorValuesToFiles {
 			
 			foreach my $assayGroup ( $testAssayGroup, $referenceAssayGroup ) {
 				foreach my $assay ( @{ $assayGroup->get_assays } ) {
-					$H_xmlAssayNames->{ $assay->get_name } = 1;
+					$xmlAssayNames->{ $assay->get_name } = 1;
 				}
 			}
 		}
 	}
 	
 	# Ref to empty hash to fill.
-	my $H_arraysToFactorValuesToFiles = {};
+	my $arraysToFactorValuesToFiles = {};
 	# Go through the assays...
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
 		# Get the assay name
 		my $assayName = $assay4atlas->get_name;
 		# Skip this one if it's not in the XML config file
-		unless(exists($H_xmlAssayNames->{ $assayName })) { next; }
+		unless(exists($xmlAssayNames->{ $assayName })) { next; }
 
 		# Get the array design
 		my $arrayDesign = $assay4atlas->get_array_design;
 		# Get the factor(s) and value(s)
-		my $H_factors = $assay4atlas->get_factors;
+		my $factors = $assay4atlas->get_factors;
 		# Get the raw data filename
 		my $arrayDataFile = $loadDir."/".$assay4atlas->get_array_data_file;
 
@@ -280,18 +280,18 @@ sub makeArraysToFactorValuesToFiles {
 		}
 
 		# Push all factor values onto an array.
-		my @A_factorValues = ();
-		foreach my $factor (keys %{ $H_factors }) {
-			push @A_factorValues, $H_factors->{ $factor }->{ "value" };
+		my @factorValues = ();
+		foreach my $factor (keys %{ $factors }) {
+			push @factorValues, $factors->{ $factor }->{ "value" };
 		}
 
 		# Stick the factor values together if there's more than one. If there's
 		# only one this just returns the factor value by itself.
-		my $factorValue = join ", ", @A_factorValues;
+		my $factorValue = join ", ", @factorValues;
 		
-		$H_arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue }->{ $assayName } = $arrayDataFile;
+		$arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue }->{ $assayName } = $arrayDataFile;
 	}
-	return ($H_arraysToFactorValuesToFiles, $experimentType);
+	return ($arraysToFactorValuesToFiles, $experimentType);
 }
 
 
@@ -300,17 +300,17 @@ sub makeArraysToFactorValuesToFiles {
 # 	for 2-colour] to a temporary file.
 # ARGUMENTS:
 # 	- $arrayDesign : ArrayExpress array design accession
-# 	- $H_arraysToFactorValuesToFiles : reference to hash of array designs, factor values, assay names and filenames.
-# 	- $H_miRBaseFileHash : reference to hash of array designs that are for microRNA.
+# 	- $arraysToFactorValuesToFiles : reference to hash of array designs, factor values, assay names and filenames.
+# 	- $miRBaseFileHash : reference to hash of array designs that are for microRNA.
 # 	- $experimentType : affy, agil1, or agil2.
 sub writeAnnotations {
-	my ($arrayDesign, $H_arraysToFactorValuesToFiles, $H_miRBaseFileHash, $experimentType) = @_;
+	my ($arrayDesign, $arraysToFactorValuesToFiles, $miRBaseFileHash, $experimentType) = @_;
 
 	# Check if the array design has a miRBase mapping file
 	# Flag
 	my $miRBaseFile = 0;
-	if(exists($H_miRBaseFileHash->{ $arrayDesign })) {
-		$miRBaseFile = $H_miRBaseFileHash->{ $arrayDesign };
+	if(exists($miRBaseFileHash->{ $arrayDesign })) {
+		$miRBaseFile = $miRBaseFileHash->{ $arrayDesign };
 	}
 	
 	# Name for temp file to write annotations to, in /tmp with process ID ($$).
@@ -324,31 +324,31 @@ sub writeAnnotations {
 	# 	AssayName	Cy3	Cy5	FileName
 	if($experimentType eq "agil2") {
 		# Ref to empty hash to remember two-colour annotations and filenames.
-		my $H_twoColourAnnotations = {};
+		my $twoColourAnnotations = {};
 		# Go through the factor values for this array design...
-		foreach my $factorValue (keys %{ $H_arraysToFactorValuesToFiles->{ $arrayDesign } }) {
+		foreach my $factorValue (keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign } }) {
 			# Go through the assays for this factor value...
-			foreach my $assayName (keys %{ $H_arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue } }) {
+			foreach my $assayName (keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue } }) {
 				# Get the label (Cy3 or Cy5)
 				(my $label = $assayName) =~ s/.*\.(Cy\d)$/$1/;
 				# Make a version of the assay name without the label.
 				(my $assayNameNoLabel = $assayName) =~ s/\.Cy\d$//;
 				
 				# Add the factor value to the hash for this assay for this label.
-				$H_twoColourAnnotations->{ $assayNameNoLabel }->{ $label } = $factorValue;
+				$twoColourAnnotations->{ $assayNameNoLabel }->{ $label } = $factorValue;
 				# Add the file name for this assay as well.
-				$H_twoColourAnnotations->{ $assayNameNoLabel }->{ "filename" } = $H_arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue }->{ $assayName };
+				$twoColourAnnotations->{ $assayNameNoLabel }->{ "filename" } = $arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue }->{ $assayName };
 			}
 		}
 
 		# Write header.
 		print $tmpFH "AssayName\tCy3\tCy5\tFileName";
 		# Write the annotations.
-		foreach my $assayNameNoLabel (keys %{ $H_twoColourAnnotations }) {
+		foreach my $assayNameNoLabel (keys %{ $twoColourAnnotations }) {
 			print $tmpFH "\n$assayNameNoLabel\t";
-			print $tmpFH $H_twoColourAnnotations->{ $assayNameNoLabel }->{ "Cy3" }, "\t";
-			print $tmpFH $H_twoColourAnnotations->{ $assayNameNoLabel }->{ "Cy5" }, "\t";
-			print $tmpFH $H_twoColourAnnotations->{ $assayNameNoLabel }->{ "filename" };
+			print $tmpFH $twoColourAnnotations->{ $assayNameNoLabel }->{ "Cy3" }, "\t";
+			print $tmpFH $twoColourAnnotations->{ $assayNameNoLabel }->{ "Cy5" }, "\t";
+			print $tmpFH $twoColourAnnotations->{ $assayNameNoLabel }->{ "filename" };
 		}
 	}
 	# For 1-colour arrays, don't need the Cy3/Cy5 info.
@@ -356,11 +356,11 @@ sub writeAnnotations {
 		# Write header.
 		print $tmpFH "AssayName\tFactorValue\tFileName";
 		# Go through the factor values for this array...
-		foreach my $factorValue (keys %{ $H_arraysToFactorValuesToFiles->{ $arrayDesign } }) {
+		foreach my $factorValue (keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign } }) {
 			# Go through the assays for this factor value...
-			foreach my $assayName (keys %{ $H_arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue } }) {
+			foreach my $assayName (keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue } }) {
 				# Write annotations.
-				print $tmpFH "\n$assayName\t$factorValue\t".$H_arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue }->{ $assayName };
+				print $tmpFH "\n$assayName\t$factorValue\t".$arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue }->{ $assayName };
 			}
 		}
 	}
@@ -370,7 +370,7 @@ sub writeAnnotations {
 }
 
 
-# &removeLoadDirFromReport
+# removeLoadDirFromReport
 # 	- Remove the full path to the load directory from index.html and arrayQualityMetrics.js.
 # Arguments:
 # 	- $reportDir : the directory containing the output arrayQualityMetrics.
@@ -379,9 +379,9 @@ sub removeLoadDirFromReport {
 	my ($reportDir, $loadDir) = @_;
 	
 	# We need to fix the HTML report and the JavaScript file.
-	my @A_filesToFix = ("$reportDir/index.html", "$reportDir/arrayQualityMetrics.js");
+	my @filesToFix = ("$reportDir/index.html", "$reportDir/arrayQualityMetrics.js");
 
-	foreach my $original (@A_filesToFix) {
+	foreach my $original (@filesToFix) {
 		# A filename for a temp file to write to, in /tmp with process ID.
 		my $temp = "/tmp/$$.temp";
 		
@@ -407,7 +407,7 @@ sub removeLoadDirFromReport {
 }
 
 
-# &removeRejectedAssays
+# removeRejectedAssays
 #	- Find names of assays that failed QC in the R script output and remove
 #	them from the experiment config. Also remove contrasts containing them if the
 #	contrast no longer has enough replicates without failed assays.
@@ -424,11 +424,11 @@ sub removeRejectedAssays {
 	# Check for rejected assays. If there are some, check them in the contrast hash.
 	if($qcRscriptOutput =~ /REJECTED ASSAYS:\t(.*)\n/) {
 		# Get the string of rejected assay names separated by tabs if more than one.
-		my @A_rejectedAssays = split "\t", $1;
+		my @rejectedAssays = split "\t", $1;
 
 		# Want to check whether assay groups containing the rejected assay(s)
 		# still have enough assays without rejected ones.
-		foreach my $rejected (@A_rejectedAssays) { 
+		foreach my $rejected (@rejectedAssays) { 
 			# Log that this assay failed.
 			$logger->info( "[QC] $exptAccession: Assay \"$rejected\" failed QC and will be removed from XML config." );
 			
