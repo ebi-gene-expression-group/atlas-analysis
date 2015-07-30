@@ -58,6 +58,8 @@ my $usage = "Usage:
 
 unless( $expAcc ) { die $usage; }
 
+unless( $expAcc =~ /^E-\w{4}-\d+$/ ) { die $usage; }
+
 my $atlasXMLfile = "$expAcc-configuration.xml";
 
 unless( -r $atlasXMLfile ) {
@@ -65,7 +67,9 @@ unless( -r $atlasXMLfile ) {
 }
 
 # Parse experiment config.
+$logger->info( "Reading experiment config from $atlasXMLfile ..." );
 my $experimentConfig = parseAtlasConfig( $atlasXMLfile );
+$logger->info( "Successfully read experiment config." );
 
 # Make sure this is an RNA-seq experiment.
 unless( $experimentConfig->get_atlas_experiment_type =~ /rnaseq/ ) {
@@ -79,6 +83,7 @@ unless( $experimentConfig->get_atlas_experiment_type =~ /rnaseq/ ) {
 # about QC failures of runs that aren't in the experiment config.
 my $configRuns = _get_all_config_runs( $experimentConfig );
 
+$logger->info( "Retrieving QC results via $getQCresultsScript ..." );
 # Get the RNA-seq QC results
 my $rnaseqQCresults = `$getQCresultsScript $expAcc 2>&1`;
 
@@ -86,7 +91,11 @@ my $rnaseqQCresults = `$getQCresultsScript $expAcc 2>&1`;
 if( $? ) {
 	$logger->logdie( "Errors encountered running script $getQCresultsScript\n$rnaseqQCresults" );
 }
+else {
+	$logger->info( "Successfully retrieved QC results." );
+}
 
+$logger->info( "Parsing QC results..." );
 # Otherwise, what we have should be the table of results for each run in the
 # experiment.
 my @resultsRows = split /\n/, $rnaseqQCresults;
@@ -115,6 +124,8 @@ foreach my $row ( @resultsRows ) {
 		$failedRuns->{ $runAcc } = 1;
 	}
 }
+
+$logger->info( "Successfully parsed QC results." );
 
 # If there were any failed runs, go through the XML and remove them.
 if( keys %{ $failedRuns } ) {
