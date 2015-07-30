@@ -3,6 +3,7 @@
 
 use strict;
 use warnings;
+use 5.10.0;
 
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
 use File::Spec;
