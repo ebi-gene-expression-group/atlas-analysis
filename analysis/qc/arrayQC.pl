@@ -62,12 +62,12 @@ my $atlasXMLfile = "$exptAccession-configuration.xml";
 
 # Die if the XML file doesn't exist.
 unless(-e $atlasXMLfile) {
-	$logger->logdie( "[QC] Could not file $atlasXMLfile" );
+	$logger->logdie( "Could not file $atlasXMLfile" );
 }
 
-$logger->info( "[QC] Reading XML config from \"$atlasXMLfile\"..." );
+$logger->info( "Reading XML config from \"$atlasXMLfile\"..." );
 my $experimentConfig = parseAtlasConfig( $atlasXMLfile );
-$logger->info( "[QC] Successfully read XML config." );
+$logger->info( "Successfully read XML config." );
 
 
 #--------------------------------------------------
@@ -79,12 +79,12 @@ $logger->info( "[QC] Successfully read XML config." );
 # R script (should be in PATH).
 my $qcRscript = "arrayQC.R";
 unless( can_run( $qcRscript ) ) {
-    $logger->logdie( "[QC] $qcRscript not found. Please ensure it is installed and you can run it." );
+    $logger->logdie( "$qcRscript not found. Please ensure it is installed and you can run it." );
 }
 
 # Check that R is available.
 unless( can_run( "R" ) ) {
-    $logger->logdie( "[QC] R not found. Please ensure it is installed and you can run it." );
+    $logger->logdie( "R not found. Please ensure it is installed and you can run it." );
 }
 
 # Path to directory with ArrayExpress/Atlas load directories underneath.
@@ -117,9 +117,9 @@ unless(-e $idfFilename) {
 }
 
 # Read the MAGE-TAB.
-$logger->info( "[QC] Reading MAGE-TAB from \"$idfFilename\"..." );
+$logger->info( "Reading MAGE-TAB from \"$idfFilename\"..." );
 my $magetab4atlas = Atlas::Magetab4Atlas->new( "idf_filename" => $idfFilename );
-$logger->info( "[QC] Successfully read MAGE-TAB" );
+$logger->info( "Successfully read MAGE-TAB" );
 
 # Next need to sort the raw data files by array design and within that
 # by factor value. Use a hash like:
@@ -128,9 +128,9 @@ $logger->info( "[QC] Successfully read MAGE-TAB" );
 # 	  ->{ <array design 2> }->{ <factor value(s) 3> } = [ <file 7>, <file 8>, <file 9> ]
 # 	  ...
 # Only consider assays that are in the XML config file.
-$logger->info( "[QC] Collecting factor values and raw data filenames for assays listed in XML config only..." );
+$logger->info( "Collecting factor values and raw data filenames for assays listed in XML config only..." );
 my ($arraysToFactorValuesToFiles, $experimentType) = makeArraysToFactorValuesToFiles($magetab4atlas, $loadDir, $experimentConfig);
-$logger->info( "[QC] Successfully collected factor values and raw data filenames." );
+$logger->info( "Successfully collected factor values and raw data filenames." );
 
 
 # For each array design in the experiment: Write the factor value and filename
@@ -144,7 +144,7 @@ $logger->info( "[QC] Successfully collected factor values and raw data filenames
 my $failed;
 foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 	
-	$logger->info( "[QC] Running QC in R for array design \"$arrayDesign\"..." );
+	$logger->info( "Running QC in R for array design \"$arrayDesign\"..." );
 
 	# Write annotations (factor value(s), filenames, [labels]) to a temp file. This will be read by R and then deleted.
 	my ($tempFile, $miRBaseFile) = writeAnnotations($arrayDesign, $arraysToFactorValuesToFiles, $miRBaseFileHash, $experimentType);
@@ -157,30 +157,30 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 	# Check for errors in the R output.
 	if($qcRscriptOutput =~ /error/i) {
 		# Warn that QC had problems but continue with the next array design (if any).
-		$logger->info( "[QC] $exptAccession: Error during quality metrics calculation for array $arrayDesign, outout from R below.\n------------\n$qcRscriptOutput\n------------\n" );
+		$logger->info( "$exptAccession: Error during quality metrics calculation for array $arrayDesign, outout from R below.\n------------\n$qcRscriptOutput\n------------\n" );
 	}
 
 	# Delete the no longer needed temp file.
 	`rm $tempFile`;
 
-	$logger->info( "[QC] R process successful." );
+	$logger->info( "R process successful." );
 	
 	# Look for assays that failed QC and remove them from the experiment config.
-	$logger->info( "[QC] Checking for assays that failed QC..." );
+	$logger->info( "Checking for assays that failed QC..." );
 	($experimentConfig, $failed) = removeRejectedAssays($experimentConfig, $qcRscriptOutput, $arrayDesign);
 	
 	unless( $failed ) {
-		$logger->info( "[QC] All assays for \"$arrayDesign\" passed QC." );
+		$logger->info( "All assays for \"$arrayDesign\" passed QC." );
 	}
 
 	# The HTML report contains the full path to the raw data files in the load
 	# directory. This looks annoying and is not necessary, so remove it. The
 	# path is in index.html and arrayQualityMetrics.js.
-	$logger->info( "[QC] Removing full paths to data files from QC HTML report..." );
+	$logger->info( "Removing full paths to data files from QC HTML report..." );
 	removeLoadDirFromReport($reportDir, $loadDir);
-	$logger->info( "[QC] Successfully removed paths from HTML report." );
+	$logger->info( "Successfully removed paths from HTML report." );
 
-	$logger->info( "[QC] Successfully finished QC for \"$arrayDesign\"" );
+	$logger->info( "Successfully finished QC for \"$arrayDesign\"" );
 }
 
 # If we are still here, rewrite XML config file without failing assays and
@@ -189,19 +189,19 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 if($failed) {
 	
 	# Rename the original config file by appending ".beforeQC" to the filename.
-	$logger->info( "[QC] Renaming original XML config file to \"$atlasXMLfile.beforeQC\"" );
+	$logger->info( "Renaming original XML config file to \"$atlasXMLfile.beforeQC\"" );
 	`mv $atlasXMLfile $atlasXMLfile.beforeQC`;
 	
 	# Write the new config file.
-	$logger->info( "[QC] Writing new XML config file without assays that failed QC..." );
+	$logger->info( "Writing new XML config file without assays that failed QC..." );
 	$experimentConfig->write_xml( "." );
-	$logger->info( "[QC] Successfully written new XML config file." );
+	$logger->info( "Successfully written new XML config file." );
 
 	# Because the Atlas::AtlasConfig modules write files with ".auto" on the end,
 	# rename the new one so that it doesn't.
-	$logger->info( "[QC] Removing \".auto\" from new XML config filename..." );
+	$logger->info( "Removing \".auto\" from new XML config filename..." );
 	`mv $atlasXMLfile.auto $atlasXMLfile`;
-	$logger->info( "[QC] Successully finished all QC processing." );
+	$logger->info( "Successully finished all QC processing." );
 }
 # end
 #####
@@ -437,7 +437,7 @@ sub removeRejectedAssays {
 		# still have enough assays without rejected ones.
 		foreach my $rejected (@rejectedAssays) { 
 			# Log that this assay failed.
-			$logger->info( "[QC] $exptAccession: Assay \"$rejected\" failed QC and will be removed from XML config." );
+			$logger->info( "$exptAccession: Assay \"$rejected\" failed QC and will be removed from XML config." );
 			
 			# Set flag
 			$failed = 1;
