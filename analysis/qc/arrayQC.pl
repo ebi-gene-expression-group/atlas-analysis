@@ -43,6 +43,10 @@ Log::Log4perl::init( \$logger_config );
 my $logger = Log::Log4perl::get_logger;
 
 my $atlasProdDir = $ENV{ "ATLAS_PROD" };
+unless( $atlasProdDir ) {
+	$logger->logdie( "ATLAS_PROD environment variable is not defined, cannot continue." );
+}
+
 my $atlasSiteConfig = get_atlas_site_config;
 
 # Helpful message
@@ -61,20 +65,13 @@ unless($exptAccession) { die $usage; }
 my $atlasXMLfile = "$exptAccession-configuration.xml";
 
 # Die if the XML file doesn't exist.
-unless(-e $atlasXMLfile) {
-	$logger->logdie( "Could not file $atlasXMLfile" );
+unless(-r $atlasXMLfile) {
+	$logger->logdie( "Could not read file $atlasXMLfile" );
 }
 
 $logger->info( "Reading XML config from \"$atlasXMLfile\"..." );
 my $experimentConfig = parseAtlasConfig( $atlasXMLfile );
 $logger->info( "Successfully read XML config." );
-
-
-#--------------------------------------------------
-# use Data::Dumper;
-# print Dumper( $experimentConfig );
-#-------------------------------------------------- 
-
 
 # R script (should be in PATH).
 my $qcRscript = "arrayQC.R";
@@ -155,9 +152,10 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 	my $qcRscriptOutput = `$qcRscript $tempFile $experimentType $exptAccession $arrayDesign $reportDir $miRBaseFile 2>&1`;
 
 	# Check for errors in the R output.
-	if($qcRscriptOutput =~ /error/i) {
+	if( $? ) {
 		# Warn that QC had problems but continue with the next array design (if any).
-		$logger->info( "$exptAccession: Error during quality metrics calculation for array $arrayDesign, outout from R below.\n------------\n$qcRscriptOutput\n------------\n" );
+		$logger->warn( "$exptAccession: Error during quality metrics calculation for array $arrayDesign, outout from R below.\n------------\n$qcRscriptOutput\n------------\n" );
+		next;
 	}
 
 	# Delete the no longer needed temp file.
