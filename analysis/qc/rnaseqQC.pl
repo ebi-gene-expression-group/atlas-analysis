@@ -88,5 +88,13 @@ if( $? ) {
 my @resultsRows = split /\n/, $rnaseqQCresults;
 
 foreach my $row ( @resultsRows ) {
-	say $row;
+
+	my @splitRow = split /\t/, $row;
+
+	my $runAcc = $splitRow[ 1 ];
+	my $qcStatus = $splitRow[ 5 ];
+
+	unless( $qcStatus eq "completed" ) {
+		say "$runAcc has status $qcStatus";
+	}
 }
