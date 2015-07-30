@@ -127,6 +127,17 @@ foreach my $row ( @resultsRows ) {
 
 $logger->info( "Successfully parsed QC results." );
 
+my $qcFileName = $expAcc . "-findCRAMFiles-report.tsv";
+
+$logger->info( "Writing QC results to file $qcFileName ..." );
+
+open( my $fh, ">", $qcFileName ) or $logger->logdie( "Cannot write to file $qcFileName : $!" );
+say $fh $rnaseqQCresults;
+close $fh;
+
+$logger->info( "Successfully written QC results." );
+
+
 # If there were any failed runs, go through the XML and remove them.
 if( keys %{ $failedRuns } ) {
 
