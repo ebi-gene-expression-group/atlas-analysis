@@ -6,12 +6,7 @@
 # 	limma for each contrast, creating an MvA plot for each contrast, and then
 # 	summarizing statistics results for all contrasts into a single
 # 	tab-delimited text file.
-# 	- For RNA-seq, differential expression stats for each contrast have already
-# 	been calculated using DESeq via iRAP. For this data, find contrast
-# 	definitions in iRAP config and display names in Atlas contrasts XML file,
-# 	read DESeq results for each contrast, create an MvA plot for each contrast,
-# 	and then summarize statistics results for all contrasts into a single
-# 	tab-delimited text file.
+# 	- For RNA-seq data, DESeq2 is used instead of limma for differential expression analysis.
 
 =pod
 
@@ -23,13 +18,13 @@ diffAtlas_DE.pl - do differential expression analysis for Expression Atlas.
 
 diffAtlas_DE.pl --experiment E-MTAB-1066 --directory path/to/processing/directory
 
-diffAtlas_DE.pl --experiment E-GEOD-38400 --irapconf E-MTAB-38400.conf
 
 =head1 DESCRIPTION
 
-This script currently either (a) runs differential expression analysis via
-limma for microarray experiments, or (b) reads in iRAP's DESeq results files
-and compiles them for an RNA-seq experiment.
+This script runs differential expression analysis via an R script using limma
+for microarray experiments or DESeq2 for RNA-seq ones. It then summarizes the
+results from each contrast in the XML config file into a single analytics
+results file for the whole experiment.
 
 =head1 OPTIONS
 
@@ -43,10 +38,6 @@ Required. ArrayExpress accession of experiment.
 
 Required. Path to Atlas processing directory containin XML config and
 normalized data files (for microarray).
-
-=item -i --irapconf
-
-Required for RNA-seq experiments. Full path to iRAP config file.
 
 =item -h --help
 
@@ -125,16 +116,6 @@ my $experimentConfig = parseAtlasConfig( $atlasXML );
 
 my $atlasExperimentType = $experimentConfig->get_atlas_experiment_type;
 
-# If this is an RNA-seq experiment, make sure we got the path to the iRAP config file.
-if( $atlasExperimentType =~ "rnaseq" ) {
-	unless( $args->{ "irap_config" } ) {
-		$logger->logdie( 
-			$args->{ "experiment_accession" }, 
-			" is an RNA-seq experiment but no iRAP config file was specified. Cannot continue."
-		);
-	}
-}
-
 # Make sure we haven't been given a baseline experiment.
 if( $atlasExperimentType =~ /baseline/ ) {
 	$logger->logdie( "Experiments with type \"", $experimentConfig->get_atlas_experiment_type, "\" cannot be processed as differential." );
@@ -154,12 +135,12 @@ if( $atlasExperimentType =~ /array/ ) {
 		$args->{ "processing_directory" }, 
 	);
 }
-# For RNA-seq experiments, take results from iRAP's DESeq results files, write
-# them into one file, and create MvA plots.
+# For RNA-seq experiments, run differential expression analysis using DESeq2,
+# write results, and create MvA plots.
 elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	
-	# Read the iRAP config file to get the path to the raw counts matrix.
-	my $countsMatrixFilePath = get_counts_matrix_path( $args->{ "irap_config" }, $args->{ "experiment_accession" } );
+	# Create the path to the raw counts matrix.
+	my $countsMatrixFilePath = get_counts_matrix_path( $args->{ "experiment_accession" } );
 	
 	run_rnaseq_differential_expression(
 		$deseqScript,
@@ -182,10 +163,8 @@ else {
 # subroutines #
 ###############
 
-# init
-# 	Get commandline arguments using Getopt::Long.
-# 		--atlasxml <Atlas contrasts XML file> (required)
-# 		--irapconf <iRAP config file> (for RNA-seq)
+# parse_args
+# 	Get commandline arguments
 sub parse_args {
 	
 	my %args;
@@ -196,7 +175,6 @@ sub parse_args {
 		"h|help"			=> \$want_help,
 		"e|experiment=s"	=> \$args{ "experiment_accession" }, 
 		"d|directory=s"		=> \$args{ "processing_directory" },
-		"i|irapconf=s"		=> \$args{ "irap_config" },
 	);
 
 	# Print help if requested.
@@ -413,43 +391,20 @@ sub read_limma_results {
 
 
 # get_counts_matrix_path
-#  - read iRAP config file to get filename for raw counts matrix.
+#  - create the path for raw counts matrix file, and check the file is readable
+#  before returning the path.
 sub get_counts_matrix_path {
 
-	my ( $irapConfig, $expAcc ) = @_;
-
-	# Directory of config file is the same as the beginning of path to
-	# DESeq files.
-	my $irapDir = ( fileparse( $irapConfig ) )[1];
-
-	# Get experiment accession, mapper and quantification method
-	# from config file to create full path to counts matrix file.
-	my ( $irapExptAcc, $mapper, $qMethod );
+	my ( $expAcc ) = @_;
 	
-	open( my $confFH, $irapConfig ) or die( "Can't open $irapConfig: $!\n" );
+	my $irapSingleLibDir = $ENV{ "IRAP_SINGLE_LIB" };
 
-	$logger->info( "Reading iRAP config: $irapConfig..." );
-	while( defined( my $line = <$confFH> ) ) {
-
-		chomp $line;
-
-		if( $line =~ /^name=(.*)/ ) { 
-			$irapExptAcc = $1; 
-		
-			# Check experiment accession from iRAP config matches that in filename of
-			# Atlas contrasts file.
-			unless( $irapExptAcc eq $expAcc ) {
-				$logger->logdie( "iRAP experiment accession is: $irapExptAcc -- does not match Atlas experiment accession ($expAcc)" );
-			}
-		}
-		
-		elsif( $line =~ /^mapper=(.*)/ ) { $mapper = $1; }
-		elsif( $line =~ /^quant_method=(.*)/ ) { $qMethod = $1; }
+	unless( $irapSingleLibDir ) {
+		$logger->logdie( "IRAP_SINGLE_LIB environment variable is not defined. Cannot continue." );
 	}
-	close( $confFH );
-
+	
 	# Build path to raw counts matrix.
-	my $countsMatrixFilePath = File::Spec->catfile( $irapDir, $expAcc, $mapper, $qMethod, "genes.raw." . $qMethod . ".tsv" );
+	my $countsMatrixFilePath = File::Spec->catfile( $irapSingleLibDir, "studies", $expAcc, "genes.raw.tsv" );
 	
 	# Make sure the file exists and is readable.
 	unless( -r $countsMatrixFilePath ) {
