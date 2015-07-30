@@ -89,6 +89,8 @@ my @resultsRows = split /\n/, $rnaseqQCresults;
 
 foreach my $row ( @resultsRows ) {
 
+	if( $row =~ /^study/ ) { next; }
+
 	my @splitRow = split /\t/, $row;
 
 	my $runAcc = $splitRow[ 1 ];
