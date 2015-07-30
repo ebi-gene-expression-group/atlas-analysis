@@ -33,8 +33,9 @@ my $logger_config = q(
 	log4perl.rootlogger						= INFO, SCREEN
 	log4perl.appender.SCREEN				= Log::Log4perl::Appender::Screen
 	log4perl.appender.SCREEN.stderr			= 0
+	log4j.PatternLayout.cspec.Q				= sub { return "[QC]" }
 	log4perl.appender.SCREEN.layout			= Log::Log4perl::Layout::PatternLayout
-	log4perl.appender.SCREEN.layout.ConversionPattern = %-5p - %m%n
+	log4perl.appender.SCREEN.layout.ConversionPattern = %-5p - %Q %m%n
 );
 
 # Initialise logger.
@@ -69,8 +70,10 @@ my $experimentConfig = parseAtlasConfig( $atlasXMLfile );
 $logger->info( "[QC] Successfully read XML config." );
 
 
-use Data::Dumper;
-print Dumper( $experimentConfig );
+#--------------------------------------------------
+# use Data::Dumper;
+# print Dumper( $experimentConfig );
+#-------------------------------------------------- 
 
 
 # R script (should be in PATH).
