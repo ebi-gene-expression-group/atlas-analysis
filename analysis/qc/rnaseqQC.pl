@@ -75,6 +75,10 @@ unless( $experimentConfig->get_atlas_experiment_type =~ /rnaseq/ ) {
 	);
 }
 
+# Get a hash of the run accessions from the experiment config; we don't care
+# about QC failures of runs that aren't in the experiment config.
+my $configRuns = _get_all_config_runs( $experimentConfig );
+
 # Get the RNA-seq QC results
 my $rnaseqQCresults = `$getQCresultsScript $expAcc 2>&1`;
 
@@ -87,8 +91,12 @@ if( $? ) {
 # experiment.
 my @resultsRows = split /\n/, $rnaseqQCresults;
 
+# A hash to collect failed runs.
+my $failedRuns = {};
+
 foreach my $row ( @resultsRows ) {
 
+	# Skip the header.
 	if( $row =~ /^study/ ) { next; }
 
 	my @splitRow = split /\t/, $row;
@@ -96,7 +104,79 @@ foreach my $row ( @resultsRows ) {
 	my $runAcc = $splitRow[ 1 ];
 	my $qcStatus = $splitRow[ 5 ];
 
+	# Skip if this run is not in the experiment config.
+	unless( $configRuns->{ $runAcc } ) { next; }
+
+	# Add failed run accessions to the hash.
 	unless( $qcStatus eq "completed" ) {
-		say "$runAcc has status $qcStatus";
+		
+		$logger->warn( "$runAcc failed QC with status: \"$qcStatus\"" );
+
+		$failedRuns->{ $runAcc } = 1;
 	}
+}
+
+# If there were any failed runs, go through the XML and remove them.
+if( keys %{ $failedRuns } ) {
+
+	# Remove from config.
+	$experimentConfig = _remove_rejected_runs( $experimentConfig, $failedRuns );
+
+	# Re-write config now we've removed the failed runs.
+	$logger->info( "Renaming original XML config file to \"$atlasXMLfile.beforeQC\"" );
+	
+	`mv $atlasXMLfile $atlasXMLfile.beforeQC`;
+	
+	if( $? ) {
+		$logger->logdie( "Could not rename file: $!" );
+	}
+	
+	$logger->info( "Writing new XML config file without assays that failed QC..." );
+	$experimentConfig->write_xml( "." );
+	$logger->info( "Successfully written new XML config file." );
+
+	# Because the Atlas::AtlasConfig modules write files with ".auto" on the end,
+	# rename the new one so that it doesn't.
+	$logger->info( "Removing \".auto\" from new XML config filename..." );
+	`mv $atlasXMLfile.auto $atlasXMLfile`;
+	$logger->info( "Successully finished all QC processing." );
+
+} else {
+	$logger->info( "All runs passed QC" );
+}
+
+
+
+sub _get_all_config_runs {
+
+	my ( $experimentConfig ) = @_;
+
+	my $configRuns = {};
+
+	foreach my $analytics ( $experimentConfig->get_atlas_analytics ) {
+
+		foreach my $assay ( @{ $analytics->get_assays } ) {
+
+			$configRuns->{ $assay->get_name } = 1;
+		}
+	}
+
+	return $configRuns;
+}
+
+
+sub _remove_rejected_runs {
+
+	my ( $experimentConfig, $failedRuns ) = @_;
+
+	foreach my $runAcc ( keys %{ $failedRuns } ) {
+
+		$logger->info( "Removing run \"$runAcc\" from XML config..." );
+
+		$experimentConfig->remove_assay( $runAcc );
+
+		$logger->info( "Successfully removed \"$runAcc\"" );
+	}
+
+	return $experimentConfig;
 }
