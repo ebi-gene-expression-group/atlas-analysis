@@ -79,10 +79,6 @@ unless( $experimentConfig->get_atlas_experiment_type =~ /rnaseq/ ) {
 	);
 }
 
-use Data::Dumper;
-print Dumper( $experimentConfig );
-
-
 # Get a hash of the run accessions from the experiment config; we don't care
 # about QC failures of runs that aren't in the experiment config.
 my $configRuns = _get_all_config_runs( $experimentConfig );
