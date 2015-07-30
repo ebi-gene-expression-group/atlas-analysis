@@ -153,7 +153,7 @@ sub _get_all_config_runs {
 
 	my $configRuns = {};
 
-	foreach my $analytics ( $experimentConfig->get_atlas_analytics ) {
+	foreach my $analytics ( @{ $experimentConfig->get_atlas_analytics } ) {
 
 		foreach my $assay ( @{ $analytics->get_assays } ) {
 
