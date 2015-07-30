@@ -34,7 +34,10 @@ unless( $atlasProdDir ) {
 my $atlasSiteConfig = get_atlas_site_config;
 
 # Path to script for checking RNA-seq QC results.
-my $getQCresultsScript = $atlasSiteConfig->get_find_cram_files_script;
+my $getQCresultsScript = File::Spec->catfile( 
+	$atlasProdDir,
+	$atlasSiteConfig->get_find_cram_files_script
+);
 
 # Check this user can run the QC results script.
 unless( can_run( $getQCresultsScript ) ) {
