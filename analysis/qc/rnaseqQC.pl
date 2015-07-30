@@ -55,7 +55,7 @@ my $usage = "Usage:
 	rnaseqQC.pl <experiment accession>
 ";
 
-unless( $exptAcc ) { die $usage; }
+unless( $expAcc ) { die $usage; }
 
 my $atlasXMLfile = "$expAcc-configuration.xml";
 
