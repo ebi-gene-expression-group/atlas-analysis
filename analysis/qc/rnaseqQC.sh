@@ -14,7 +14,8 @@ if [ $# -lt 1 ]; then
 fi
 
 expAcc=$1
-pushd ${ATLAS_PROD}/analysis/differential/rna-seq/experiments/$expAcc
+expTargetDir=$2
+pushd ${expTargetDir}
 rm -rf qc
 
 ${ATLAS_PROD}/sw/atlasinstall_${atlasEnv}/atlasprod/analysis/qc/rnaseqQC.pl $expAcc
@@ -22,7 +23,7 @@ exitCode=$?
 if [ $exitCode -eq 1 ]; then
 	# The QC procedure succeeded but the experiment failed QC.
 	popd
-	mv ${ATLAS_PROD}/analysis/differential/rna-seq/experiments/$expAcc ${ATLAS_PROD}/failedQC/rna-seq
+	mv ${expTargetDir} ${ATLAS_PROD}/failedQC/rna-seq
 	echo "[QC] Quality control for ${expAcc} has failed - see http://www.ebi.ac.uk/~rpetry/atlas3/failedQC/rna-seq/${expAcc} for more info"
 	exit 2
 elif [ $exitCode -ne 0 ]; then
