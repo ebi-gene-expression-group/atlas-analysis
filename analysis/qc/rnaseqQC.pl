@@ -113,7 +113,7 @@ foreach my $row ( @resultsRows ) {
 	unless( $configRuns->{ $runAcc } ) { next; }
 
 	# Add failed run accessions to the hash.
-	unless( $qcStatus eq "completed" ) {
+	unless( $qcStatus eq "completed" || $qcStatus eq "on_ftp" ) {
 		
 		$logger->warn( "$runAcc failed QC with status: \"$qcStatus\"" );
 
