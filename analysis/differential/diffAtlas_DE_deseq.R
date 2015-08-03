@@ -135,10 +135,10 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory, countsMatrixF
 			# If there are any technical replicates...
 			if( length( techRepGroupIDs ) > 0 ) {
 				
-				cat( "Technical replicates found. Calculating mean of each set of technical replicates...\n" )
+				cat( "Technical replicates found. Calculating sum of each set of technical replicates...\n" )
 
-				# Replace the columns for technical replicates with their averages in the normalized data.
-				countsForContrast <- add_tech_rep_averages( countsForContrast, bioRepAnnotations, techRepGroupIDs )
+				# Replace the columns for technical replicates with their sums in the normalized data.
+				countsForContrast <- add_tech_rep_sums( countsForContrast, bioRepAnnotations, techRepGroupIDs )
 
 				cat( "Technical replicate averaging successful.\n" )
 			
@@ -432,17 +432,15 @@ make_assays_to_bioreps_df <- function( bioReps ) {
 }
 
 
-# add_tech_rep_averages
-# 	- Given a data frame of expression values (normalized intensities, logFCs,
-# 	average intensities), the data frame of biological replicate annotations,
-# 	technical replicates group IDs, calculate the
-# 	mean for each set of technical replicate columns in the data frame, and
-# 	replace the original columns with the new column(s) containing the
-# 	averages.
-add_tech_rep_averages <- function( expressionData, bioRepAnnotations, techRepGroupIDs ) {
+# add_tech_rep_sums
+# 	- Given a data frame of expression values, the data frame of biological
+# 	replicate annotations, technical replicates group IDs, calculate the sum
+# 	for each set of technical replicate columns in the data frame, and replace
+# 	the original columns with the new column(s) containing the sums.
+add_tech_rep_sums <- function( expressionData, bioRepAnnotations, techRepGroupIDs ) {
 
-	# Create a list with one element per column of averages.
-	techRepAveragesList <- lapply( techRepGroupIDs, function( techRepGroupID ) {
+	# Create a list with one element per column of sums.
+	techRepSumsList <- lapply( techRepGroupIDs, function( techRepGroupID ) {
 
 		# Get the row indices for the technical replicates.
 		techRepRows <- which( bioRepAnnotations$BioRepName == techRepGroupID )
@@ -453,14 +451,14 @@ add_tech_rep_averages <- function( expressionData, bioRepAnnotations, techRepGro
 		# Get the columns of normalized data for these assays.
 		techRepColumns <- expressionData[ , techRepAssayNames ]
 
-		# Get the mean of each row.
-		techRepAverages <- apply( techRepColumns, 1, function( x ) { mean( x ) } )
+		# Get the sum of each row.
+		techRepSums <- apply( techRepColumns, 1, function( x ) { sum( x ) } )
 
-		techRepAveragesDF <- structure( data.frame( techRepAverages ), names = techRepGroupID )
+		techRepSumsDF <- structure( data.frame( techRepSums ), names = techRepGroupID )
 	} )
 
 	# Turn the list into a data frame.
-	techRepAveragesDF <- do.call( "cbind", techRepAveragesList )
+	techRepSumsDF <- do.call( "cbind", techRepSumsList )
 
 	# Next need to remove the columns for the technical replicate assays from
 	# the normalized data frame.
@@ -472,8 +470,8 @@ add_tech_rep_averages <- function( expressionData, bioRepAnnotations, techRepGro
 	# Remove the columns for these assay names from the normalized data frame.
 	expressionData <- expressionData[ , !( colnames( expressionData ) %in% allTechRepAssays ), drop = FALSE ]
 
-	# Add the columns of averages instead.
-	expressionData <- cbind( expressionData, techRepAveragesDF )
+	# Add the columns of sums instead.
+	expressionData <- cbind( expressionData, techRepSumsDF )
 
 	return( expressionData )
 }
