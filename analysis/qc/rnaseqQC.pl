@@ -46,6 +46,28 @@ unless( can_run( $getQCresultsScript ) ) {
 	);
 }
 
+# Get the list of accessions of experiments that have runs rejected by iRAP for
+# having too-short reads (less than 30bp).
+my $tooShortReadsFile = File::Spec->catfile(
+	$atlasProdDir,
+	$atlasSiteConfig->get_exps_with_runs_rejected_for_small_read_size
+);
+
+# Read the accessions of experiments that have been rejected for having
+# too-short reads.
+my $tooShortAccs = {};
+open my $fh, "<", $tooShortReadsFile
+	or $logger->logdie( "Cannot read file $tooShortReadsFile: $!" );
+while( defined( my $line = <$fh> ) ) {
+
+	chomp $line;
+	
+	if( $line =~ /^E-\w{4}-\d+$/ ) {
+		$tooShortAccs->{ $line } = 1;
+	}
+}
+close $fh;
+
 my ( $expAcc ) = @ARGV;
 
 my $usage = "Usage:
@@ -96,8 +118,14 @@ $logger->info( "Parsing QC results..." );
 # experiment.
 my @resultsRows = split /\n/, $rnaseqQCresults;
 
+# Make sure there's something in the results other than the 
+
 # A hash to collect failed runs.
 my $failedRuns = {};
+
+# A flag to set if we need to add a new accession to the "too short reads"
+# file.
+my $newTooShort = 0;
 
 foreach my $row ( @resultsRows ) {
 
@@ -118,6 +146,16 @@ foreach my $row ( @resultsRows ) {
 		$logger->warn( "$runAcc failed QC with status: \"$qcStatus\"" );
 
 		$failedRuns->{ $runAcc } = 1;
+		
+		if( $qcStatus =~ /FastqInfo: Read size smaller than/i ) {
+
+			unless( $tooShortAccs->{ $expAcc } ) {
+				
+				$newTooShort++;
+
+				$tooShortAccs->{ $expAcc } = 1;
+			}
+		}
 	}
 }
 
@@ -132,6 +170,24 @@ say $fh $rnaseqQCresults;
 close $fh;
 
 $logger->info( "Successfully written QC results." );
+
+# If there were any new accessions to add to the "too-short reads" file,
+# re-write it now.
+if( $newTooShort ) {
+
+	$logger->info( "Adding experiment accession to $tooShortReadsFile ..." );
+
+	open my $fh, ">", $tooShortReadsFile
+		or $logger->logdie( "Cannot write to file $tooShortReadsFile : $!" );
+
+	foreach my $acc ( keys %{ $tooShortAccs } ) {
+		say $fh $acc;
+	}
+
+	close( $fh );
+
+	$logger->info( "Successfully written accessions." );
+}
 
 
 # If there were any failed runs, go through the XML and remove them.
