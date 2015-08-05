@@ -165,9 +165,9 @@ my $qcFileName = $expAcc . "-findCRAMFiles-report.tsv";
 
 $logger->info( "Writing QC results to file $qcFileName ..." );
 
-open( my $fh, ">", $qcFileName ) or $logger->logdie( "Cannot write to file $qcFileName : $!" );
-say $fh $rnaseqQCresults;
-close $fh;
+open( my $qcfh, ">", $qcFileName ) or $logger->logdie( "Cannot write to file $qcFileName : $!" );
+say $qcfh $rnaseqQCresults;
+close $qcfh;
 
 $logger->info( "Successfully written QC results." );
 
@@ -177,14 +177,14 @@ if( $newTooShort ) {
 
 	$logger->info( "Adding experiment accession to $tooShortReadsFile ..." );
 
-	open my $fh, ">", $tooShortReadsFile
+	open my $tsfh, ">", $tooShortReadsFile
 		or $logger->logdie( "Cannot write to file $tooShortReadsFile : $!" );
 
 	foreach my $acc ( keys %{ $tooShortAccs } ) {
-		say $fh $acc;
+		say $tsfh $acc;
 	}
 
-	close( $fh );
+	close( $tsfh );
 
 	$logger->info( "Successfully written accessions." );
 }
