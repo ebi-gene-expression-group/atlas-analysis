@@ -266,6 +266,10 @@ sub run_microarray_differential_expression {
 		my $contrastName = $contrastIDs2names->{ $contrastID };
 		my $arrayDesignAccession = $contrastIDs2arrayDesigns->{ $contrastID };
 
+        unless( $arrayDesignAccession ) {
+            $logger->logdie( "No array design accession found for contrast $contrastID, please check." );
+        }
+
 		# Filename for MvA plot.
 		my $plotFile = File::Spec->catfile( $atlasProcessingDirectory, $expAcc."_".$arrayDesignAccession."-".$contrastID."-mvaPlot.png" );
 
