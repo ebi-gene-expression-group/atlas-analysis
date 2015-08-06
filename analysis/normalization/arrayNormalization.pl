@@ -21,6 +21,22 @@ use File::Spec;
 use EBI::FGPT::Config qw( $CONFIG );
 use IPC::Cmd qw( can_run );
 
+use Log::Log4perl;
+
+# Log4perl config.
+my $logger_config = q(
+	log4perl.rootlogger			         = INFO, SCREEN
+	log4perl.appender.SCREEN             = Log::Log4perl::Appender::Screen
+	log4perl.appender.SCREEN.stderr      = 0
+	log4perl.appender.SCREEN.layout      = Log::Log4perl::Layout::PatternLayout
+	log4perl.appender.SCREEN.layout.ConversionPattern = %-5p - %m%n
+);
+
+# Initialise logger.
+Log::Log4perl::init(\$logger_config);
+my $logger = Log::Log4perl::get_logger;
+
+
 my $atlasProdDir = $ENV{ "ATLAS_PROD" };
 my $atlasSiteConfig = get_atlas_site_config;
 
@@ -28,18 +44,18 @@ my $atlasSiteConfig = get_atlas_site_config;
 my $exptAccession = shift;
 
 unless( $exptAccession ) {
-    die "Please provide experiment accession as an argument.\n";
+    $logger->logdie( "Please provide experiment accession as an argument." );
 }
 
 # Filename of R script for normalization.
 my $normalizationRscript = "arrayNormalization.R";
 unless( can_run( $normalizationRscript ) ) {
-    die "Script \"$normalizationRscript\" not found. Please ensure it is in your \$PATH and you can run it.\n";
+    $logger->logdie( "Script \"$normalizationRscript\" not found. Please ensure it is in your \$PATH and you can run it.");
 }
 
 # Check that we can run R.
 unless( can_run( "R" ) ) {
-    die "R was not found. Please ensure it is installed and you can run it.\n";
+    $logger->logdie( "R was not found. Please ensure it is installed and you can run it." );
 }
 
 # Path to directory with ArrayExpress/Atlas load directories underneath.
@@ -73,7 +89,7 @@ my $experimentConfig = parseAtlasConfig( $atlasXMLconfigPath );
 
 # Check that the experiment type is a microarray one.
 unless( $experimentConfig->get_atlas_experiment_type =~ /array/ ) {
-	die "This does not look like a microarray experiment. Experiment type is \"", $experimentConfig->get_atlas_experiment_type, "\n";
+	$logger->logdie( "This does not look like a microarray experiment. Experiment type is \"", $experimentConfig->get_atlas_experiment_type );
 }
 
 # Get the pipeline (e.g. MEXP, MTAB, GEOD, ...) for this experiment.
@@ -84,9 +100,9 @@ my $loadDir = File::Spec->catdir( $exptsLoadStem, $pipeline, $exptAccession );
 my $idfFilename = File::Spec->catfile( $loadDir, "$exptAccession.idf.txt" );
 
 # Read the MAGE-TAB.
-print "Reading MAGE-TAB...\n";
+$logger->info( "Reading MAGE-TAB..." );
 my $magetab4atlas = Atlas::Magetab4Atlas->new( "idf_filename" => $idfFilename );
-print "Read MAGE-TAB.\n";
+$logger->info( "Read MAGE-TAB." );
 
 # Create hash mapping assay names to raw data file names for each array design:
 #
@@ -99,18 +115,16 @@ my ($H_arraysToAssaysToFiles, $normalizationMode) = &makeArraysToAssaysToFiles( 
 
 # Log how many array designs and assays were found
 my $arrayCount = keys %{ $H_arraysToAssaysToFiles };
-print "Found $arrayCount array design";
-if($arrayCount > 1) { print "s"; }
-print ":\n";
+$logger->info( "Found $arrayCount array designs" );
 foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 	my $assayCount = keys %{ $H_arraysToAssaysToFiles->{ $arrayDesign }};
-	print "\t$arrayDesign: $assayCount assays.\n";
+	$logger->info( "\t$arrayDesign: $assayCount assays." );
 }
 # Also what kind of normalization will be done. This is either:
 # 	- "oligo" : using oligo package for Affymetrix arrays.
 # 	- "agil1" : using limma pacakge for Agilent 1-colour data.
 # 	- "agil2" : using limma package for Agilent 2-colour data.
-print "The normalization mode is $normalizationMode.\n";
+$logger->info( "The normalization mode is $normalizationMode." );
 
 # Run normalization for each array design.
 foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
@@ -118,13 +132,13 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 	# Flag
 	my $miRBaseFile = 0;
 	if(exists($H_miRBaseFileHash->{ $arrayDesign })) {
-		print "$arrayDesign is a microRNA array design.\n";
+		$logger->info( "$arrayDesign is a microRNA array design." );
 		$miRBaseFile = $H_miRBaseFileHash->{ $arrayDesign };
 	}
 
 	# Write a file to read into R
 	my $tempFile = "/tmp/$exptAccession"."_$arrayDesign.$$.tsv";
-	open(my $tmpFH, ">", $tempFile) or die "Can't create file \"$tempFile\": $!\n";
+	open(my $tmpFH, ">", $tempFile) or $logger->logdie( "Can't create file \"$tempFile\": $!" );
 
 	# Write headers
 	print $tmpFH "AssayName\tFilename";
@@ -136,7 +150,7 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 	# Name for normalized data file.
 	my $normalizedDataFile = $exptAccession."_".$arrayDesign."-normalized-expressions.tsv.undecorated";
 
-	print "Running normalization in R for $exptAccession, array design $arrayDesign...\n";
+	$logger->info( "Running normalization in R for $exptAccession, array design $arrayDesign..." );
 
 	# Run R script to do normalization with Bioconductor packages in R.
 	# NB: Using 2>&1 means that nothing from R is printed to STDOUT. If there's an
@@ -145,10 +159,10 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 	
 	# If there was an error in R die and print the error.
 	if($RscriptOutput =~ /error/i) {
-		die "Error encountered during normalization of $exptAccession on array $arrayDesign. Full output from R is below:
+		$logger->logdie( "Error encountered during normalization of $exptAccession on array $arrayDesign. Full output from R is below:
 		------------------------
 		$RscriptOutput
-		";
+		" );
 	}
 	else {
 		# For 2-colour data, rename files created.
@@ -161,7 +175,7 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 			`mv $aValuesFile $avgIntensitiesFile`;
 		}
 
-		print "Normalization for array design $arrayDesign completed.\n";
+		$logger->info( "Normalization for array design $arrayDesign completed." );
 	}
 
 	# Delete temporary file.
@@ -230,7 +244,7 @@ sub makeArraysToAssaysToFiles {
 
 		# Check that we saw this assay in the XML config. If not, skip it.
 		unless( grep { /^$assayNameEsc$/ } @{ $arrayDesignsToAssayNames->{ $arrayDesign } } ) { 
-			print "Assay \"$assayName\" not found in XML config, not including in normalization.\n";
+			$logger->info( "Assay \"$assayName\" not found in XML config, not including in normalization." );
 			next;
 		}
 
