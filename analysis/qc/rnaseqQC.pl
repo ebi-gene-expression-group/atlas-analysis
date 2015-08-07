@@ -170,7 +170,7 @@ $logger->info( "Successfully parsed QC results." );
 # not.
 my $runsMissing = 0;
 
-foreach my $runAcc ( keys @{ $configRuns } ) {
+foreach my $runAcc ( keys %{ $configRuns } ) {
 
     unless( $qcRuns->{ $runAcc } ) {
 
