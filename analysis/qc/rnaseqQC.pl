@@ -140,7 +140,7 @@ foreach my $row ( @resultsRows ) {
 	my $qcStatus = $splitRow[ 5 ];
 
     # Save the run accession.
-    push $qcRuns=>{ $runAcc } = 1;
+    $qcRuns->{ $runAcc } = 1;
 
 	# Skip if this run is not in the experiment config.
 	unless( $configRuns->{ $runAcc } ) { next; }
