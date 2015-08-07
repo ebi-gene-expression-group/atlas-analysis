@@ -118,14 +118,16 @@ $logger->info( "Parsing QC results..." );
 # experiment.
 my @resultsRows = split /\n/, $rnaseqQCresults;
 
-# Make sure there's something in the results other than the 
-
 # A hash to collect failed runs.
 my $failedRuns = {};
 
 # A flag to set if we need to add a new accession to the "too short reads"
 # file.
 my $newTooShort = 0;
+
+# Collect all the run accessions found in the QC results so that we can check
+# that none are missing afterwards.
+my $qcRuns = {};
 
 foreach my $row ( @resultsRows ) {
 
@@ -136,6 +138,9 @@ foreach my $row ( @resultsRows ) {
 
 	my $runAcc = $splitRow[ 1 ];
 	my $qcStatus = $splitRow[ 5 ];
+
+    # Save the run accession.
+    push $qcRuns=>{ $runAcc } = 1;
 
 	# Skip if this run is not in the experiment config.
 	unless( $configRuns->{ $runAcc } ) { next; }
@@ -160,6 +165,24 @@ foreach my $row ( @resultsRows ) {
 }
 
 $logger->info( "Successfully parsed QC results." );
+
+# Check that all runs from the XML config were found in the QC results. Die if
+# not.
+my $runsMissing = 0;
+
+foreach my $runAcc ( keys @{ $configRuns } ) {
+
+    unless( $qcRuns->{ $runAcc } ) {
+
+        $logger->error( "$runAcc was not found in QC results." );
+ 
+        push $runsMissing++;
+    }
+}
+
+if( $runsMissing ) {
+    $logger->logdie( "Not all runs in XML config were found in QC results. Cannot continue." );
+}
 
 my $qcFileName = $expAcc . "-findCRAMFiles-report.tsv";
 
@@ -219,7 +242,12 @@ if( keys %{ $failedRuns } ) {
 	$logger->info( "All runs passed QC" );
 }
 
+# end.
 
+
+
+##############
+# Subroutines.
 
 sub _get_all_config_runs {
 
