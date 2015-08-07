@@ -166,6 +166,7 @@ foreach my $row ( @resultsRows ) {
 
 $logger->info( "Successfully parsed QC results." );
 
+$logger->info( "Checking that all runs in experiment config have been QC'ed..." );
 # Check that all runs from the XML config were found in the QC results. Die if
 # not.
 my $runsMissing = 0;
@@ -183,6 +184,8 @@ foreach my $runAcc ( keys %{ $configRuns } ) {
 if( $runsMissing ) {
     $logger->logdie( "Not all runs in XML config were found in QC results. Cannot continue." );
 }
+
+$logger->info( "All runs in XML config have been QC'ed." );
 
 my $qcFileName = $expAcc . "-findCRAMFiles-report.tsv";
 
