@@ -176,7 +176,7 @@ foreach my $runAcc ( keys @{ $configRuns } ) {
 
         $logger->error( "$runAcc was not found in QC results." );
  
-        push $runsMissing++;
+        $runsMissing++;
     }
 }
 
