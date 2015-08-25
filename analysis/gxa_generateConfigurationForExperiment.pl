@@ -169,6 +169,11 @@ unless( @{ $magetab4atlas->get_assays } ) {
 my $atlasExperimentType = create_atlas_experiment_type($magetab4atlas, $args->{ "analysis_type" });
 $logger->info("Experiment type is $atlasExperimentType\n");
 
+# Temporary: don't allow 2-colour experiments.
+if( $atlasExperimentType =~ /2colour/ ) {
+    $logger->logdie( "2-colour array experiments are not currently allowed." );
+}
+
 # Create the experiment config.
 my $experimentConfig = create_experiment_config(
 	$magetab4atlas, 
