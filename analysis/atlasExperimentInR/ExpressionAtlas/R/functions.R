@@ -15,8 +15,7 @@ parseAtlasConfig <- function( atlasXMLconfigFile ) {
 	# Get the config node attributes.
 	configNodeAttrs <- xmlAttrs( configNode )
 
-	# Get the Atlas experiment type. We'll use this later to decide whether to
-	# create an ExpressionSet/MAList or SummarizedExperiment.
+	# Get the Atlas experiment type.
 	atlasExperimentType <- configNodeAttrs[[ "experimentType" ]]
 
 	# Go through the analytics node(s).
@@ -185,6 +184,21 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 
 }
 
+
+check_file_exists <- function( filename ) {
+
+	if( !file.exists( filename ) ) {
+		stop( paste( 
+			"Cannot find:",
+			filename
+		) )
+	}
+}
+
+
+##########################
+# Non-exported functions #
+##########################
 
 # .parseSDRF
 # 	- Take an SDRF filename and the experiment type from the XML config, and
@@ -622,3 +636,5 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	
 	return( analysisMethodsList )
 }
+
+
