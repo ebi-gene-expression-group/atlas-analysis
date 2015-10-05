@@ -5,8 +5,6 @@ scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source ${scriptDir}/../../bash_util/generic_routines.sh
 atlasEnv=`atlas_env`
 
-source ${ATLAS_PROD}/sw/atlasinstall_${atlasEnv}/atlasprod/irap/gxa_preirap.conf
-
 if [ $# -lt 1 ]; then
    echo "Usage: $0 expAcc"
    echo "e.g. $0 E-MTAB-1066"
