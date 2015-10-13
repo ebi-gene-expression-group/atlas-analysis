@@ -52,11 +52,11 @@ if( @previousPercentileRanksFiles ) {
 }
 
 # File the analytics file(s).
-my @analyticsFiles = glob( "*-analytics.tsv" );
+my @analyticsFiles = glob( "*-analytics.tsv.unrounded" );
 
 # Check we got at least one analytics filename.
 if( @analyticsFiles == 0 ) {
-    $logger->logdie( "No analytics files found in ", Cwd::cwd() );
+    $logger->logdie( "No unrounded analytics files found in ", Cwd::cwd() );
 }
 
 # Go through the analytics files and calculate percentile ranks for each of
