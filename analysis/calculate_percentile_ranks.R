@@ -31,9 +31,9 @@ if( length( args ) != 1 ) {
 # Get the analytics filename from the arguments.
 analyticsFilename <- args[ 1 ]
 
-if( !grepl( "-analytics.tsv$", analyticsFilename ) ) {
+if( !grepl( "-analytics.tsv.unrounded$", analyticsFilename ) ) {
 
-    stop( paste( analyticsFilename, "does not look like a decorated analytics filename. Please check." ) )
+    stop( paste( analyticsFilename, "does not look like a decorated and unrounded analytics filename. Please check." ) )
 }
 
 # Get the start of the filename (the experiment accession, and the array design
