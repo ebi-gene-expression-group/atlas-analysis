@@ -95,7 +95,7 @@ percentilesDataFrames <- lapply( contrastIDs, function( contrastID ) {
     percentiles <- quantile( abs( contrastDF[[ logFCcolname ]] ), probs = seq( 0, 1, by = 0.01 ), na.rm=TRUE )
     
     # Work out the indices of the percentiles vector that each logFC corresponds to.
-    percentileIndices <- findInterval( abs( contrastDF[[ logFCcolname ]] ), percentiles )
+    percentileIndices <- findInterval( abs( contrastDF[[ logFCcolname ]] ), sort( percentiles ) )
     
     # Get the numeric values from the names of the percentiles vector for each
     # logFC. These are the actual percentiles for each logFC.
