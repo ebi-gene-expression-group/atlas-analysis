@@ -137,7 +137,7 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 	}
 
 	# Write a file to read into R
-	my $tempFile = "/tmp/$exptAccession"."_$arrayDesign.$$.tsv";
+	my $tempFile = File::Spec->catfile( $ENV{ "HOME" }, "tmp", "$exptAccession"."_$arrayDesign.$$.tsv" );
 	open(my $tmpFH, ">", $tempFile) or $logger->logdie( "Can't create file \"$tempFile\": $!" );
 
 	# Write headers
