@@ -261,9 +261,6 @@ sub makeArraysToFactorValuesToFiles {
 	# Go through the assays...
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
 
-        use Data::Dumper;
-        print Dumper( $assay4atlas );
-
 		# Get the assay name
 		my $assayName = $assay4atlas->get_name;
 		# Skip this one if it's not in the XML config file
