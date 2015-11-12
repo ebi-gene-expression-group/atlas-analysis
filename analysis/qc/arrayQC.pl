@@ -287,7 +287,7 @@ sub makeArraysToFactorValuesToFiles {
 		# Push all factor values onto an array.
 		my @factorValues = ();
 		foreach my $factor (keys %{ $factors }) {
-			push @factorValues, $factors->{ $factor }->{ "value" };
+			push @factorValues, keys %{ $factors->{ $factor } };
 		}
 
 		# Stick the factor values together if there's more than one. If there's
