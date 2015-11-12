@@ -260,6 +260,10 @@ sub makeArraysToFactorValuesToFiles {
 	my $arraysToFactorValuesToFiles = {};
 	# Go through the assays...
 	foreach my $assay4atlas (@{ $magetab4atlas->get_assays }) {
+
+        use Data::Dumper;
+        print Dumper( $assay4atlas );
+
 		# Get the assay name
 		my $assayName = $assay4atlas->get_name;
 		# Skip this one if it's not in the XML config file
@@ -270,7 +274,7 @@ sub makeArraysToFactorValuesToFiles {
 		# Get the factor(s) and value(s)
 		my $factors = $assay4atlas->get_factors;
 		# Get the raw data filename
-		my $arrayDataFile = $loadDir."/".$assay4atlas->get_array_data_file;
+		my $arrayDataFile = File::Spec->catfile( $loadDir, $assay4atlas->get_array_data_file );
 
 		# For 1-colour array data, need to tell the R script whether this is
 		# Affymetrix or Agilent (or other -- for now we only handle Affy and Agil
