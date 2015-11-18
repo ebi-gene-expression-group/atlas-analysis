@@ -194,9 +194,9 @@ if( $runsMissing ) {
 $logger->info( "All runs in XML config have been QC'ed." );
 
 # Also check that all QC'ed runs exist in the raw counts matrix.
-$logger->info( "Checking that all runs that passed QC exist in counts matrix..." );
-
 my $countsMatrixFile = File::Spec->catfile( $ENV{ "IRAP_SINGLE_LIB" }, "studies", $expAcc, "genes.raw.tsv" );
+
+$logger->info( "Checking that all runs that passed QC exist in counts matrix $countsMatrixFile" );
 
 my %countsMatrixRuns;
 
@@ -235,7 +235,7 @@ if( keys %{ $missingFromCounts } ) {
 
     my $missingRunString = join ", ", ( keys %{ $missingFromCounts } );
 
-    $logger->logdie( "The following run(s) were not found in the counts matrix: $missingRunString" );
+    $logger->logdie( "The following run(s) were not found in the counts matrix:\n\t$missingRunString" );
 }
 
 # If we're still alive, log that all was OK.
