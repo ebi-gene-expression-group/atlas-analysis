@@ -127,7 +127,7 @@ my $newTooShort = 0;
 
 # Collect all the run accessions found in the QC results so that we can check
 # that none are missing afterwards.
-my $qcRuns = {};
+$_ = {} for my ( $qcRuns, $passedQC );
 
 foreach my $row ( @resultsRows ) {
 
@@ -162,6 +162,12 @@ foreach my $row ( @resultsRows ) {
 			}
 		}
 	}
+    # If the run passed QC, save it so we can make sure it exists in the counts
+    # matrix.
+    else {
+
+        $passedQC->{ $runAcc } = 1;
+    }
 }
 
 $logger->info( "Successfully parsed QC results." );
@@ -186,6 +192,45 @@ if( $runsMissing ) {
 }
 
 $logger->info( "All runs in XML config have been QC'ed." );
+
+# Also check that all QC'ed runs exist in the raw counts matrix.
+$logger->info( "Checking that all runs that passed QC exist in counts matrix..." );
+
+my $countsMatrixFile = File::Spec->catfile( $ENV{ "IRAP_SINGLE_LIB" }, "studies", $expAcc, "genes.raw.tsv" );
+
+my %countsMatrixRuns;
+
+open( my $countsFH, "<", $countsMatrixFile ) or $logger->logdie( "Cannot open $countsMatrixFile: $!" );
+
+while( defined( my $line = <$countsFH> ) ) {
+
+    chomp $line;
+
+    my @headers = split "\t", $line;
+
+    # Remove first element (e.g. "Gene ID") as we don't want it.
+    shift @headers;
+
+    # Add remaining header (run accessions) to hash.
+    %countsMatrixRuns = map { $_ => 1 } @headers;
+
+    # Quit as we only care about the first line of this file.
+    last;
+}
+
+close $countsFH;
+
+# Make sure every run that passed QC exists in the counts matrix.
+foreach my $runAcc ( keys %{ $passedQC } ) {
+
+    unless( $countsMatrixRuns{ $runAcc } ) {
+
+        $logger->logdie( "Run accession \"$runAcc\" was not found in $countsMatrixFile. Cannot continue." );
+    }
+}
+
+# If we're still alive, log that all was OK.
+$logger->info( "All runs that passed QC were found in the counts matrix." );
 
 my $qcFileName = $expAcc . "-findCRAMFiles-report.tsv";
 
