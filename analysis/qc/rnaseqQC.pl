@@ -233,9 +233,9 @@ foreach my $runAcc ( keys %{ $passedQC } ) {
 
 if( keys %{ $missingFromCounts } ) {
 
-    my $missingRunString = join ", ", ( keys %{ $missingFromCounts } );
+    my $missingRunString = join "\n", ( keys %{ $missingFromCounts } );
 
-    $logger->logdie( "The following run(s) were not found in the counts matrix:\n\t$missingRunString" );
+    $logger->logdie( "The following run(s) were not found in the counts matrix:\n$missingRunString" );
 }
 
 # If we're still alive, log that all was OK.
