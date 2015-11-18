@@ -220,13 +220,22 @@ while( defined( my $line = <$countsFH> ) ) {
 
 close $countsFH;
 
+# Collect missing run accessions to report later.
+my $missingFromCounts = {};
+
 # Make sure every run that passed QC exists in the counts matrix.
 foreach my $runAcc ( keys %{ $passedQC } ) {
 
     unless( $countsMatrixRuns{ $runAcc } ) {
-
-        $logger->logdie( "Run accession \"$runAcc\" was not found in $countsMatrixFile. Cannot continue." );
+        $missingFromCounts->{ $runAcc } = 1;
     }
+}
+
+if( keys %{ $missingFromCounts } ) {
+
+    my $missingRunString = join ", ", ( keys %{ $missingFromCounts } );
+
+    $logger->logdie( "The following run(s) were not found in the counts matrix: $missingRunString" );
 }
 
 # If we're still alive, log that all was OK.
