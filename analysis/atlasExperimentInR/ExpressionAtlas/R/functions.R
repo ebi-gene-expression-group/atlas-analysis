@@ -437,11 +437,8 @@ check_file_exists <- function( filename ) {
 	# Is this an RNA-seq experiment?
 	else if( grepl( "rnaseq", atlasExperimentType ) ) {
 		
-		# Create the file name of the raw counts.
-		expressionsFile <- paste( experimentAccession, "-raw-counts.tsv.undecorated", sep="" )
-		
 		# Add the full path to the file.
-		expressionsFile <- file.path( atlasExperimentDirectory, expressionsFile )
+		expressionsFile <- file.path( Sys.getenv( "IRAP_SINGLE_LIB" ), "studies", experimentAccession, "genes.raw.tsv" )
 		
 		# Check that the expressions file exists, die if not.
 		if( !file.exists( expressionsFile ) ) {
