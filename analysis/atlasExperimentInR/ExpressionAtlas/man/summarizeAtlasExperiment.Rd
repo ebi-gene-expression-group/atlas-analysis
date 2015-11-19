@@ -37,6 +37,7 @@
 }
 \examples{
 
+\dontrun{
 # Summarize an Atlas microarray experiment.
 arrayExperimentSummaryList <- summarizeAtlasExperiment( 
 	"E-MEXP-1025", 
@@ -67,4 +68,5 @@ names( analysisMethods )
 
 # See the filtering steps used.
 analysisMethods$filtering
+}
 }
