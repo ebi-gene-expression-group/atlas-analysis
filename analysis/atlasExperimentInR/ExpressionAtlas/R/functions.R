@@ -218,11 +218,11 @@ check_file_exists <- function( filename ) {
 	completeSDRF <- read.delim( filename, header = FALSE, stringsAsFactors = FALSE )
 
 	# Get the Characteristics column indices, and any unit columns next to them.
-	charColIndices <- grep( "Characteristics", ignore.case = TRUE, completeSDRF[ 1, ] )
+	charColIndices <- grep( "^Characteristics", ignore.case = FALSE, completeSDRF[ 1, ] )
 	charColIndices <- .addUnitCols( charColIndices, completeSDRF )
 	
 	# Get the Factor column indices, an any unit columns next to them.
-	factorColIndices <- grep( "Factor\\s?Value", ignore.case = TRUE, completeSDRF[ 1, ] )
+	factorColIndices <- grep( "^Factor\\s?Value", ignore.case = FALSE, completeSDRF[ 1, ] )
 	factorColIndices <- .addUnitCols( factorColIndices, completeSDRF )
 
 	# Get the index of the Comment[technical replicate group] column, if there
