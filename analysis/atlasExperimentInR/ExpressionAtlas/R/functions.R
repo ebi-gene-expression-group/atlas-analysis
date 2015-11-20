@@ -549,6 +549,25 @@ check_file_exists <- function( filename ) {
 
 
 .createSummarizedExperiment <- function( expressions, analyticsSDRF, analysisMethodsFile ) {
+
+    # Make sure all the assays we want are present in the expressions matrix.
+    wantedAssays <- rownames( analyticsSDRF )
+    matrixAssays <- colnames( expressions )
+
+    # Die if any assays we wanted are missing.
+    if( !all( wantedAssays %in% matrixAssays ) ) {
+
+        missingAssays <- wantedAssays[ which( !wantedAssays %in% matrixAssays ) ]
+
+        missingAssayString <- paste( missingAssays, collapse = "\n" )
+
+        stop( paste( 
+            "The following assays are missing from the expression matrix:",
+            missingAssayString,
+            "Cannot continue.",
+            sep = "\n"
+        ) )
+    }
 	
 	# Only select columns with assay names in our SDRF.
 	expressions <- expressions[ , rownames( analyticsSDRF ) ]
