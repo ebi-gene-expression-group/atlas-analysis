@@ -204,7 +204,7 @@ $logger->info( "Checking mapping quality for runs that passed QC..." );
 
 if( keys %{ $lowMappedReads } ) {
 
-    foreach my $runAcc ( keys %{ $lowMappedReads } ) {
+    foreach my $runAcc ( sort keys %{ $lowMappedReads } ) {
         
         $logger->warn( "LOW_MQ: Run ", $runAcc, " has less than 70% reads mapped (", $lowMappedReads->{ $runAcc }, "%)" );
     }
