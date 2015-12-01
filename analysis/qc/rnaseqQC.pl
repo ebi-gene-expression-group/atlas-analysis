@@ -118,16 +118,14 @@ $logger->info( "Parsing QC results..." );
 # experiment.
 my @resultsRows = split /\n/, $rnaseqQCresults;
 
-# A hash to collect failed runs.
-my $failedRuns = {};
-
 # A flag to set if we need to add a new accession to the "too short reads"
 # file.
 my $newTooShort = 0;
 
 # Collect all the run accessions found in the QC results so that we can check
-# that none are missing afterwards.
-$_ = {} for my ( $qcRuns, $passedQC );
+# that none are missing afterwards. Also remember failed runs, and runs with
+# lower than 70% mapped reads.
+$_ = {} for my ( $qcRuns, $passedQC, $failedRuns, $lowMappedReads );
 
 foreach my $row ( @resultsRows ) {
 
@@ -167,6 +165,15 @@ foreach my $row ( @resultsRows ) {
     else {
 
         $passedQC->{ $runAcc } = 1;
+
+        # Also see if we got less than 70% reads mapped. If so, add them to
+        # the hash to save them.
+        my $percentMappedReads = $splitRow[ 6 ];
+
+        if( $percentMappedReads < 70 ) {
+
+            $lowMappedReads->{ $runAcc } = $percentMappedReads;
+        }
     }
 }
 
@@ -192,6 +199,19 @@ if( $runsMissing ) {
 }
 
 $logger->info( "All runs in XML config have been QC'ed." );
+
+$logger->info( "Checking mapping quality for runs that passed QC..." );
+
+if( keys %{ $lowMappedReads } ) {
+
+    foreach my $runAcc ( sort keys %{ $lowMappedReads } ) {
+        
+        $logger->warn( "LOW_MQ: Run ", $runAcc, " has less than 70% reads mapped (", $lowMappedReads->{ $runAcc }, "%)" );
+    }
+}
+else {
+    $logger->info( "All runs have >= 70% reads mapped." );
+}
 
 # Also check that all QC'ed runs exist in the raw counts matrix.
 my $countsMatrixFile = File::Spec->catfile( $ENV{ "IRAP_SINGLE_LIB" }, "studies", $expAcc, "genes.raw.tsv" );
