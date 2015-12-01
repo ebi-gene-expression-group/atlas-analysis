@@ -239,7 +239,7 @@ check_file_exists <- function( filename ) {
 			
             cat( "Did not find Comment[ ENA_RUN ] column in SDRF, trying Comment[ RUN_NAME ] column.\n" )
 
-            assayNameColIndex <- grep( "Comment\\s?\\p\\s?RUN_NAME\\s?\\]", ignore.case = TRUE, completeSDRF[ 1, ] )
+            assayNameColIndex <- grep( "Comment\\s?\\[\\s?RUN_NAME\\s?\\]", ignore.case = TRUE, completeSDRF[ 1, ] )
 
             if( length( assayNameColIndex ) != 1 ) {
 
