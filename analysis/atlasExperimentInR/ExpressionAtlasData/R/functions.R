@@ -22,13 +22,21 @@ getAtlasExperiment <- function( experimentAccession ) {
     
     cat( paste( "Loading Expression Atlas experiment summary from", fullUrl, "...\n" ) )
 
-    result <- try( load( url( fullUrl ) ) )
+    loadResult <- try( load( url( fullUrl ) ) )
     
-    if( class( result ) == "try-error" ) {
+    if( class( loadResult ) == "try-error" ) {
 
         msg <- geterrmessage()
 
         stop( paste( "Error encountered while trying to download experiment summary:", msg ) )
+    }
+    
+    # Make sure experiment summary object exists before trying to return it.
+    getResult <- try( get( "experimentSummary" ) )
+
+    if( class( getResult ) == "try-error" ) {
+        
+        stop( "ERROR - Download appeared successful but no experiment summary object was found." )
     }
 
     # If we're still here, things must have worked ok.
