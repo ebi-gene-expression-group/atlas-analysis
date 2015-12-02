@@ -63,7 +63,7 @@ getAtlasData <- function( experimentAccessions ) {
 
     experimentSummaryList <- lapply( experimentAccessions, function( experimentAccession ) {
         getAtlasExperiment( experimentAccession )
-    }
+    } )
 
     return( experimentSummaryList )
 }
