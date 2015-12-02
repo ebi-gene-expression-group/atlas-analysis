@@ -34,5 +34,5 @@ getAtlasExperiment <- function( experimentAccession ) {
     # If we're still here, things must have worked ok.
     cat( paste( "Successfully downloaded experimentSummary object for", experimentAccession, "\n" ) )
 
-    return( experimentSummary )
+    return( get( "experimentSummary" ) )
 }
