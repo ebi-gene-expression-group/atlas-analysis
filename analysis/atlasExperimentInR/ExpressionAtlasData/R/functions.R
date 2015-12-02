@@ -1,4 +1,6 @@
-
+# getAtlasExperiment
+#   - Download and return the SimpleList object representing a single
+#   Expression Atlas experiment.
 getAtlasExperiment <- function( experimentAccession ) {
     
     # Make sure we were given an experiment accession.
@@ -30,7 +32,7 @@ getAtlasExperiment <- function( experimentAccession ) {
     }
 
     # If we're still here, things must have worked ok.
-    cat( paste( "Successfully loaded experimentSummary object for", experimentAccession, "\n" ) )
+    cat( paste( "Successfully downloaded experimentSummary object for", experimentAccession, "\n" ) )
 
     return( experimentSummary )
 }
