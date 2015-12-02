@@ -5,7 +5,7 @@ Title: Download data from EMBL-EBI Expression Atlas.
 Author: EMBL-EBI Expression Atlas team
 Maintainer: Maria Keays <mkeays@ebi.ac.uk>
 Description: This package is for downloading data from specified datasets from EMBL-EBI Expression Atlas and loading it into R for further analysis. Each Expression Atlas dataset is represented as a SimpleList object with one element per platform. Sequencing data is contained in a SummarizedExperiment object, while microarray data is contained in an ExpressionSet or MAList object.
-Depends: XML, yaml, plyr, Biobase, GenomicRanges, limma, methods
+Depends: Biobase, GenomicRanges, limma, methods
 Collate: functions.R
 License: GPL (>= 3)
 LazyLoad: yes
