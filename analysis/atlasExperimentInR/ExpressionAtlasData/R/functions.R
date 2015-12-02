@@ -40,7 +40,51 @@ getAtlasExperiment <- function( experimentAccession ) {
     }
 
     # If we're still here, things must have worked ok.
-    cat( paste( "Successfully downloaded experimentSummary object for", experimentAccession, "\n" ) )
+    cat( paste( "Successfully downloaded experiment summary object for", experimentAccession, "\n" ) )
 
     return( get( "experimentSummary" ) )
 }
+
+
+# getAtlasData
+#   - Download SimpleList objects for one or more Expression Atlas experiments
+#   and return then in a list.
+getAtlasData <- function( experimentAccessions ) {
+
+    if( missing( experimentAccessions ) ) {
+
+        stop( "Please provide a vector of experiment accessions to download." )
+    }
+
+    # Go through each one and download it, creating a list.
+    # So that the list has the experiment accessions as the names, use them as
+    # names for the vector before starting to create the list.
+    names( experimentAccessions ) <- experimentAccessions
+
+    experimentSummaryList <- lapply( experimentAccessions, function( experimentAccession ) {
+        getAtlasExperiment( experimentAccession )
+    }
+
+    return( experimentSummaryList )
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
