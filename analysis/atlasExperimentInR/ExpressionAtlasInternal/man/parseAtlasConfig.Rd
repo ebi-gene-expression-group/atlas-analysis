@@ -21,7 +21,7 @@
 \examples{
 
 	# Path to atlas XML config file.
-	atlasXMLconfigFile <- system.file( "extdata", "E-MTAB-1066-configuration.xml", package = "ExpressionAtlas" )
+	atlasXMLconfigFile <- system.file( "extdata", "E-MTAB-1066-configuration.xml", package = "ExpressionAtlasInternal" )
 
 	# Parse the config file into a list
 	parsedXMLlist <- parseAtlasConfig( atlasXMLconfigFile )

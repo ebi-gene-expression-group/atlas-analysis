@@ -7,7 +7,7 @@ suppressMessages( library( limma ) )
 suppressMessages( library( Biobase ) )
 suppressMessages( library( genefilter ) )
 
-suppressMessages( library( ExpressionAtlas ) )
+suppressMessages( library( ExpressionAtlasInternal ) )
 
 # diffAtlas_DE_limma()
 # - Differential expression analysis (2-group comparison) using limma.

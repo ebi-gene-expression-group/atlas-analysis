@@ -2,8 +2,8 @@
 #
 # Script to create a heatmap for a baseline Expression Atlas experiment.
 
-# Load ExpressionAtlas package.
-suppressMessages( library( ExpressionAtlas ) )
+# Load ExpressionAtlasInternal package.
+suppressMessages( library( ExpressionAtlasInternal ) )
 # Load genefilter package to get rowVars function.
 suppressMessages( library( genefilter ) )
 # Load gplots package for heatmap.2 function.
