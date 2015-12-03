@@ -1,3 +1,2 @@
 export( getAtlasExperiment, getAtlasData )
-exportClasses( )
-import( Biobase, GenomicRanges, limma )
+import( Biobase, GenomicRanges, limma, methods )
