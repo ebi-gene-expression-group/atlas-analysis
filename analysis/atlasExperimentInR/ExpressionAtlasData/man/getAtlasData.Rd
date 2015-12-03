@@ -3,7 +3,8 @@
 \title{ Download data from multiple Expression Atlas experiments }
 \description{
     This function downloads Expression Atlas experiment summary SimpleList
-    objects, and returns a list containing these objects.
+    objects based on a vector of ArrayExpress experiment accessions, and
+    returns a list containing these objects.
 }
 \usage{
     getAtlasData( experimentAccessions )

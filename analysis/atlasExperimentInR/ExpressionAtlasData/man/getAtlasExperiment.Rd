@@ -3,7 +3,8 @@
 \title{ Download data for an Expression Atlas experiment }
 \description{
     This function downloads and returns a SimpleList object representing a
-    single Expression Atlas experiment.
+    single Expression Atlas experiment, based on the ArrayExpress accession of
+    the experiment.
 }
 \usage{
     getAtlasExperiment( experimentAccession )
