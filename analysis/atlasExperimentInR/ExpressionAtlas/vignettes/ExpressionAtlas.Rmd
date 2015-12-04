@@ -1,12 +1,12 @@
-%\VignetteEngine{ knitr::knitr }
-%\VignetteIndexEntry{ ExpressionAtlas }
-
 ---
 title: "ExpressionAtlas package vignette"
 author: "Maria Keays"
 date: "3 December 2015"
 output: pdf_document
 ---
+
+%\VignetteEngine{ knitr::knitr }
+%\VignetteIndexEntry{ ExpressionAtlas }
 
 # Expression Atlas
 
