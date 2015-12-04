@@ -5,7 +5,6 @@ date: "`r Sys.Date()`"
 vignette: >
     %\VignetteEngine{ knitr::rmarkdown }
     %\VignetteIndexEntry{ ExpressionAtlas }
-output: pdf_document
 ---
 
 # Expression Atlas
@@ -26,7 +25,7 @@ To download Expression Atlas datasets, you need to know their
 be found by searching at the Expression Atlas website and clicking on any of
 the results that appear. The URL of the Expression Atlas experiment page
 contains the experiment accession e.g. in
-`http://www.ebi.ac.uk/gxa/experiments/E-MTAB-3007` , the accession is
+http://www.ebi.ac.uk/gxa/experiments/E-MTAB-3007 , the accession is
 **E-MTAB-3007**.
 
 ## Downloading a single Expression Atlas experiment summary
