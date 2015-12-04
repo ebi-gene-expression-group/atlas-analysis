@@ -1,3 +1,6 @@
+%\VignetteEngine{ knitr::knitr }
+%\VignetteIndexEntry{ ExpressionAtlas }
+
 ---
 title: "ExpressionAtlas package vignette"
 author: "Maria Keays"
@@ -32,6 +35,8 @@ You can download data for a single Expression Atlas experiment using the
 `getAtlasExperiment() function:
 
 ```{r}
+library( ExpressionAtlas )
+
 mtab3007 <- getAtlasExperiment( "E-MTAB-3007" )
 ```
 
