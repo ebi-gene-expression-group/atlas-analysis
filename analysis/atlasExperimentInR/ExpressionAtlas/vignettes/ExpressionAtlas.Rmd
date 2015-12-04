@@ -2,10 +2,10 @@
 title: "ExpressionAtlas package vignette"
 author: "Maria Keays"
 date: "`r Sys.Date()`"
-output: pdf_document
 vignette: >
     %\VignetteEngine{ knitr::rmarkdown }
     %\VignetteIndexEntry{ ExpressionAtlas }
+output: pdf_document
 ---
 
 # Expression Atlas
