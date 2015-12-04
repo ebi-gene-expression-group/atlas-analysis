@@ -1,0 +1,38 @@
+---
+title: "ExpressionAtlas package vignette"
+author: "Maria Keays"
+date: "3 December 2015"
+output: pdf_document
+---
+
+# Expression Atlas
+
+The EMBL-EBI [Expression Atlas](http://www.ebi.ac.uk/gxa) consists of
+high-throughput expression datasets that are re-processed to allow users to
+search for genes with interesting expression patterns under different
+biological conditions, such as a gene knock out, a compound treatment, or in a
+particular organism part or cell. Data fron each experiment in Expression
+Atlas is available as a pre-packaged experiment summary R object available for
+download. The *ExpressionAtlas* package enables these files to be loaded
+directly within an R session.
+
+# Downloading Expression Atlas data in R
+
+To download Expression Atlas datasets, you need to know their
+[ArrayExpress](http://www.ebi.ac.uk/arrayexpress) accession numbers. These can
+be found by searching at the Expression Atlas website and clicking on any of
+the results that appear. The URL of the Expression Atlas experiment page
+contains the experiment accession e.g. in
+`http://www.ebi.ac.uk/gxa/experiments/E-MTAB-3007 , the accession is
+*E-MTAB-3007*.
+
+## Downloading a single Expression Atlas experiment summary
+
+You can download data for a single Expression Atlas experiment using the
+`getAtlasExperiment() function:
+
+```{r}
+mtab3007 <- getAtlasExperiment( "E-MTAB-3007" )
+```
+
+

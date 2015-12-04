@@ -21,5 +21,11 @@
 \examples{
 
     # Download some Expression Atlas data into a list.
-    myExperimentSummaries <- getAtlasData( c( "E-GEOD-11175", "E-MTAB-3007", "E-GEOD-21070" ) )
+    myExperimentSummaries <- getAtlasData( 
+        c( 
+            "E-GEOD-11175", 
+            "E-MTAB-3007", 
+            "E-GEOD-21070" 
+        ) 
+    )
 }
