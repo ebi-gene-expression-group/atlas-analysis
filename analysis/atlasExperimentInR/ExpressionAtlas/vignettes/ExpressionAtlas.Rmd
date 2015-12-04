@@ -39,4 +39,16 @@ library( ExpressionAtlas )
 mtab3007 <- getAtlasExperiment( "E-MTAB-3007" )
 ```
 
+Data is returned as a *SimpleList* object (see package
+[IRanges](http://bioconductor.org/packages/release/bioc/html/IRanges.html)).
+
+## RNA-seq experiment summaries
+
+Following on from above, `mtab3007` now contains a *SimpleList* object 
+with a single entry named `rnaseq`.
+
+```{r}
+mtab3007$rnaseq
+```
+
 

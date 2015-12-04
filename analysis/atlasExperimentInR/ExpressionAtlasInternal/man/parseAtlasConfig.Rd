@@ -19,7 +19,7 @@
 	elements found in the XML config file.
 }
 \examples{
-
+\dontrun{
 	# Path to atlas XML config file.
 	atlasXMLconfigFile <- system.file( "extdata", "E-MTAB-1066-configuration.xml", package = "ExpressionAtlasInternal" )
 
@@ -31,5 +31,5 @@
 
 	# Get the Analytics objects (which contain AssayGroups)
 	allAnalytics <- parsedXMLlist$allAnalytics
-
+}
 }

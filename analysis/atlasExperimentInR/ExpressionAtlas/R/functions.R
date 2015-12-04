@@ -20,7 +20,7 @@ getAtlasExperiment <- function( experimentAccession ) {
 
     fullUrl <- paste( urlBase, experimentAccession, atlasExperimentSummaryFile, sep = "/" )
     
-    cat( paste( "Loading Expression Atlas experiment summary from", fullUrl, "...\n" ) )
+    cat( paste( "Downloading Expression Atlas experiment summary from", fullUrl, "...\n" ) )
 
     loadResult <- try( load( url( fullUrl ) ) )
     

@@ -12,10 +12,11 @@
     A list with elements from the YAML file.
 }
 \examples{
-
+\dontrun{
     # Create a new AtlasSiteConfig object.
     atlasSiteConfig <- createAtlasSiteConfig()
 
     # Get the path to Ensembl annotation sources.
     annotationSourceDir <- atlasSiteConfig$annotation_source_dir
+}
 }
