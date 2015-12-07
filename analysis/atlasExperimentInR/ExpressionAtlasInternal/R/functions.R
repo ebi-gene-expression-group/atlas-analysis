@@ -573,7 +573,7 @@ check_file_exists <- function( filename ) {
 	expressions <- expressions[ , rownames( analyticsSDRF ) ]
 
 	# Turn data frame into matrix.
-	expressionsMatrix <- DataFrame( expressions )
+	expressionsMatrix <- as.matrix( expressions )
 
 	# Turn SDRF into a DataFrame.
 	analyticsSDRF <- DataFrame( analyticsSDRF )
