@@ -576,7 +576,7 @@ check_file_exists <- function( filename ) {
 	expressionsMatrix <- as.matrix( expressions )
 
 	# Turn SDRF into a DataFrame.
-	analyticsSDRF <- as.data.frame( analyticsSDRF )
+	analyticsSDRF <- DataFrame( analyticsSDRF )
 
 	# Get analysis methods
 	analysisMethodsList <- .readSeqAnalysisMethods( analysisMethodsFile )
