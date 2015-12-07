@@ -4,7 +4,7 @@ export( platform, assay_groups, getAllAssays, assay_group_id, assay_names, assay
 import( methods )
 importFrom( SummarizedExperiment, SummarizedExperiment )
 importFrom( plyr, ldply )
-importFrom( XML, xmlInternalTreeParse )
+importFrom( XML, xmlInternalTreeParse, xmlRoot, xmlAttrs, xmlElementsByTagName, xmlValue )
 importFrom( yaml, yaml.load_file )
 importFrom( S4Vectors, SimpleList )
 importClassesFrom( Biobase, AnnotatedDataFrame, MIAME, ExpressionSet )
