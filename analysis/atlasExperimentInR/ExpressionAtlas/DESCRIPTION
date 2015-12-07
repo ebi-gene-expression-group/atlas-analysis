@@ -6,7 +6,7 @@ Author: Maria Keays
 Maintainer: Maria Keays <mkeays@ebi.ac.uk>
 Description: This package is for downloading data from specified datasets from EMBL-EBI Expression Atlas and loading it into R for further analysis. Each Expression Atlas dataset is represented as a SimpleList object with one element per platform. Sequencing data is contained in a SummarizedExperiment object, while microarray data is contained in an ExpressionSet or MAList object.
 Depends: methods
-Imports: Biobase, GenomicRanges, limma
+Imports: Biobase, SummarizedExperiment, limma
 Suggests: knitr
 VignetteBuilder: knitr
 Collate: functions.R
