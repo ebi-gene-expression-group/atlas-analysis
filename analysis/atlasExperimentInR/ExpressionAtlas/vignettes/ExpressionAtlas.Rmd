@@ -40,7 +40,7 @@ mtab3007 <- getAtlasExperiment( "E-MTAB-3007" )
 ```
 
 Data is returned as a *SimpleList* object (see package
-[IRanges](http://bioconductor.org/packages/release/bioc/html/IRanges.html)).
+[S4Vectors](http://bioconductor.org/packages/release/bioc/html/S4Vectors.html)).
 
 ## RNA-seq experiment summaries
 
