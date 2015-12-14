@@ -583,7 +583,7 @@ check_file_exists <- function( filename ) {
     
     # Create dummy row ranges (copied from SummarizedExperiment class code)
     partitioning <- PartitioningByEnd( integer( nrow( expressionsMatrix ) ), names = rownames( expressionsMatrix ) )
-    dummyRanges <- relist( GRanges( seqnames=rownames( expressionsMatrix ) ), partitioning )
+    dummyRanges <- BiocGenerics::relist( GRanges(), partitioning )
 
 	# Create SummarizedExperiment
 	summarizedExperiment <- new( "RangedSummarizedExperiment", 
