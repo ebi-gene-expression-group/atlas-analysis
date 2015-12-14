@@ -35,6 +35,7 @@ You can download data for a single Expression Atlas experiment using the
 
 ```{r}
 library( ExpressionAtlas )
+library( SummarizedExperiment )
 
 mtab3007 <- getAtlasExperiment( "E-MTAB-3007" )
 ```
@@ -63,14 +64,45 @@ head( assays( sumexp ) )
 The sample annotations can be found in the *coldata* slot:
 
 ```{r}
-coldata( sumexp )
+colData( sumexp )
 ```
 
 Information describing how the raw data files were processed to obtain the raw
 counts matrix are found in the *metadata* slot:
 
-```{r}
+```{r eval=FALSE}
 metadata( sumexp )
 ```
 
+## Single-channel microarray experiments.
 
+Data from a single-channel microarray experiment, e.g.
+[E-GEOD-16567](http://www.ebi.ac.uk/gxa/experiments/E-GEOD-16567), is
+represented as one or more [ExpressionSet]() objects in the SimpleList that is
+downloaded. ExpressionSet objects are indexed by the ArrayExpress accession(s)
+of the microarray(s) used in the original experiment.
+
+```{r}
+geod16567 <- getAtlasExperiment( "E-GEOD-16567" )
+names( geod16567 )
+affy77data <- geod16567[[ "A-AFFY-77" ]]
+affy77data
+```
+
+The matrix of normalized intensity values is in the *assayData* slot:
+
+```{r}
+exprs( affy77data )
+```
+
+The sample annotations are in the *phenoData* slot:
+
+```{r}
+pData( affy77data )
+```
+
+A brief outline of how the raw data was normalized is in the *experimentData* slot:
+
+```{r}
+preproc( experimentData( affy77data ) )
+```
