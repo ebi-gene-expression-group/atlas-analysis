@@ -583,7 +583,7 @@ check_file_exists <- function( filename ) {
 
 	# Create SummarizedExperiment
 	summarizedExperiment <- new( "RangedSummarizedExperiment", 
-                                    assays = SimpleList( counts = expressionsMatrix ), 
+                                    assays = list( counts = expressionsMatrix ), 
                                     colData = analyticsSDRF, 
                                     metadata = analysisMethodsList 
                                 )
