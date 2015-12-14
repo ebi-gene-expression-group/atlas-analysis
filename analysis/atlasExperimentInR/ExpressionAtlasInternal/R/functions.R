@@ -583,7 +583,7 @@ check_file_exists <- function( filename ) {
 
 	# Create SummarizedExperiment
 	summarizedExperiment <- new( "RangedSummarizedExperiment", 
-                                    assays = list( counts = expressionsMatrix ), 
+                                    assays = Assays( SimpleList( counts = expressionsMatrix ) ), 
                                     colData = analyticsSDRF, 
                                     metadata = analysisMethodsList 
                                 )
@@ -647,7 +647,7 @@ check_file_exists <- function( filename ) {
 	# Get the quantification info.
 	quantInfo <- analysisMethodsDF[ quantRow, 2 ]
 
-	analysisMethodsList <- list( 
+	analysisMethodsList <- SimpleList( 
 		pipeline = irapInfo,
 		filtering = filteringInfo,
 		mapping = mappingInfo,
