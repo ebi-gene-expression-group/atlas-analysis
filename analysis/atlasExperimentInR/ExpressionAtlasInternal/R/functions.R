@@ -582,7 +582,7 @@ check_file_exists <- function( filename ) {
 	analysisMethodsList <- .readSeqAnalysisMethods( analysisMethodsFile )
 
 	# Create SummarizedExperiment
-	summarizedExperiment <- new( "RangedSummarizedExperiment", 
+	summarizedExperiment <- SummarizedExperiment( 
                                     assays = Assays( SimpleList( counts = expressionsMatrix ) ), 
                                     colData = analyticsSDRF, 
                                     metadata = analysisMethodsList 
