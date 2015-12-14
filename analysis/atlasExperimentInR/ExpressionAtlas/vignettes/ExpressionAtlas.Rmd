@@ -45,10 +45,32 @@ Data is returned as a *SimpleList* object (see package
 ## RNA-seq experiment summaries
 
 Following on from above, `mtab3007` now contains a *SimpleList* object 
-with a single entry named `rnaseq`.
+with a single entry named `rnaseq`. For RNA-seq experiments, the entry is a
+*RangedSummarizedExperiment* objects (see package
+[SummarizedExperiment](http://bioconductor.org/packages/release/bioc/html/SummarizedExperiment.html)).
 
 ```{r}
-mtab3007$rnaseq
+sumexp <- mtab3007$rnaseq
+sumexp
+```
+
+The matrix of raw counts for this experiment is stored in the *assays* slot:
+
+```{r}
+head( assays( sumexp ) )
+```
+
+The sample annotations can be found in the *coldata* slot:
+
+```{r}
+coldata( sumexp )
+```
+
+Information describing how the raw data files were processed to obtain the raw
+counts matrix are found in the *metadata* slot:
+
+```{r}
+metadata( sumexp )
 ```
 
 
