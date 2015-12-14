@@ -6,7 +6,7 @@ Author: EMBL-EBI Expression Atlas team
 Maintainer: Maria Keays <mkeays@ebi.ac.uk>
 Description: A package exporting functions and classes used in the
 	representation and analysis of EMBL-EBI Expression Atlas data.
-Imports: XML, yaml, plyr, Biobase, SummarizedExperiment, GenomicRanges, limma, S4Vectors, methods
+Imports: XML, yaml, plyr, Biobase, SummarizedExperiment, GenomicRanges, IRanges, limma, S4Vectors, methods
 Collate: BiologicalReplicate.R AssayGroup.R Contrast.R BatchEffect.R Analytics.R functions.R
 License: GPL (>= 3)
 LazyLoad: yes
