@@ -647,7 +647,7 @@ check_file_exists <- function( filename ) {
 	# Get the quantification info.
 	quantInfo <- analysisMethodsDF[ quantRow, 2 ]
 
-	analysisMethodsList <- SimpleList( 
+	analysisMethodsList <- list( 
 		pipeline = irapInfo,
 		filtering = filteringInfo,
 		mapping = mappingInfo,
