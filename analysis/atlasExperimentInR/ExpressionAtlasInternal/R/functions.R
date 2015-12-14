@@ -582,7 +582,7 @@ check_file_exists <- function( filename ) {
 	analysisMethodsList <- .readSeqAnalysisMethods( analysisMethodsFile )
     
     # Create dummy row ranges (copied from SummarizedExperiment class code)
-    partitioning <- PartitioningByEnd( integer( nrow( expressionsMatrix ) ), names = rownames( expressionsMatrix ) )
+    partitioning <- PartitioningByEnd( integer( nrow( expressionsMatrix ) ), names = rownames( expressions ) )
     dummyRanges <- relist( GRanges(), partitioning )
 
 	# Create SummarizedExperiment
