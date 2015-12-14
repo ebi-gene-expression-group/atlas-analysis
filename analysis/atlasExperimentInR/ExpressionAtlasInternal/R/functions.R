@@ -581,11 +581,14 @@ check_file_exists <- function( filename ) {
 	# Get analysis methods
 	analysisMethodsList <- .readSeqAnalysisMethods( analysisMethodsFile )
 
+    dummyRanges <- GRangesList( GRanges( seqnames = Rle( rownames( expressionsMatrix ) ) ) )
+
 	# Create SummarizedExperiment
-	summarizedExperiment <- SummarizedExperiment( 
+	summarizedExperiment <- new( "RangedSummarizedExperiment", 
                                     assays = Assays( SimpleList( counts = expressionsMatrix ) ), 
                                     colData = analyticsSDRF, 
-                                    metadata = analysisMethodsList 
+                                    metadata = analysisMethodsList,
+                                    rowRanges = dummyRanges
                                 )
 
 	# Return it.
