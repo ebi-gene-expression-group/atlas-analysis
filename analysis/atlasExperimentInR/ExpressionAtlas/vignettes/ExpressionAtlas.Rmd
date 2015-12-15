@@ -87,7 +87,7 @@ metadata( sumexp )
 Data from a single-channel microarray experiment, e.g.
 [E-GEOD-16567](http://www.ebi.ac.uk/gxa/experiments/E-GEOD-16567), is
 represented as one or more
-*[ExpressionSet]*(https://www.bioconductor.org/packages/release/bioc/vignettes/Biobase/inst/doc/ExpressionSetIntroduction.pdf)
+*[ExpressionSet](https://www.bioconductor.org/packages/release/bioc/vignettes/Biobase/inst/doc/ExpressionSetIntroduction.pdf)*
 object(s) in the SimpleList that is downloaded. *ExpressionSet* objects are
 indexed by the ArrayExpress accession(s) of the microarray design(s) used in the
 original experiment.
