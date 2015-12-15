@@ -21,7 +21,7 @@ conditions.
 The *ExpressionAtlas* R package enables download of pre-packaged data from
 Expression Atlas directly into an R session. Raw counts are provided for
 RNA-seq datasets, while normalized intensities are available for microarray
-experiments. Protocols describing how the data was generated is contained within
+experiments. Protocols describing how the data was generated are contained within
 the downloaded R objects, with more detailed information available on the
 [Expression Atlas website](http://www.ebi.ac.uk/gxa). Sample annotations are
 also included in the R object.
