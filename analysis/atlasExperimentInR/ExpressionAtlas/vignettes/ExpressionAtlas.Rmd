@@ -31,7 +31,7 @@ http://www.ebi.ac.uk/gxa/experiments/E-MTAB-3007 , the accession is
 ## Downloading a single Expression Atlas experiment summary
 
 You can download data for a single Expression Atlas experiment using the
-`getAtlasExperiment() function:
+`getAtlasExperiment()` function:
 
 ```{r}
 library( ExpressionAtlas )
@@ -43,7 +43,7 @@ mtab3007 <- getAtlasExperiment( "E-MTAB-3007" )
 Data is returned as a *SimpleList* object (see package
 [S4Vectors](http://bioconductor.org/packages/release/bioc/html/S4Vectors.html)).
 
-## RNA-seq experiment summaries
+### RNA-seq experiment summaries
 
 Following on from above, `mtab3007` now contains a *SimpleList* object 
 with a single entry named `rnaseq`. For RNA-seq experiments, the entry is a
@@ -74,7 +74,7 @@ counts matrix are found in the *metadata* slot:
 metadata( sumexp )
 ```
 
-## Single-channel microarray experiments.
+### Single-channel microarray experiments.
 
 Data from a single-channel microarray experiment, e.g.
 [E-GEOD-16567](http://www.ebi.ac.uk/gxa/experiments/E-GEOD-16567), is
@@ -106,3 +106,19 @@ A brief outline of how the raw data was normalized is in the *experimentData* sl
 ```{r}
 preproc( experimentData( affy77data ) )
 ```
+
+## Downloading multiple experiments at once
+
+You can download experiment summaries for more than one Expression Atlas
+experiment in one go, using the `getAtlasData()` function. This function
+returns a list where each experiment summary is stored under its experiment
+accession.
+
+```{r}
+myAccessions <- c( "E-MTAB-3007", "E-GEOD-16567" )
+mySummaries <- getAtlasData( myAccessions )
+mySummaries
+```
+
+Each experiment summary in the list is either a RangedSummarizedExperiment or
+an ExpressionSet (see above).
