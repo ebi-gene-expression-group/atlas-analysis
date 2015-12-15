@@ -121,7 +121,7 @@ preproc( experimentData( affy77data ) )
 
 You can download experiment summaries for more than one Expression Atlas
 experiment in one go, using the `getAtlasData()` function. This function
-returns a list where each experiment summary is stored under its ArrayExpress
+returns a SimpleList where each experiment summary is stored under its ArrayExpress
 accession.
 
 ```{r}
