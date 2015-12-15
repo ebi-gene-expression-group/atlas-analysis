@@ -9,22 +9,30 @@ vignette: >
 
 # Expression Atlas
 
-The EMBL-EBI [Expression Atlas](http://www.ebi.ac.uk/gxa) consists of
-high-throughput expression datasets that are re-processed to allow users to
-search for genes with interesting expression patterns under different
-biological conditions, such as a gene knock out, a compound treatment, or in a
-particular organism part or cell. Data fron each experiment in Expression
-Atlas is available as a pre-packaged experiment summary R object available for
-download. The *ExpressionAtlas* package enables these files to be loaded
-directly within an R session.
+The [EMBL-EBI](http://www.ebi.ac.uk) [Expression
+Atlas](http://www.ebi.ac.uk/gxa) consists of hand-picked high quality datasets
+from [ArrayExpress](http://www.ebi.ac.uk/arrayexpress) that have been manually
+curated and re-analyzed via the Expression Atlas analysis pipeline. The
+Expression Atlas website allows users to search these datasets for genes and/or
+experimental conditions, to discover which genes are expressed in which
+tissues, cell types, developmental stages, and hundreds of other experimental
+conditions.
+
+The *ExpressionAtlas* R package enables download of pre-packaged data from
+Expression Atlas directly into an R session. Raw counts are provided for
+RNA-seq datasets, while normalized intensities are available for microarray
+experiments. Protocols describing how the data was generated is contained within
+the downloaded R objects, with more detailed information available on the
+[Expression Atlas website](http://www.ebi.ac.uk/gxa). Sample annotations are
+also included in the R object.
 
 # Downloading Expression Atlas data in R
 
-To download Expression Atlas datasets, you need to know their
-[ArrayExpress](http://www.ebi.ac.uk/arrayexpress) accession numbers. These can
-be found by searching at the Expression Atlas website and clicking on any of
-the results that appear. The URL of the Expression Atlas experiment page
-contains the experiment accession e.g. in
+To download Expression Atlas datasets, you currently need to know their
+ArrayExpress accession numbers. These can be found by searching at the
+[Expression Atlas website](http://www.ebi.ac.uk/gxa) and clicking on any of the
+results that appear. The URL of the Expression Atlas experiment page contains
+the experiment accession e.g. in
 http://www.ebi.ac.uk/gxa/experiments/E-MTAB-3007 , the accession is
 **E-MTAB-3007**.
 
@@ -46,8 +54,8 @@ Data is returned as a *SimpleList* object (see package
 ### RNA-seq experiment summaries
 
 Following on from above, `mtab3007` now contains a *SimpleList* object 
-with a single entry named `rnaseq`. For RNA-seq experiments, the entry is a
-*RangedSummarizedExperiment* objects (see package
+with a single entry named `rnaseq`. For RNA-seq experiments, this entry is a
+*RangedSummarizedExperiment* object (see package
 [SummarizedExperiment](http://bioconductor.org/packages/release/bioc/html/SummarizedExperiment.html)).
 
 ```{r}
@@ -61,7 +69,7 @@ The matrix of raw counts for this experiment is stored in the *assays* slot:
 head( assays( sumexp ) )
 ```
 
-The sample annotations can be found in the *coldata* slot:
+The sample annotations can be found in the *colData* slot:
 
 ```{r}
 colData( sumexp )
@@ -78,9 +86,11 @@ metadata( sumexp )
 
 Data from a single-channel microarray experiment, e.g.
 [E-GEOD-16567](http://www.ebi.ac.uk/gxa/experiments/E-GEOD-16567), is
-represented as one or more [ExpressionSet]() objects in the SimpleList that is
-downloaded. ExpressionSet objects are indexed by the ArrayExpress accession(s)
-of the microarray(s) used in the original experiment.
+represented as one or more
+[ExpressionSet](https://www.bioconductor.org/packages/release/bioc/vignettes/Biobase/inst/doc/ExpressionSetIntroduction.pdf)
+object(s) in the SimpleList that is downloaded. ExpressionSet objects are
+indexed by the ArrayExpress accession(s) of the microarray design(s) used in the
+original experiment.
 
 ```{r}
 geod16567 <- getAtlasExperiment( "E-GEOD-16567" )
@@ -111,7 +121,7 @@ preproc( experimentData( affy77data ) )
 
 You can download experiment summaries for more than one Expression Atlas
 experiment in one go, using the `getAtlasData()` function. This function
-returns a list where each experiment summary is stored under its experiment
+returns a list where each experiment summary is stored under its ArrayExpress
 accession.
 
 ```{r}
@@ -120,5 +130,5 @@ mySummaries <- getAtlasData( myAccessions )
 mySummaries
 ```
 
-Each experiment summary in the list is either a RangedSummarizedExperiment or
-an ExpressionSet (see above).
+Each experiment summary in the list is either a *RangedSummarizedExperiment* or
+an *ExpressionSet* (see above).
