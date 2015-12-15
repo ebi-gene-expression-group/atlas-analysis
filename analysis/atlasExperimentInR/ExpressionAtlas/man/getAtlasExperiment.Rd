@@ -22,20 +22,25 @@
     Atlas does not support multi-technology (e.g. microarray and RNA-seq)
     experiments.
 
-    For a microarray experiment, each entry of the list may be either an
-    ExpressionSet (single-channel) or MAList (two-channel) object. For a
-    sequencing experiment, the single entry is a SummarizedExperiment object.
-    Please refer to the relevant documentation on these classes for more
-    information about them.
+    For a single-channel microarray experiment, each entry of the list is an
+    ExpressionSet object. For a sequencing experiment, the single entry is a
+    SummarizedExperiment object.  Please refer to the relevant documentation on
+    these classes for more information about them.
     
     \bold{ RNA-seq data }
 
     Each SummarizedExperiment object contains the following:
 
     \itemize{
-        \item{ Matrix of raw counts (not normalized), in the assays slot, in a counts element. }
+        \item{ 
+            Matrix of raw counts (not normalized), in the assays slot, in a
+            counts element. 
+            }
         \item{ Sample annotations, in the colData slot. }
-        \item{ Brief outline of methods, from QC of FASTQ files to production of raw counts, in the exptData slot. }
+        \item{ 
+            Brief outline of methods, from QC of FASTQ files to production of
+            raw counts, in the exptData slot. 
+            }
     }
 
     \bold{ Single-channel microarray data }
@@ -43,19 +48,19 @@
     Each ExpressionSet object contains the following:
 
     \itemize{
-        \item{ Matrix of normalized intensity values, in the assayData, accessed via: exprs( expressionSet ) }
-        \item{ Sample annotations, in the phenoData, accessed via: pData( expressionSet ) }
-        \item{ Brief outline of normalization method applied, in the experimentData slot, accessed via: preproc( experimentData( expressionSet ) ) }
-    }
-
-    \bold{ Two-channel microarray data }
-
-    Each MAList object contains the following:
-
-    \itemize{
-        \item{ Vector of probe names, in the genes element. }
-        \item{ Matrix of log2(fold-change) values, in the M element. }
-        \item{ Matrix of LOESS normalized average intensities, in the A element. }
+        \item{ 
+            Matrix of normalized intensity values, in the assayData, accessed
+            via: exprs( expressionSet ) 
+            }
+        \item{ 
+            Sample annotations, in the phenoData, accessed via: pData(
+            expressionSet ) 
+            }
+        \item{ 
+            Brief outline of normalization method applied, in the
+            experimentData slot, accessed via: preproc( experimentData(
+            expressionSet ) )
+            }
     }
 }
 \examples{
