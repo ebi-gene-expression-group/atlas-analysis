@@ -92,7 +92,7 @@ affy77data
 The matrix of normalized intensity values is in the *assayData* slot:
 
 ```{r}
-exprs( affy77data )
+head( exprs( affy77data ) )
 ```
 
 The sample annotations are in the *phenoData* slot:
