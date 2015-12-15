@@ -85,7 +85,7 @@ metadata( sumexp )
 ### Single-channel microarray experiments.
 
 Data from a single-channel microarray experiment, e.g.
-[E-GEOD-16567](http://www.ebi.ac.uk/gxa/experiments/E-GEOD-16567), is
+[E-MEXP-2702](http://www.ebi.ac.uk/gxa/experiments/E-MEXP-2702), is
 represented as one or more
 *[ExpressionSet](https://www.bioconductor.org/packages/release/bioc/vignettes/Biobase/inst/doc/ExpressionSetIntroduction.pdf)*
 object(s) in the SimpleList that is downloaded. *ExpressionSet* objects are
@@ -93,7 +93,7 @@ indexed by the ArrayExpress accession(s) of the microarray design(s) used in the
 original experiment.
 
 ```{r}
-geod16567 <- getAtlasExperiment( "E-GEOD-16567" )
+geod16567 <- getAtlasExperiment( "E-MEXP-2702" )
 names( geod16567 )
 affy77data <- geod16567[[ "A-AFFY-77" ]]
 affy77data
@@ -125,7 +125,7 @@ returns a *SimpleList* where each experiment summary is stored under its
 ArrayExpress accession.
 
 ```{r}
-myAccessions <- c( "E-MTAB-3007", "E-GEOD-16567" )
+myAccessions <- c( "E-MTAB-3007", "E-MEXP-2702" )
 mySummaries <- getAtlasData( myAccessions )
 mySummaries
 ```
