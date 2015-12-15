@@ -26,7 +26,7 @@ getAtlasExperiment <- function( experimentAccession ) {
     
     cat( 
         paste( 
-            "Downloading Expression Atlas experiment summary from", 
+            "Downloading Expression Atlas experiment summary from:\n", 
             fullUrl, 
             "...\n" 
         ) 
