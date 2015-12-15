@@ -90,24 +90,28 @@ getAtlasData <- function( experimentAccessions ) {
     # names for the vector before starting to create the list.
     names( experimentAccessions ) <- experimentAccessions
 
-    experimentSummaryList <- lapply( experimentAccessions, function( experimentAccession ) {
+    experimentSummaryList <- SimpleList( 
+        
+        lapply( experimentAccessions, function( experimentAccession ) {
 
-        if( .isValidExperimentAccession( experimentAccession ) ) {
+            if( .isValidExperimentAccession( experimentAccession ) ) {
             
-            getAtlasExperiment( experimentAccession )
+                getAtlasExperiment( experimentAccession )
 
-        } else {
+            } else {
 
-            warning( 
-                paste( 
-                    "Not attempting to download data for invalid accession \"", 
-                    experimentAccession, 
-                    "\"", 
-                    sep="" 
-                ) 
-            )
-        }
-    } )
+                warning( 
+                    paste( 
+                        "Not attempting to download data for invalid accession \"", 
+                        experimentAccession, 
+                        "\"", 
+                        sep="" 
+                    ) 
+                )
+            }
+        } 
+    ) )
+
 
     # Make sure we got something back -- if all the accessions were invalid
     # then experimentSummaryList may be empty.
