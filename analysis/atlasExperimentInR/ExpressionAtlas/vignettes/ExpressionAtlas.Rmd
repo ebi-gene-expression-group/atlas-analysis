@@ -93,9 +93,9 @@ indexed by the ArrayExpress accession(s) of the microarray design(s) used in the
 original experiment.
 
 ```{r}
-geod16567 <- getAtlasExperiment( "E-MEXP-2702" )
-names( geod16567 )
-affy77data <- geod16567[[ "A-AFFY-77" ]]
+mexp2702 <- getAtlasExperiment( "E-MEXP-2702" )
+names( mexp2702 )
+affy77data <- mexp2702[[ "A-AFFY-77" ]]
 affy77data
 ```
 
