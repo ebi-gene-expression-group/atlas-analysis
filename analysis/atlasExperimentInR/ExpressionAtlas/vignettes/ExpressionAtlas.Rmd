@@ -66,7 +66,7 @@ sumexp
 The matrix of raw counts for this experiment is stored in the *assays* slot:
 
 ```{r}
-head( assays( sumexp ) )
+head( assays( sumexp )$counts )
 ```
 
 The sample annotations can be found in the *colData* slot:
