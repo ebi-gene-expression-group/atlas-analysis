@@ -85,6 +85,23 @@ getAtlasData <- function( experimentAccessions ) {
         stop( "Please provide experiment accessions as a vector." )
     }
 
+    # Only use valid accessions to download.
+    experimentAccessions <- experimentAccessions[ 
+        which( 
+            sapply( 
+                experimentAccessions, function( accession ) {
+                    .isValidExperimentAccession( accession )
+                }
+            )
+        )
+    ]
+
+    # The experimentAccessions vector is empty if none of the accessions are
+    # valid. Just quit here if so.
+    if( length( experimentAccessions ) == 0 ) {
+        stop( "None of the accessions passed are valid ArrayExpress accessions. Cannot continue." )
+    }
+    
     # Go through each one and download it, creating a list.
     # So that the list has the experiment accessions as the names, use them as
     # names for the vector before starting to create the list.
@@ -94,27 +111,9 @@ getAtlasData <- function( experimentAccessions ) {
         
         lapply( experimentAccessions, function( experimentAccession ) {
 
-            if( .isValidExperimentAccession( experimentAccession ) ) {
-            
-                getAtlasExperiment( experimentAccession )
-
-            } else {
-
-                warning( 
-                    paste( 
-                        "Not attempting to download data for invalid accession \"", 
-                        experimentAccession, 
-                        "\"", 
-                        sep="" 
-                    ) 
-                )
-            }
+            getAtlasExperiment( experimentAccession )
         } 
     ) )
-
-
-    # Make sure we got something back -- if all the accessions were invalid
-    # then experimentSummaryList may be empty.
 
     return( experimentSummaryList )
 }

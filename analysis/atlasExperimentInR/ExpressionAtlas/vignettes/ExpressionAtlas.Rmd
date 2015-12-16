@@ -131,4 +131,9 @@ mySummaries
 ```
 
 Each experiment summary in the list is either a *RangedSummarizedExperiment* or
-an *ExpressionSet* (see above).
+an *ExpressionSet*.
+
+```{r}
+mySummaries[[ "E-MTAB-3007" ]]
+mySummaries[[ "E-MTAB-3007" ]]$rnaseq
+```
