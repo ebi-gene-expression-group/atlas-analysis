@@ -6,8 +6,8 @@
 # ExpressionSet (1-colour microarray data), or MAList (2-colour microarray
 # data).
 
-# Load ExpressionAtlas package
-suppressMessages( library( ExpressionAtlas ) )
+# Load ExpressionAtlasInternal package
+suppressMessages( library( ExpressionAtlasInternal ) )
 
 # Get commandline arguments.
 args <- commandArgs( TRUE )

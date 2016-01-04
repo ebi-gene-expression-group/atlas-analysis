@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
-# Load ExpressionAtlas package.
-suppressMessages( library( ExpressionAtlas ) )
+# Load ExpressionAtlasInternal package.
+suppressMessages( library( ExpressionAtlasInternal ) )
 
 # Functions
 

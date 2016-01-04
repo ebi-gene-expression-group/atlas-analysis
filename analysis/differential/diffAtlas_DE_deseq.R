@@ -6,7 +6,7 @@
 
 suppressMessages( library( DESeq2 ) )
 
-suppressMessages( library( ExpressionAtlas ) )
+suppressMessages( library( ExpressionAtlasInternal ) )
 
 # diffAtlas_DE_deseq2
 # - Differential expression analysis (2-group comparison) using DESeq2.

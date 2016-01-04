@@ -1,0 +1,139 @@
+---
+title: "ExpressionAtlas package vignette"
+author: "Maria Keays"
+date: "`r Sys.Date()`"
+vignette: >
+    %\VignetteEngine{ knitr::rmarkdown }
+    %\VignetteIndexEntry{ ExpressionAtlas }
+---
+
+# Expression Atlas
+
+The [EMBL-EBI](http://www.ebi.ac.uk) [Expression
+Atlas](http://www.ebi.ac.uk/gxa) consists of hand-picked high quality datasets
+from [ArrayExpress](http://www.ebi.ac.uk/arrayexpress) that have been manually
+curated and re-analyzed via the Expression Atlas analysis pipeline. The
+Expression Atlas website allows users to search these datasets for genes and/or
+experimental conditions, to discover which genes are expressed in which
+tissues, cell types, developmental stages, and hundreds of other experimental
+conditions.
+
+The *ExpressionAtlas* R package enables download of pre-packaged data from
+Expression Atlas directly into an R session. Raw counts are provided for
+RNA-seq datasets, while normalized intensities are available for microarray
+experiments. Protocols describing how the data was generated are contained within
+the downloaded R objects, with more detailed information available on the
+[Expression Atlas website](http://www.ebi.ac.uk/gxa). Sample annotations are
+also included in the R object.
+
+# Downloading Expression Atlas data in R
+
+To download Expression Atlas datasets, you currently need to know their
+ArrayExpress accession numbers. These can be found by searching at the
+[Expression Atlas website](http://www.ebi.ac.uk/gxa) and clicking on any of the
+results that appear. The URL of the Expression Atlas experiment page contains
+the experiment accession e.g. in
+http://www.ebi.ac.uk/gxa/experiments/E-MTAB-3007 , the accession is
+**E-MTAB-3007**.
+
+## Downloading a single Expression Atlas experiment summary
+
+You can download data for a single Expression Atlas experiment using the
+`getAtlasExperiment()` function:
+
+```{r}
+library( ExpressionAtlas )
+library( SummarizedExperiment )
+
+mtab3007 <- getAtlasExperiment( "E-MTAB-3007" )
+```
+
+Data is returned as a *SimpleList* object (see package
+[S4Vectors](http://bioconductor.org/packages/release/bioc/html/S4Vectors.html)).
+
+### RNA-seq experiment summaries
+
+Following on from above, `mtab3007` now contains a *SimpleList* object 
+with a single entry named `rnaseq`. For RNA-seq experiments, this entry is a
+*RangedSummarizedExperiment* object (see package
+[SummarizedExperiment](http://bioconductor.org/packages/release/bioc/html/SummarizedExperiment.html)).
+
+```{r}
+sumexp <- mtab3007$rnaseq
+sumexp
+```
+
+The matrix of raw counts for this experiment is stored in the *assays* slot:
+
+```{r}
+head( assays( sumexp )$counts )
+```
+
+The sample annotations can be found in the *colData* slot:
+
+```{r}
+colData( sumexp )
+```
+
+Information describing how the raw data files were processed to obtain the raw
+counts matrix are found in the *metadata* slot:
+
+```{r eval=FALSE}
+metadata( sumexp )
+```
+
+### Single-channel microarray experiments.
+
+Data from a single-channel microarray experiment, e.g.
+[E-MEXP-2702](http://www.ebi.ac.uk/gxa/experiments/E-MEXP-2702), is
+represented as one or more
+*[ExpressionSet](https://www.bioconductor.org/packages/release/bioc/vignettes/Biobase/inst/doc/ExpressionSetIntroduction.pdf)*
+object(s) in the SimpleList that is downloaded. *ExpressionSet* objects are
+indexed by the ArrayExpress accession(s) of the microarray design(s) used in the
+original experiment.
+
+```{r}
+mexp2702 <- getAtlasExperiment( "E-MEXP-2702" )
+names( mexp2702 )
+affy77data <- mexp2702[[ "A-AFFY-77" ]]
+affy77data
+```
+
+The matrix of normalized intensity values is in the *assayData* slot:
+
+```{r}
+head( exprs( affy77data ) )
+```
+
+The sample annotations are in the *phenoData* slot:
+
+```{r}
+pData( affy77data )
+```
+
+A brief outline of how the raw data was normalized is in the *experimentData* slot:
+
+```{r}
+preproc( experimentData( affy77data ) )
+```
+
+## Downloading multiple experiments at once
+
+You can download experiment summaries for more than one Expression Atlas
+experiment in one go, using the `getAtlasData()` function. This function
+returns a *SimpleList* where each experiment summary is stored under its
+ArrayExpress accession.
+
+```{r}
+myAccessions <- c( "E-MTAB-3007", "E-MEXP-2702" )
+mySummaries <- getAtlasData( myAccessions )
+mySummaries
+```
+
+Each experiment summary in the list is either a *RangedSummarizedExperiment* or
+an *ExpressionSet*.
+
+```{r}
+mySummaries[[ "E-MTAB-3007" ]]
+mySummaries[[ "E-MTAB-3007" ]]$rnaseq
+```

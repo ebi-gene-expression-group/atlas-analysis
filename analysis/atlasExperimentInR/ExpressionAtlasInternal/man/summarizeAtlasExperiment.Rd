@@ -41,7 +41,7 @@
 # Summarize an Atlas microarray experiment.
 arrayExperimentSummaryList <- summarizeAtlasExperiment( 
 	"E-MEXP-1025", 
-	system.file( "extdata", "E-MEXP-1025", package = "ExpressionAtlas" ) 
+	system.file( "extdata", "E-MEXP-1025", package = "ExpressionAtlasInternal" ) 
 )
 
 # Get some ExpressionSet objects.
@@ -54,7 +54,7 @@ preproc( experimentData( expressionSet_affy18 ) )
 # Summarize an Atlas RNA-seq experiment.
 rnaseqExperimentSummaryList <- summarizeAtlasExperiment(
 	"E-GEOD-38400",
-	system.file( "extdata", "E-GEOD-38400", package = "ExpressionAtlas" )
+	system.file( "extdata", "E-GEOD-38400", package = "ExpressionAtlasInternal" )
 )
 
 # Get the SummarizedExperiment object.
