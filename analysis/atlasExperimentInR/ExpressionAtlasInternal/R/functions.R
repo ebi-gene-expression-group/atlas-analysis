@@ -586,8 +586,8 @@ check_file_exists <- function( filename ) {
     dummyRanges <- BiocGenerics::relist( GRanges(), partitioning )
 
 	# Create SummarizedExperiment
-	summarizedExperiment <- new( "RangedSummarizedExperiment", 
-                                    assays = Assays( SimpleList( counts = expressionsMatrix ) ), 
+	summarizedExperiment <- SummarizedExperiment( 
+                                    assays = SimpleList( counts = expressionsMatrix ), 
                                     colData = analyticsSDRF, 
                                     metadata = analysisMethodsList,
                                     rowRanges = dummyRanges
