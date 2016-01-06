@@ -55,18 +55,20 @@ my $tooShortReadsFile = File::Spec->catfile(
 
 # Read the accessions of experiments that have been rejected for having
 # too-short reads.
-my $tooShortAccs = {};
-open my $fh, "<", $tooShortReadsFile
-	or $logger->logdie( "Cannot read file $tooShortReadsFile: $!" );
-while( defined( my $line = <$fh> ) ) {
-
-	chomp $line;
-	
-	if( $line =~ /^E-\w{4}-\d+$/ ) {
-		$tooShortAccs->{ $line } = 1;
-	}
-}
-close $fh;
+#--------------------------------------------------
+# my $tooShortAccs = {};
+# open my $fh, "<", $tooShortReadsFile
+# 	or $logger->logdie( "Cannot read file $tooShortReadsFile: $!" );
+# while( defined( my $line = <$fh> ) ) {
+# 
+# 	chomp $line;
+# 	
+# 	if( $line =~ /^E-\w{4}-\d+$/ ) {
+# 		$tooShortAccs->{ $line } = 1;
+# 	}
+# }
+# close $fh;
+#-------------------------------------------------- 
 
 my ( $expAcc ) = @ARGV;
 
@@ -150,15 +152,21 @@ foreach my $row ( @resultsRows ) {
 
 		$failedRuns->{ $runAcc } = 1;
 		
-		if( $qcStatus =~ /FastqInfo: Read size smaller than/i ) {
+		#--------------------------------------------------
+		# if( $qcStatus =~ /FastqInfo: Read size smaller than/i ) {
+		#-------------------------------------------------- 
 
-			unless( $tooShortAccs->{ $expAcc } ) {
-				
-				$newTooShort++;
+		#--------------------------------------------------
+		# 	unless( $tooShortAccs->{ $expAcc } ) {
+		# 		
+		# 		$newTooShort++;
+		#-------------------------------------------------- 
 
-				$tooShortAccs->{ $expAcc } = 1;
-			}
-		}
+		#--------------------------------------------------
+		# 		$tooShortAccs->{ $expAcc } = 1;
+		# 	}
+		# }
+		#-------------------------------------------------- 
 	}
     # If the run passed QC, save it so we can make sure it exists in the counts
     # matrix.
@@ -273,21 +281,23 @@ $logger->info( "Successfully written QC results." );
 
 # If there were any new accessions to add to the "too-short reads" file,
 # re-write it now.
-if( $newTooShort ) {
-
-	$logger->info( "Adding experiment accession to $tooShortReadsFile ..." );
-
-	open my $tsfh, ">", $tooShortReadsFile
-		or $logger->logdie( "Cannot write to file $tooShortReadsFile : $!" );
-
-	foreach my $acc ( keys %{ $tooShortAccs } ) {
-		say $tsfh $acc;
-	}
-
-	close( $tsfh );
-
-	$logger->info( "Successfully written accessions." );
-}
+#--------------------------------------------------
+# if( $newTooShort ) {
+# 
+# 	$logger->info( "Adding experiment accession to $tooShortReadsFile ..." );
+# 
+# 	open my $tsfh, ">", $tooShortReadsFile
+# 		or $logger->logdie( "Cannot write to file $tooShortReadsFile : $!" );
+# 
+# 	foreach my $acc ( keys %{ $tooShortAccs } ) {
+# 		say $tsfh $acc;
+# 	}
+# 
+# 	close( $tsfh );
+# 
+# 	$logger->info( "Successfully written accessions." );
+# }
+#-------------------------------------------------- 
 
 
 # If there were any failed runs, go through the XML and remove them.
