@@ -153,9 +153,8 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 
 	# Check for errors in the R output.
 	if( $? ) {
-		# Warn that QC had problems but continue with the next array design (if any).
-		$logger->warn( "$exptAccession: Error during quality metrics calculation for array $arrayDesign, outout from R below.\n------------\n$qcRscriptOutput\n------------\n" );
-		next;
+		# Die here if any errors from R.
+		$logger->logdie( "$exptAccession: Error during quality metrics calculation for array $arrayDesign, outout from R below.\n------------\n$qcRscriptOutput\n------------\n" );
 	}
 
 	# Delete the no longer needed temp file.
