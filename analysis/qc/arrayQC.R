@@ -127,14 +127,35 @@ atlasArrayQC <- function(annotationFile, exptType, exptAcc, arrayDesign, outDir,
 	
 	# Run quality metrics calculation
 	# Store output in arrayQCdata
-	arrayQCdata <- arrayQualityMetrics(expressionset = dataSet, 
-						outdir = outDir,
-						force = TRUE,
-						do.logtransform = TRUE,
-						intgroup = factorColName,
-						spatial = FALSE,
-						reporttitle = reportTitle)
+	#--------------------------------------------------
+	# arrayQCdata <- arrayQualityMetrics(expressionset = dataSet, 
+	# 					outdir = outDir,
+	# 					force = TRUE,
+	# 					do.logtransform = TRUE,
+	# 					intgroup = factorColName,
+	# 					spatial = FALSE,
+	# 					reporttitle = reportTitle)
+	#-------------------------------------------------- 
 	
+    ##########################
+    # FIXME: Temporary workaround while arrayQualityMetrics package has a bug.
+    # Courtesy of Mike Smith on the Bioconductor support site: https://support.bioconductor.org/p/76626/#76640
+    preparedData <- prepdata(expressionset = dataSet, do.logtransform = TRUE, intgroup = factorColName)
+    bo = aqm.boxplot(preparedData)
+    de = aqm.density(preparedData)
+    hm = aqm.heatmap(preparedData)
+    pca = aqm.pca(preparedData)
+    ma = aqm.maplot(preparedData)
+    qm = list("Boxplot" = bo, "Density" = de, "Heatmap" = hm, "PCA" = pca, "MAplot" = ma)
+    arrayQCdata <- aqm.writereport( 
+        modules = qm, 
+        arrayTable = preparedData$pData, 
+        reporttitle = reportTitle, 
+        outdir = outDir
+    )
+    # End temporary workaround
+    ##########################
+
 	# Next want to inspect the output of arrayQualityMetrics stored in the
 	# arrayQCdata object. This object is a list, the element we are interested
 	# in is "modules", which is also a list. It contains all the data displayed
