@@ -74,7 +74,9 @@ my $experimentConfig = parseAtlasConfig( $atlasXMLfile );
 $logger->info( "Successfully read XML config." );
 
 # R script (should be in PATH).
+#-------------------------------------------------- 
 my $qcRscript = "arrayQC.R";
+
 unless( can_run( $qcRscript ) ) {
     $logger->logdie( "$qcRscript not found. Please ensure it is installed and you can run it." );
 }
@@ -148,6 +150,7 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 
 	# Create directory name for this experiment/array design.
 	my $reportDir = $exptAccession."_$arrayDesign"."_QM";
+
 	# Run R script.
 	my $qcRscriptOutput = `$qcRscript $tempFile $experimentType $exptAccession $arrayDesign $reportDir $miRBaseFile 2>&1`;
 
@@ -156,7 +159,7 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 		# Die here if any errors from R.
 		$logger->logdie( "$exptAccession: Error during quality metrics calculation for array $arrayDesign, outout from R below.\n------------\n$qcRscriptOutput\n------------\n" );
 	}
-
+    
 	# Delete the no longer needed temp file.
 	`rm $tempFile`;
 
