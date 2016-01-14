@@ -12,7 +12,7 @@ Description: This package is for downloading data from specified datasets from
 biocViews: ExpressionData, ExperimentData, SequencingData, MicroarrayData,
     ArrayExpress
 Depends: methods
-Imports: Biobase, SummarizedExperiment, limma, S4Vectors
+Imports: Biobase, SummarizedExperiment, limma, S4Vectors, XML
 Suggests: knitr,
     testthat
 VignetteBuilder: knitr
