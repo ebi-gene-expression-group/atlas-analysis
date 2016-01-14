@@ -150,3 +150,95 @@ getAtlasData <- function( experimentAccessions ) {
     }
 }
 
+
+# searchAtlasExperiments
+#   - Search (currently against ArrayExpress API) for datasets in Atlas matching given terms.
+#   - TODO: since we are currently using the ArrayExpress API, we can't query
+#   for genes, only sample properties.
+searchAtlasExperiments <- function( properties, species = NULL ) {
+
+    if( missing( properties ) ) {
+        stop( "Please provide at least one search term." )
+    }
+
+    if( typeof( properties ) != "character" ) {
+        stop( "Please provide search term(s) as a character vector." )
+    }
+    
+    properties <- sapply( properties, URLencode )
+
+    if( missing( species ) ) {
+    
+        cat( "No species was provided. Will search for data from all available species.\n" )
+    
+    } else if( typeof( species ) != "character" ) {
+       
+       stop( "Please provide species as a character vector." )
+    
+    } else if( length( species ) > 1 ) {
+
+        stop( "More than one species found. You may only specify one species at a time." )
+    }
+
+    aeAPIbase <- "http://www.ebi.ac.uk/arrayexpress/xml/v2/experiments?keywords="
+
+    queryURL <- paste( 
+        aeAPIbase,
+        paste( properties, collapse = "+OR+" ),
+        "&gxa=TRUE",
+        sep = ""
+    )
+
+    if( !missing( species ) ) {
+    
+        species <- URLencode( species )
+
+        queryURL <- paste( 
+            queryURL, 
+            "&species=", 
+            species, 
+            sep = "" 
+        )
+    }
+
+    cat( 
+        paste( 
+            "Searching ArrayExpress for experiments in Atlas using the following URL:\n",
+            queryURL,
+            "\n...",
+            sep = ""
+        )
+    )
+    
+    # Run the query and download the resulting XML.
+    aeResultsXmlTree <- xmlInternalTreeParse( queryURL, isURL = TRUE )
+    
+    # Pull out the root node ("experiments").
+    allExpsNode <- xmlRoot( aeResultsXmlTree )
+
+    # Get a list of all the experiments.
+    allExperiments <- xmlElementsByTagName( allExpsNode, "experiment" )
+
+    # Pull out the title and accession of each experiment.
+    # TODO: What else might be useful here? Species, description(?), factor(s)? ...
+    resultsList <- lapply( allExperiments, function( experimentNode ) {
+
+        expAcc <- xmlValue( xmlElementsByTagName( experimentNode, "accession" )$accession )
+
+        expTitle <- xmlValue( xmlElementsByTagName( experimentNode, "name" )$name )
+
+        species <- xmlValue( xmlElementsByTagName( experimentNode, "organism" )$organism )
+
+        list( accession = expAcc, title = expTitle, species = species )
+
+    } )
+    
+    allAccessions <- sapply( resultsList, function( x ) { x$accession } )
+    allSpecies <- sapply( resultsList, function( x ) { x$species } )
+    allTitles <- sapply( resultsList, function( x ) { x$title } )
+
+    resultsSummary <- data.frame( Accession = allAccessions, Species = allSpecies, Title = allTitles )
+    resultsSummary <- resultsSummary[ order( resultsSummary$Species ), ]
+    
+    return( resultsSummary )
+}
