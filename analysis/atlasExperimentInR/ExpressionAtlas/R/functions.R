@@ -237,7 +237,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     allSpecies <- sapply( resultsList, function( x ) { x$species } )
     allTitles <- sapply( resultsList, function( x ) { x$title } )
 
-    resultsSummary <- data.frame( Accession = allAccessions, Species = allSpecies, Title = allTitles )
+    resultsSummary <- data.frame( Accession = allAccessions, Species = allSpecies, Title = allTitles, stringsAsFactors = FALSE )
     resultsSummary <- resultsSummary[ order( resultsSummary$Species ), ]
     
     return( resultsSummary )
