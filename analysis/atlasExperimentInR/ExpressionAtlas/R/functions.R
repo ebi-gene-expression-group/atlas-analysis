@@ -244,7 +244,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     } )
     
     allAccessions <- sapply( resultsList, function( x ) { x$accession } )
-    allExpTypes <- sapply( resultsList( function( x ) { x$expType } )
+    allExpTypes <- sapply( resultsList, function( x ) { x$expType } )
     allSpecies <- sapply( resultsList, function( x ) { x$species } )
     allTitles <- sapply( resultsList, function( x ) { x$title } )
 
