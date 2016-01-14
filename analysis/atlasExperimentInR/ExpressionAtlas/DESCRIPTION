@@ -13,8 +13,7 @@ biocViews: ExpressionData, ExperimentData, SequencingData, MicroarrayData,
     ArrayExpress
 Depends: methods
 Imports: Biobase, SummarizedExperiment, limma, S4Vectors, XML
-Suggests: knitr,
-    testthat
+Suggests: knitr, testthat, rmarkdown
 VignetteBuilder: knitr
 Collate: functions.R
 License: GPL (>= 3)
