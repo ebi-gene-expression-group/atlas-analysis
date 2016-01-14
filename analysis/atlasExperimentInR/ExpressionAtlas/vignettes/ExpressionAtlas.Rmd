@@ -82,7 +82,7 @@ counts matrix are found in the *metadata* slot:
 metadata( sumexp )
 ```
 
-### Single-channel microarray experiments.
+### Single-channel microarray experiments
 
 Data from a single-channel microarray experiment, e.g.
 [E-MEXP-2702](http://www.ebi.ac.uk/gxa/experiments/E-MEXP-2702), is
