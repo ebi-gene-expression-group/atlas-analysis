@@ -205,7 +205,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
         paste( 
             "Searching ArrayExpress for experiments in Atlas using the following URL:\n",
             queryURL,
-            "\n...",
+            " ...\n",
             sep = ""
         )
     )
@@ -213,14 +213,22 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     # Run the query and download the resulting XML.
     aeResultsXmlTree <- xmlInternalTreeParse( queryURL, isURL = TRUE )
     
+    # TODO: make sure the above worked i.e. wrap it in try().
+
     # Pull out the root node ("experiments").
     allExpsNode <- xmlRoot( aeResultsXmlTree )
 
     # Get a list of all the experiments.
     allExperiments <- xmlElementsByTagName( allExpsNode, "experiment" )
 
-    # Pull out the title and accession of each experiment.
-    # TODO: What else might be useful here? Species, description(?), factor(s)? ...
+    # TODO: log the number of experiments found.
+
+    # Pull out the title, accession, and species of each experiment.
+    # TODO: What else might be useful here?
+    #   - experiment type i.e. microarray or RNA-seq
+    #   - description(?), 
+    #   - factor(s)? 
+    #   - ...?
     resultsList <- lapply( allExperiments, function( experimentNode ) {
 
         expAcc <- xmlValue( xmlElementsByTagName( experimentNode, "accession" )$accession )
@@ -229,16 +237,25 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
 
         species <- xmlValue( xmlElementsByTagName( experimentNode, "organism" )$organism )
 
-        list( accession = expAcc, title = expTitle, species = species )
+        expType <- xmlValue( xmlElementsByTagName( experimentNode, "experimenttype")$experimenttype )
+
+        list( accession = expAcc, title = expTitle, species = species, expType = expType )
 
     } )
     
     allAccessions <- sapply( resultsList, function( x ) { x$accession } )
+    allExpTypes <- sapply( resultsList( function( x ) { x$expType } )
     allSpecies <- sapply( resultsList, function( x ) { x$species } )
     allTitles <- sapply( resultsList, function( x ) { x$title } )
 
-    resultsSummary <- data.frame( Accession = allAccessions, Species = allSpecies, Title = allTitles, stringsAsFactors = FALSE )
-    resultsSummary <- resultsSummary[ order( resultsSummary$Species ), ]
+    resultsSummary <- data.frame( 
+        Accession = allAccessions, 
+        Species = allSpecies, 
+        Type = allExpTypes, 
+        Title = allTitles, 
+        stringsAsFactors = FALSE 
+    )
+    resultsSummary <- resultsSummary[ order( resultsSummary$Species, resultsSummary$Accession ), ]
     
     return( resultsSummary )
 }
