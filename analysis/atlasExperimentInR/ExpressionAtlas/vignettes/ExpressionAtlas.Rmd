@@ -2,6 +2,7 @@
 title: "ExpressionAtlas package vignette"
 author: "Maria Keays"
 date: "`r Sys.Date()`"
+output: html_document
 vignette: >
     %\VignetteEngine{ knitr::rmarkdown }
     %\VignetteIndexEntry{ ExpressionAtlas }
