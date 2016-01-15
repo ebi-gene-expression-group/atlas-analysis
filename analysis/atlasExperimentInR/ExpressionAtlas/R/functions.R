@@ -248,6 +248,11 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     allSpecies <- sapply( resultsList, function( x ) { x$species } )
     allTitles <- sapply( resultsList, function( x ) { x$title } )
 
+    names( allAccessions ) <- NULL
+    names( allExpTypes ) <- NULL
+    names( allSpecies ) <- NULL
+    names( allTitles ) <- NULL
+
     resultsSummary <- DataFrame( 
         Accession = allAccessions, 
         Species = allSpecies, 
