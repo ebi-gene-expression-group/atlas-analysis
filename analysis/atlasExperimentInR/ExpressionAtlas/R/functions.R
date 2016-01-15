@@ -252,7 +252,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
         Accession = allAccessions, 
         Species = allSpecies, 
         Type = allExpTypes, 
-        Title = allTitles, 
+        Title = allTitles
     )
     resultsSummary <- resultsSummary[ order( resultsSummary$Species, resultsSummary$Accession ), ]
     
