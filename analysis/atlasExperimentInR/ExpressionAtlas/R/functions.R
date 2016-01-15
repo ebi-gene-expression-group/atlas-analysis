@@ -203,7 +203,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
 
     cat( 
         paste( 
-            "Searching ArrayExpress for experiments in Atlas using the following URL:\n",
+            "Searching for Expression Atlas experiments matching your query\n",
             queryURL,
             " ...\n",
             sep = ""
@@ -221,11 +221,11 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     # Get a list of all the experiments.
     allExperiments <- xmlElementsByTagName( allExpsNode, "experiment" )
 
-    # TODO: log the number of experiments found.
+    # Log the number of experiments found.
+    cat( paste( length( allExperiments ), "experiments found.\n" ) )
 
     # Pull out the title, accession, and species of each experiment.
     # TODO: What else might be useful here?
-    #   - experiment type i.e. microarray or RNA-seq
     #   - description(?), 
     #   - factor(s)? 
     #   - ...?
@@ -248,7 +248,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     allSpecies <- sapply( resultsList, function( x ) { x$species } )
     allTitles <- sapply( resultsList, function( x ) { x$title } )
 
-    resultsSummary <- data.frame( 
+    resultsSummary <- DataFrame( 
         Accession = allAccessions, 
         Species = allSpecies, 
         Type = allExpTypes, 
