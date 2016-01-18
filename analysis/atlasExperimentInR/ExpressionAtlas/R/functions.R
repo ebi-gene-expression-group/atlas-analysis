@@ -156,39 +156,48 @@ getAtlasData <- function( experimentAccessions ) {
 #   - TODO: since we are currently using the ArrayExpress API, we can't query
 #   for genes, only sample properties.
 searchAtlasExperiments <- function( properties, species = NULL ) {
-
+    
+    # Quit if we don't have any search terms
     if( missing( properties ) ) {
         stop( "Please provide at least one search term." )
     }
-
+    
+    # If we've got something other than a character vector of properties, also quit.
     if( typeof( properties ) != "character" ) {
         stop( "Please provide search term(s) as a character vector." )
     }
     
+    # Make properties URL friendly (e.g. replace spaces with %20
     properties <- sapply( properties, URLencode )
 
+    # If we weren't passed a species, log this.
     if( missing( species ) ) {
     
         cat( "No species was provided. Will search for data from all available species.\n" )
     
     } else if( typeof( species ) != "character" ) {
        
-       stop( "Please provide species as a character vector." )
+        # Quit if the species isn't a character vector.
+        stop( "Please provide species as a character vector." )
     
     } else if( length( species ) > 1 ) {
-
+        
+        # Only allow one species to be specified.
         stop( "More than one species found. You may only specify one species at a time." )
     }
-
+    
+    # ArrayExpress API base URL.
     aeAPIbase <- "http://www.ebi.ac.uk/arrayexpress/xml/v2/experiments?keywords="
 
+    # Construct the query URL
     queryURL <- paste( 
         aeAPIbase,
         paste( properties, collapse = "+OR+" ),
         "&gxa=TRUE",
         sep = ""
     )
-
+    
+    # Add the species to the URL if we were passed one.
     if( !missing( species ) ) {
     
         species <- URLencode( species )
@@ -200,7 +209,9 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
             sep = "" 
         )
     }
-
+    
+    # Log search is beginnined.
+    # FIXME: remove URL from logging.
     cat( 
         paste( 
             "Searching for Expression Atlas experiments matching your query\n",
@@ -210,11 +221,23 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
         )
     )
     
-    # Run the query and download the resulting XML.
-    aeResultsXmlTree <- xmlInternalTreeParse( queryURL, isURL = TRUE )
+    # Run the query and download the result.
+    response <- GET( queryURL )
     
-    # TODO: make sure the above worked i.e. wrap it in try().
+    # Make sure the HTTP request worked.
+    if( status_code( response ) != 200 ) {
+        stop( 
+            paste( 
+                "Error running query. Received HTTP error code", 
+                status_code( response ),
+                "from server. Please try again later. If you continue to experience problems please email atlas-feedback@ebi.ac.uk"
+            )
+        )
+    }
 
+    # Parse the XML content.
+    aeResultsXmlTree <- xmlInternalTreeParse( content( response ) )
+    
     # Pull out the root node ("experiments").
     allExpsNode <- xmlRoot( aeResultsXmlTree )
 
