@@ -65,7 +65,9 @@ getAtlasExperiment <- function( experimentAccession ) {
         ) 
     )
 
-    return( get( "experimentSummary" ) )
+    expSum <- get( "experimentSummary" )
+
+    return( expSum )
 }
 
 
