@@ -11,8 +11,8 @@ Description: This package is for downloading data from specified datasets from
     while microarray data is contained in an ExpressionSet or MAList object.
 biocViews: ExpressionData, ExperimentData, SequencingData, MicroarrayData,
     ArrayExpress
-Depends: methods
-Imports: Biobase, SummarizedExperiment, limma, S4Vectors, XML, httr
+Depends: methods, Biobase, SummarizedExperiment, limma, S4Vectors
+Imports: XML, httr
 Suggests: knitr, testthat, rmarkdown
 VignetteBuilder: knitr
 Collate: functions.R
