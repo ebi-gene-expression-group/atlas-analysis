@@ -234,12 +234,17 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
             )
         )
     } else {
-        cat( "Query successful." )
+        cat( "Query successful.\n" )
     }
     
+    # DEBUG
+    cat( "parsing XML...\n" )
 
     # Parse the XML content.
     aeResultsXmlTree <- xmlInternalTreeParse( content( response ) )
+
+    # DEBUG
+    cat( "XML parsed OK\n")
     
     # Pull out the root node ("experiments").
     allExpsNode <- xmlRoot( aeResultsXmlTree )
