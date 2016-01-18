@@ -236,7 +236,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     }
 
     # Parse the XML content.
-    aeResultsXmlTree <- xmlInternalTreeParse( content( response ) )
+    aeResultsXmlTree <- xmlInternalTreeParse( httr::content( response ) )
     
     # Pull out the root node ("experiments").
     allExpsNode <- xmlRoot( aeResultsXmlTree )
