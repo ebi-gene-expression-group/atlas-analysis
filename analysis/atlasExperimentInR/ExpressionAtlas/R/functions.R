@@ -233,10 +233,13 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
                 "from server. Please try again later. If you continue to experience problems please email atlas-feedback@ebi.ac.uk"
             )
         )
+    } else {
+        cat( "Query successful." )
     }
+    
 
     # Parse the XML content.
-    aeResultsXmlTree <- xmlInternalTreeParse( httr::content( response ) )
+    aeResultsXmlTree <- xmlInternalTreeParse( content( response ) )
     
     # Pull out the root node ("experiments").
     allExpsNode <- xmlRoot( aeResultsXmlTree )
