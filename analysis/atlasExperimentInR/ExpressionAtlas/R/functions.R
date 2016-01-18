@@ -8,15 +8,18 @@ getAtlasExperiment <- function( experimentAccession ) {
 
         stop( "Experiment accession not valid. Cannot continue." )
     }
-
+    
+    # FIXME: change back to www before submitting.
     urlBase <- "http://wwwdev.ebi.ac.uk/gxa/experiments"
-
+    
+    # Create filename for R data file.
     atlasExperimentSummaryFile <- paste( 
         experimentAccession,
         "-atlasExperimentSummary.Rdata", 
         sep = "" 
     )
 
+    # Create full URL to download R data from.
     fullUrl <- paste( 
         urlBase, 
         experimentAccession, 
@@ -32,8 +35,10 @@ getAtlasExperiment <- function( experimentAccession ) {
         ) 
     )
 
+    # Download the data and load it into R.
     loadResult <- try( load( url( fullUrl ) ) )
     
+    # Quit if we got an error.
     if( class( loadResult ) == "try-error" ) {
 
         msg <- geterrmessage()
@@ -65,9 +70,10 @@ getAtlasExperiment <- function( experimentAccession ) {
         ) 
     )
 
+    # Return the experiment summary.
     expSum <- get( "experimentSummary" )
 
-    expSum 
+    return( expSum )
 }
 
 
@@ -239,19 +245,18 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
         cat( "Query successful.\n" )
     }
     
+    # Get the root node of the XML.
     allExpsNode <- xmlRoot( content( response ) )
 
-    # Get a list of all the experiments.
+    # Get a list of all the experiments from the root node.
     allExperiments <- xmlElementsByTagName( allExpsNode, "experiment" )
 
     # Log the number of experiments found.
     cat( paste( length( allExperiments ), "experiments found.\n" ) )
 
-    # Pull out the title, accession, and species of each experiment.
-    # TODO: What else might be useful here?
-    #   - description(?), 
-    #   - factor(s)? 
-    #   - ...?
+    # FIXME: quit here if there weren't any results!
+
+    # Pull out the title, accession, type and species of each experiment.
     resultsList <- lapply( allExperiments, function( experimentNode ) {
 
         expAcc <- xmlValue( xmlElementsByTagName( experimentNode, "accession" )$accession )
@@ -259,30 +264,39 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
         expTitle <- xmlValue( xmlElementsByTagName( experimentNode, "name" )$name )
 
         species <- xmlValue( xmlElementsByTagName( experimentNode, "organism" )$organism )
-
+        
+        # Experiment type is e.g. microarray, RNA-seq, ...
         expType <- xmlValue( xmlElementsByTagName( experimentNode, "experimenttype")$experimenttype )
-
+        
+        # Return a list with this experiment's collected info.
         list( accession = expAcc, title = expTitle, species = species, expType = expType )
 
     } )
     
+    # Create vectors of all accessions, experiment types, species, and titles.
     allAccessions <- sapply( resultsList, function( x ) { x$accession } )
     allExpTypes <- sapply( resultsList, function( x ) { x$expType } )
     allSpecies <- sapply( resultsList, function( x ) { x$species } )
     allTitles <- sapply( resultsList, function( x ) { x$title } )
 
+    # Remove the names (all names are "experiment") so they don't show up later
+    # and confuse things.
     names( allAccessions ) <- NULL
     names( allExpTypes ) <- NULL
     names( allSpecies ) <- NULL
     names( allTitles ) <- NULL
-
+    
+    # Create DataFrame containing the above results as columns.
     resultsSummary <- DataFrame( 
         Accession = allAccessions, 
         Species = allSpecies, 
         Type = allExpTypes, 
         Title = allTitles
     )
+
+    # Sort the columns by species, type, then accession.
     resultsSummary <- resultsSummary[ order( resultsSummary$Species, resultsSummary$Type, resultsSummary$Accession ), ]
     
+    # Return the DataFrame.
     return( resultsSummary )
 }
