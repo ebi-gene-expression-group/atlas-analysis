@@ -1,4 +1,4 @@
 export( getAtlasExperiment, getAtlasData, searchAtlasExperiments )
-import( Biobase, SummarizedExperiment, limma, methods, XML )
+import( SummarizedExperiment, limma, methods, XML )
 importFrom( S4Vectors, SimpleList, DataFrame )
-importFrom( httr, status_code, httr::content )
+inportFrom( httr, status_code, content )
