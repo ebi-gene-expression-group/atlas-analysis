@@ -6,7 +6,7 @@
     species name, and then searches for matching Expression Atlas experiments.
 }
 \usage{
-    searchAtlasExperiments( properties, species )
+    searchAtlasExperiments( properties, species = NULL )
 }
 \arguments{
     \item{ properties }{
@@ -14,7 +14,8 @@
         biological characteristics, experimental treatments, etc.
     }
     \item{ species }{
-        Optional. The name of a species to limit results to.
+        Optional. The name of a species to limit results to. If not provided,
+        search is performed across all species in Expression Atlas.
     }
 }
 \value{
