@@ -9,7 +9,7 @@ getAtlasExperiment <- function( experimentAccession ) {
         stop( "Experiment accession not valid. Cannot continue." )
     }
 
-    urlBase <- "http://www.ebi.ac.uk/gxa/experiments"
+    urlBase <- "http://wwwdev.ebi.ac.uk/gxa/experiments"
 
     atlasExperimentSummaryFile <- paste( 
         experimentAccession,
@@ -237,22 +237,8 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
         cat( "Query successful.\n" )
     }
     
-
-    # Parse the XML content.
-    #aeResultsXmlTree <- xmlInternalTreeParse( content( response ) )
-
-    # DEBUG
-    cat( "parsing XML...\n" )
-   
     allExpsNode <- xmlRoot( content( response ) )
 
-    # DEBUG
-    cat( "XML parsed OK\n")
-    
-    
-    # Pull out the root node ("experiments").
-    #allExpsNode <- xmlRoot( aeResultsXmlTree )
-    
     # Get a list of all the experiments.
     allExperiments <- xmlElementsByTagName( allExpsNode, "experiment" )
 
