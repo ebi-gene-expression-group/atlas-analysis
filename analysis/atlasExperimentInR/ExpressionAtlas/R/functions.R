@@ -252,7 +252,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     numExps <- xmlAttrs( allExpsNode )[ "total" ]
 
     # Log the number of experiments found.
-    cat( paste( numExps, "experiments matched your query." ) )
+    cat( paste( numExps, "experiments matched your query.\n" ) )
 
     # If there were no results, quit here.
     if( numExps == 0 ) {
