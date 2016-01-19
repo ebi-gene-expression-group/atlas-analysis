@@ -222,9 +222,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     # FIXME: remove URL from logging.
     cat( 
         paste( 
-            "Searching for Expression Atlas experiments matching your query\n",
-            queryURL,
-            " ...\n",
+            "Searching for Expression Atlas experiments matching your query ...\n",
             sep = ""
         )
     )
