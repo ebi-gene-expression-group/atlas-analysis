@@ -253,7 +253,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
 
     # If there were no results, quit here.
     if( numExps == 0 ) {
-        return( "No results found. Cannot continue." )
+        return( cat( "No results found. Cannot continue.\n" ) )
     
     } else {
         cat( paste( "Found", numExps, "experiments matching your query.\n" ) )
