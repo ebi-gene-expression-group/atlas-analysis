@@ -9,8 +9,8 @@ getAtlasExperiment <- function( experimentAccession ) {
         stop( "Experiment accession not valid. Cannot continue." )
     }
     
-    # FIXME: change back to www before submitting.
-    urlBase <- "http://wwwdev.ebi.ac.uk/gxa/experiments"
+    # URL to download Atlas data from.
+    urlBase <- "http://www.ebi.ac.uk/gxa/experiments"
     
     # Create filename for R data file.
     atlasExperimentSummaryFile <- paste( 
@@ -161,8 +161,6 @@ getAtlasData <- function( experimentAccessions ) {
 
 # searchAtlasExperiments
 #   - Search (currently against ArrayExpress API) for datasets in Atlas matching given terms.
-#   - TODO: since we are currently using the ArrayExpress API, we can't query
-#   for genes, only sample properties.
 searchAtlasExperiments <- function( properties, species = NULL ) {
     
     # Quit if we don't have any search terms
@@ -218,8 +216,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
         )
     }
     
-    # Log search is beginnined.
-    # FIXME: remove URL from logging.
+    # Log search is beginning.
     cat( 
         paste( 
             "Searching for Expression Atlas experiments matching your query ...\n",
