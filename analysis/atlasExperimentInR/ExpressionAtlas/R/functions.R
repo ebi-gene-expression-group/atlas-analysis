@@ -247,12 +247,20 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     
     # Get the root node of the XML.
     allExpsNode <- xmlRoot( content( response ) )
+    
+    # Get the number of experiments we found.
+    numExps <- xmlAttrs( allExpsNode )[ "total" ]
+
+    # Log the number of experiments found.
+    cat( paste( numExps, "experiments matched your query." ) )
+
+    # If there were no results, quit here.
+    if( numExps == 0 ) {
+        return( "No results found. Cannot continue." )
+    }
 
     # Get a list of all the experiments from the root node.
     allExperiments <- xmlElementsByTagName( allExpsNode, "experiment" )
-
-    # Log the number of experiments found.
-    cat( paste( length( allExperiments ), "experiments found.\n" ) )
 
     # FIXME: quit here if there weren't any results!
 
