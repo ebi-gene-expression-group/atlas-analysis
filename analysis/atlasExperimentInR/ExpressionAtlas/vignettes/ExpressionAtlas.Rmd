@@ -39,7 +39,7 @@ e.g. biological sample attributes and/or experimental treatments. You may also
 optionally provide a species to limit your search to, as a second argument.
 
 ```{r}
-library( ExpressionAtlas )
+suppressMessages( library( ExpressionAtlas ) )
 atlasRes <- searchAtlasExperiments( "salt", "Oryza sativa" )
 atlasRes
 ```
