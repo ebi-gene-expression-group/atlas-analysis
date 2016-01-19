@@ -26,7 +26,7 @@ the downloaded R objects, with more detailed information available on the
 [Expression Atlas website](http://www.ebi.ac.uk/gxa). Sample annotations are
 also included in the R object.
 
-# Searching and downloading Expression Atlas data in R
+# Searching and downloading Expression Atlas data
 
 ## Searching
 
