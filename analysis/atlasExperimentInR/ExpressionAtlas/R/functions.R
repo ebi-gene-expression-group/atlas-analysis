@@ -176,12 +176,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     }
     
     # Make properties URL friendly (e.g. replace spaces with %20
-    properties <- sapply( 
-        properties, 
-        function( x ) { 
-            URLencode( x ) 
-        } 
-    )
+    properties <- sapply( properties, URLencode )
 
     # If we weren't passed a species, log this.
     if( missing( species ) ) {
