@@ -8,15 +8,18 @@ getAtlasExperiment <- function( experimentAccession ) {
 
         stop( "Experiment accession not valid. Cannot continue." )
     }
-
+    
+    # URL to download Atlas data from.
     urlBase <- "http://www.ebi.ac.uk/gxa/experiments"
-
+    
+    # Create filename for R data file.
     atlasExperimentSummaryFile <- paste( 
         experimentAccession,
         "-atlasExperimentSummary.Rdata", 
         sep = "" 
     )
 
+    # Create full URL to download R data from.
     fullUrl <- paste( 
         urlBase, 
         experimentAccession, 
@@ -32,8 +35,10 @@ getAtlasExperiment <- function( experimentAccession ) {
         ) 
     )
 
+    # Download the data and load it into R.
     loadResult <- try( load( url( fullUrl ) ) )
     
+    # Quit if we got an error.
     if( class( loadResult ) == "try-error" ) {
 
         msg <- geterrmessage()
@@ -65,7 +70,10 @@ getAtlasExperiment <- function( experimentAccession ) {
         ) 
     )
 
-    return( get( "experimentSummary" ) )
+    # Return the experiment summary.
+    expSum <- get( "experimentSummary" )
+
+    return( expSum )
 }
 
 
@@ -150,3 +158,143 @@ getAtlasData <- function( experimentAccessions ) {
     }
 }
 
+
+# searchAtlasExperiments
+#   - Search (currently against ArrayExpress API) for datasets in Atlas matching given terms.
+searchAtlasExperiments <- function( properties, species = NULL ) {
+    
+    # Quit if we don't have any search terms
+    if( missing( properties ) ) {
+        stop( "Please provide at least one search term." )
+    }
+    
+    # If we've got something other than a character vector of properties, also quit.
+    if( typeof( properties ) != "character" ) {
+        stop( "Please provide search term(s) as a character vector." )
+    }
+    
+    # Make properties URL friendly (e.g. replace spaces with %20
+    properties <- sapply( properties, URLencode )
+
+    # If we weren't passed a species, log this.
+    if( missing( species ) ) {
+    
+        cat( "No species was provided. Will search for data from all available species.\n" )
+    
+    } else if( typeof( species ) != "character" ) {
+       
+        # Quit if the species isn't a character vector.
+        stop( "Please provide species as a character vector." )
+    
+    } else if( length( species ) > 1 ) {
+        
+        # Only allow one species to be specified.
+        stop( "More than one species found. You may only specify one species at a time." )
+    }
+    
+    # ArrayExpress API base URL.
+    aeAPIbase <- "http://www.ebi.ac.uk/arrayexpress/xml/v2/experiments?keywords="
+
+    # Construct the query URL
+    queryURL <- paste( 
+        aeAPIbase,
+        paste( properties, collapse = "+OR+" ),
+        "&gxa=TRUE",
+        sep = ""
+    )
+    
+    # Add the species to the URL if we were passed one.
+    if( !missing( species ) ) {
+    
+        species <- URLencode( species )
+
+        queryURL <- paste( 
+            queryURL, 
+            "&species=", 
+            species, 
+            sep = "" 
+        )
+    }
+    
+    # Log search is beginning.
+    cat( "Searching for Expression Atlas experiments matching your query ...\n" )
+    
+    # Run the query and download the result.
+    response <- GET( queryURL )
+    
+    # Make sure the HTTP request worked.
+    if( status_code( response ) != 200 ) {
+        stop( 
+            paste( 
+                "Error running query. Received HTTP error code", 
+                status_code( response ),
+                "from server. Please try again later. If you continue to experience problems please email atlas-feedback@ebi.ac.uk"
+            )
+        )
+    } else {
+        cat( "Query successful.\n" )
+    }
+    
+    # Get the root node of the XML.
+    allExpsNode <- xmlRoot( content( response ) )
+    
+    # Get the number of experiments we found.
+    numExps <- xmlAttrs( allExpsNode )[ "total" ]
+
+    # If there were no results, quit here.
+    if( numExps == 0 ) {
+        return( cat( "No results found. Cannot continue.\n" ) )
+    
+    } else {
+        cat( paste( "Found", numExps, "experiments matching your query.\n" ) )
+    }
+
+    # Get a list of all the experiments from the root node.
+    allExperiments <- xmlElementsByTagName( allExpsNode, "experiment" )
+
+    # FIXME: quit here if there weren't any results!
+
+    # Pull out the title, accession, type and species of each experiment.
+    resultsList <- lapply( allExperiments, function( experimentNode ) {
+
+        expAcc <- xmlValue( xmlElementsByTagName( experimentNode, "accession" )$accession )
+
+        expTitle <- xmlValue( xmlElementsByTagName( experimentNode, "name" )$name )
+
+        species <- xmlValue( xmlElementsByTagName( experimentNode, "organism" )$organism )
+        
+        # Experiment type is e.g. microarray, RNA-seq, ...
+        expType <- xmlValue( xmlElementsByTagName( experimentNode, "experimenttype")$experimenttype )
+        
+        # Return a list with this experiment's collected info.
+        list( accession = expAcc, title = expTitle, species = species, expType = expType )
+
+    } )
+    
+    # Create vectors of all accessions, experiment types, species, and titles.
+    allAccessions <- sapply( resultsList, function( x ) { x$accession } )
+    allExpTypes <- sapply( resultsList, function( x ) { x$expType } )
+    allSpecies <- sapply( resultsList, function( x ) { x$species } )
+    allTitles <- sapply( resultsList, function( x ) { x$title } )
+
+    # Remove the names (all names are "experiment") so they don't show up later
+    # and confuse things.
+    names( allAccessions ) <- NULL
+    names( allExpTypes ) <- NULL
+    names( allSpecies ) <- NULL
+    names( allTitles ) <- NULL
+    
+    # Create DataFrame containing the above results as columns.
+    resultsSummary <- DataFrame( 
+        Accession = allAccessions, 
+        Species = allSpecies, 
+        Type = allExpTypes, 
+        Title = allTitles
+    )
+
+    # Sort the columns by species, type, then accession.
+    resultsSummary <- resultsSummary[ order( resultsSummary$Species, resultsSummary$Type, resultsSummary$Accession ), ]
+    
+    # Return the DataFrame.
+    return( resultsSummary )
+}
