@@ -217,12 +217,7 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
     }
     
     # Log search is beginning.
-    cat( 
-        paste( 
-            "Searching for Expression Atlas experiments matching your query ...\n",
-            sep = ""
-        )
-    )
+    cat( "Searching for Expression Atlas experiments matching your query ...\n" )
     
     # Run the query and download the result.
     response <- GET( queryURL )
