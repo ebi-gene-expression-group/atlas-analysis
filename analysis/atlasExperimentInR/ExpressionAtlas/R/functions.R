@@ -257,8 +257,11 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
         cat( "Query successful.\n" )
     }
     
+    # Parse the XML document.
+    parsedXML <- xmlParse( content( response ) )
+
     # Get the root node of the XML.
-    allExpsNode <- xmlRoot( content( response ) )
+    allExpsNode <- xmlRoot( parsedXML )
     
     # Get the number of experiments we found.
     numExps <- xmlAttrs( allExpsNode )[ "total" ]
