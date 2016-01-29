@@ -2,6 +2,7 @@
 title: "ExpressionAtlas package vignette"
 author: "Maria Keays"
 date: "`r Sys.Date()`"
+output: html_document
 vignette: >
     %\VignetteEngine{ knitr::rmarkdown }
     %\VignetteIndexEntry{ ExpressionAtlas }
@@ -40,7 +41,7 @@ optionally provide a species to limit your search to, as a second argument.
 
 ```{r}
 suppressMessages( library( ExpressionAtlas ) )
-atlasRes <- searchAtlasExperiments( "salt", "Oryza sativa" )
+atlasRes <- searchAtlasExperiments( properties = "salt", species = "rice" )
 atlasRes
 ```
 
