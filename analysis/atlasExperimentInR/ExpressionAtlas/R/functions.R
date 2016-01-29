@@ -10,7 +10,7 @@ getAtlasExperiment <- function( experimentAccession ) {
     }
     
     # URL to download Atlas data from.
-    urlBase <- "http://www.ebi.ac.uk/gxa/experiments"
+    urlBase <- "ftp://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments"
     
     # Create filename for R data file.
     atlasExperimentSummaryFile <- paste( 
@@ -36,19 +36,38 @@ getAtlasExperiment <- function( experimentAccession ) {
     )
 
     # Download the data and load it into R.
-    loadResult <- try( load( url( fullUrl ) ) )
+    loadResult <- try( load( url( fullUrl ) ), silent = TRUE )
     
     # Quit if we got an error.
     if( class( loadResult ) == "try-error" ) {
 
         msg <- geterrmessage()
 
-        stop( 
+        warning( 
             paste( 
-                "Error encountered while trying to download experiment summary:", 
-                msg 
-            ) 
+                paste( 
+                    "Error encountered while trying to download experiment summary for",
+                    experimentAccession,
+                    ":"
+                ),
+                msg,
+                paste( 
+                    "There may not currently be an Expression Atlas experiment summary available for ",
+                    experimentAccession,
+                    ".\nPlease try again later, check the website at ",
+                    paste( 
+                        "http://www.ebi.ac.uk/gxa/experiments/",
+                        experimentAccession,
+                        sep = ""
+                    ),
+                    ", or email us at atlas-feedback@ebi.ac.uk",
+                    sep = ""
+                ),
+                sep = "\n"
+            )
         )
+
+        return( )
     }
     
     # Make sure experiment summary object exists before trying to return it.
@@ -119,9 +138,12 @@ getAtlasData <- function( experimentAccessions ) {
         
         lapply( experimentAccessions, function( experimentAccession ) {
 
-            getAtlasExperiment( experimentAccession )
+            experimentSummary <- getAtlasExperiment( experimentAccession )
         } 
     ) )
+
+    # Remove any null entries, i.e. experiments without R data files available.
+    experimentSummaryList <- experimentSummaryList[ ! sapply( experimentSummaryList, is.null ) ]
 
     return( experimentSummaryList )
 }
@@ -251,8 +273,6 @@ searchAtlasExperiments <- function( properties, species = NULL ) {
 
     # Get a list of all the experiments from the root node.
     allExperiments <- xmlElementsByTagName( allExpsNode, "experiment" )
-
-    # FIXME: quit here if there weren't any results!
 
     # Pull out the title, accession, type and species of each experiment.
     resultsList <- lapply( allExperiments, function( experimentNode ) {
