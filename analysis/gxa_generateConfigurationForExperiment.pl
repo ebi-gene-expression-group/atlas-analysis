@@ -75,6 +75,7 @@ Expression Atlas team <arrayexpress-atlas@ebi.ac.uk>
 
 use strict;
 use warnings;
+use 5.10.0;
 
 use Pod::Usage;
 use Getopt::Long;
