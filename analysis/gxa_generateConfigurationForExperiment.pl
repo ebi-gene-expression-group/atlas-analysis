@@ -105,9 +105,13 @@ my $atlasSiteConfig = get_atlas_site_config;
 # Parse command line arguments.
 my $args = parse_args();
 
+my $level = "INFO";
+
+if( $args->{ "debug" } ) { $level = "DEBUG"; }
+
 # Log4perl config.
-my $logger_config = q(
-	log4perl.rootlogger			         = INFO, LOG1, SCREEN
+my $logger_config = qq(
+	log4perl.rootlogger			         = $level, LOG1, SCREEN
 	log4perl.appender.SCREEN             = Log::Log4perl::Appender::Screen
 	log4perl.appender.SCREEN.stderr      = 0
 	log4perl.appender.SCREEN.layout      = Log::Log4perl::Layout::PatternLayout
@@ -125,10 +129,12 @@ Log::Log4perl::init(\$logger_config);
 my $logger = Log::Log4perl::get_logger;
 
 # Turn on debugging if required.
-if($args->{ "debug" }) {
-	$logger->level($DEBUG);
-	$logger->debug("Debugging mode ON");
-}
+#--------------------------------------------------
+# if($args->{ "debug" }) {
+# 	$logger->level($DEBUG);
+# 	$logger->debug("Debugging mode ON");
+# }
+#-------------------------------------------------- 
 
 my $atlasProdDir = $ENV{ "ATLAS_PROD" };
 
