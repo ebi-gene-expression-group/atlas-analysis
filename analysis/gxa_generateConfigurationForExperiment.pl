@@ -128,13 +128,7 @@ my $logger_config = qq(
 Log::Log4perl::init(\$logger_config);
 my $logger = Log::Log4perl::get_logger;
 
-# Turn on debugging if required.
-#--------------------------------------------------
-# if($args->{ "debug" }) {
-# 	$logger->level($DEBUG);
-# 	$logger->debug("Debugging mode ON");
-# }
-#-------------------------------------------------- 
+$logger->debug( "Debugging mode ON." );
 
 my $atlasProdDir = $ENV{ "ATLAS_PROD" };
 
