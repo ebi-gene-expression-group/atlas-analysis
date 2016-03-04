@@ -10,6 +10,8 @@ generateFactorsConfig.pl - create an XML factors config file for a baseline Expr
 
 generateFactorsConfig.pl -e E-GEOD-26284 -c E-GEOD-26284-configuration.xml -n "Cell Lines - ENCODE"
 
+generateFactorsConfig.pl -e E-MTAB-2706 -c E-MTAB-2706-configuration.xml -n "Cell Lines - 675 Genentech" -u http://www.gene.com/ -p Genentech
+
 =head1 DESCRIPTION
 
 This script takes an ArrayExpress experiment accession and an Expresison Atlas
