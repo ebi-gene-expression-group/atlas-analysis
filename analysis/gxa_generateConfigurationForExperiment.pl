@@ -88,11 +88,12 @@ use Data::Dumper;
 
 use Atlas::Common qw(
 	get_atlas_site_config
+    create_magetab4atlas
 );
 
 use Atlas::AtlasConfig::Setup qw(
 	create_factor_configs
-	create_magetab4atlas
+	check_magetab4atlas_for_config
 	create_atlas_experiment_type
 );
 use Atlas::AtlasConfig::ExperimentConfigFactory qw( create_experiment_config );
@@ -155,8 +156,11 @@ if($args->{ "ignore_factor" }) {
 
 $logger->debug( "Parsing MAGE-TAB..." );
 
-# Get a Magetab4Atlas object containing the appropriate assays.
-my $magetab4atlas = create_magetab4atlas($args, $ignoreFactorTypes);
+# Read in the MAGE-TAB.
+my $magetab4atlas = create_magetab4atlas( $args->{ "experiment_accession" } );
+
+# Make sure the Magetab4Atlas object contains the appropriate assays.
+$magetab4atlas = check_magetab4atlas_for_config($args, $ignoreFactorTypes, $magetab4atlas);
 
 $logger->debug( "Successfully parsed MAGE-TAB" );
 
