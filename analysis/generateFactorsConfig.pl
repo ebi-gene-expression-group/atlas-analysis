@@ -8,7 +8,7 @@ generateFactorsConfig.pl - create an XML factors config file for a baseline Expr
 
 =head1 SYNOPSIS
 
-generateFactorsConfig.pl -e E-MTAB-3819 -c E-MTAB-3819-configuration.xml -n "Tissues - Blueprint"
+generateFactorsConfig.pl -e E-GEOD-26284 -c E-GEOD-26284-configuration.xml -n "Cell Lines - ENCODE"
 
 =head1 DESCRIPTION
 
@@ -35,6 +35,23 @@ For example:
 See the baseline experiments page for more examples. If in doubt, check with
 the other curators.
 
+NB: speciesMapping field population is not implemented (yet). This field is
+used when the reference genome species is different from the SDRF (RNA sample)
+species. For example, data from Pongo pygmaeus may be mapped against the Pongo
+abelii genome, because the P. pygmaeus genome is not available and P. abelii is
+a closely related species.
+
+Here is an example of how to manually complete the speciesMapping field, if you
+need it. The "samples" element is for the SDRF species (note the capial "P"),
+while the "genes" element is for the reference genome species. The "genes"
+field is used by the UI code to retrieve the correct gene IDs.
+
+ <speciesMapping>
+    <genes>pongo abelii</genes>
+    <samples>Pongo pygmaeus</samples>
+ </speciesMapping>
+
+
 =head1 OPTIONS
 
 =over 2
@@ -58,8 +75,30 @@ Optional. Specify which factor to use as the default query factor.
 
 =item -o, --output_dir
 
-Optional. Where to write the factors config file. If not provided, the current
-working directory is used.
+Optional. Directory to write the factors config file. If not provided, the
+current working directory is used.
+
+=item -u, --url
+
+Optional. Specify the data provider URL, e.g. consortium homepage. This is only used for datasets from
+well-known consortia e.g. BLUEPRINT, Genentech. If this option is passed, the
+provider name must also be passed, using the "-p" option. The URL and name are
+used to display a link to the data provider URL beneath the experiment title on
+the Atlas experiment page.
+
+=item -p, --provider
+
+Optional. Specify the data provider name, "The BLUEPRINT Epigenome project". If
+this option is passed, the provider URL must also be passed, using the "-u"
+option. The URL and name are used to display a link to the data provder beneath
+the title on the Atlas experiment page.
+
+=item -f, --fort_lauderdale
+
+Optional. Use if this dataset requires that the Fort Lauderdale agreement be
+displayed when users download the data from the Atlas website. See
+http://www.wellcome.ac.uk/About-us/Publications/Reports/Biomedical-science/WTD003208.htm
+for more information about the agreement.
 
 =item -d, --debug
 
@@ -90,7 +129,7 @@ use File::Spec;
 
 use Atlas::Common qw( 
     make_ae_idf_path 
-    create_magetab4atlas    
+    create_non_strict_magetab4atlas    
 );
 use Atlas::AtlasConfig::FactorsConfigFactory qw( create_factors_config );
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
@@ -108,7 +147,7 @@ Log::Log4perl->easy_init(
 my $logger = Log::Log4perl::get_logger;
 
 # Parse MAGE-TAB and get assays.
-my $magetab = create_magetab4atlas( $args->{ "experiment_accession" } );
+my $magetab = create_non_strict_magetab4atlas( $args->{ "experiment_accession" } );
 
 # Get the assays into a hash.
 my %atlasAssays = map { $_->get_name => $_ } @{ $magetab->get_assays };
@@ -145,7 +184,7 @@ sub parse_args {
         "o|output_dir=s"    => \$args{ "output_directory" },
         "q|query_factor=s"  => \$args{ "default_query_factor" },
         "u|url=s"           => \$args{ "provider_url" },
-        "p|provider=s"      => \$args{ "provider_description" },
+        "p|provider=s"      => \$args{ "provider_name" },
         "f|fort_lauderdale" => \$args{ "fort_lauderdale" },
         "d|debug"           => \$args{ "debug" }
     );
@@ -185,6 +224,32 @@ sub parse_args {
         say "WARN  - Please ensure display name follows convention, e.g.:";
         say "WARN  - \"Tissues - 10 Mayer\" or \"Developmental Stages - modENCODE\"";
         say "WARN  - See http://www.ebi.ac.uk/gxa/baseline/experiments for more examples.";
+    }
+
+    if( $args{ "provider_url" } ) {
+        
+        unless( $args{ "provider_name" } ) {
+
+            pod2usage(
+                -message    => "ERROR - Detected data provider URL but no data provider name. Please also pass a data provider name.\n",
+                -exitval    => 255,
+                -output     => \*STDOUT,
+                -verbose    => 1
+            );
+        }
+    }
+
+    if( $args{ "provider_name" } ) {
+
+        unless( $args{ "provider_url" } ) {
+
+            pod2usage(
+                -message    => "ERROR - Detected data provider name but no data provider URL. Please also pass a data provider URL.\n",
+                -exitval    => 255,
+                -output     => \*STDOUT,
+                -verbose    => 1
+            );
+        }
     }
 
     return \%args;

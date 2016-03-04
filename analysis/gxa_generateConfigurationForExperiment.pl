@@ -88,7 +88,7 @@ use Data::Dumper;
 
 use Atlas::Common qw(
 	get_atlas_site_config
-    create_magetab4atlas
+    create_non_strict_magetab4atlas
 );
 
 use Atlas::AtlasConfig::Setup qw(
@@ -157,7 +157,7 @@ if($args->{ "ignore_factor" }) {
 $logger->debug( "Parsing MAGE-TAB..." );
 
 # Read in the MAGE-TAB.
-my $magetab4atlas = create_magetab4atlas( $args->{ "experiment_accession" } );
+my $magetab4atlas = create_non_strict_magetab4atlas( $args->{ "experiment_accession" } );
 
 # Make sure the Magetab4Atlas object contains the appropriate assays.
 $magetab4atlas = check_magetab4atlas_for_config($args, $ignoreFactorTypes, $magetab4atlas);
@@ -166,7 +166,7 @@ $logger->debug( "Successfully parsed MAGE-TAB" );
 
 $logger->debug( Dumper( $magetab4atlas ) );
 
-unless( @{ $magetab4atlas->get_assays } ) {
+unless( $magetab4atlas->has_assays ) {
 	$logger->logdie( "No assays were detected during MAGE-TAB parsing, cannot continue." );
 }
 
