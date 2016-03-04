@@ -163,7 +163,7 @@ my $factorsConfig = create_factors_config(
 
 my $outputFilename = File::Spec->catfile(
     $args->{ "output_directory" },
-    $args->{ "experiment_accession" } . "-factors.xml"
+    $args->{ "experiment_accession" } . "-factors.xml.auto"
 );
 
 $factorsConfig->write_xml( $outputFilename );
