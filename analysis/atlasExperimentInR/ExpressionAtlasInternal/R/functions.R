@@ -303,7 +303,6 @@ check_file_exists <- function( filename ) {
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
 	newColNames <- gsub( "Factor\\s?Value\\s?\\[", "", newColNames )
-	newColNames <- gsub( "Unit\\s?\\[", "", newColNames )
 	newColNames <- gsub( "\\s?\\]", "", newColNames )
 	newColNames[ 1 ] <- "AssayName"
 
