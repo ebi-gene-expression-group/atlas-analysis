@@ -126,9 +126,13 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	if( !file.exists( atlasExperimentXMLfile ) ) {
 		stop( paste( "XML config file", atlasExperimentXMLfile, "does not exist or is not readable." ) )
 	}
+    
+    cat( paste( "Reading experiment config from", atlasExperimentXMLfile, "...\n" ) )
 
 	# Parse the XML file.
 	experimentXMLlist <- parseAtlasConfig( atlasExperimentXMLfile )
+
+    cat( "Finished reading experiment config\n" )
 
 	# Get the pipeline code from the experiment accession e.g. MTAB, MEXP
 	pipeline <- gsub( "E-", "", experimentAccession )
@@ -152,12 +156,18 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 
 	# Get the experiment type from the parsed XML.
 	atlasExperimentType <- experimentXMLlist$experimentType
+    
+    cat( paste( "Reading SDRF from", sdrfPath, "...\n" ) )
 
 	# Parse the SDRF.
 	atlasSDRF <- .parseSDRF( sdrfPath, atlasExperimentType )
 
+    cat( "Finished reading SDRF\n" )
+
 	# Get the list of Analytics objects.
 	allAnalytics <- experimentXMLlist$allAnalytics
+
+    cat( "Creating experiment summary...\n" )
 
 	# Next step is to go through the analytics objects created from the XML,
 	# pull out the right rows form the SDRF, get the right expressions matrix,
@@ -179,6 +189,8 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	})
 
 	atlasExperimentSummary <- SimpleList( atlasExperimentSummary )
+    
+    cat( "Experiment summary created." )
 
 	return( atlasExperimentSummary )
 
