@@ -296,6 +296,9 @@ check_file_exists <- function( filename ) {
 	if( length( techRepGroupColIndex ) > 0 ) {
 		subsetSDRF <- cbind( subsetSDRF, completeSDRF[ , techRepGroupColIndex ] )
 	}
+    
+    # Next, merge the contents of unit columns with the column before.
+    subsetSDRF <- .mergeUnits( subsetSDRF )
 
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
@@ -349,7 +352,7 @@ check_file_exists <- function( filename ) {
 # 	return a vector of column indices containing the original ones plus any
 # 	Unit[] columns that are next to them.
 .addUnitCols <- function( colIndices, SDRF ) {
-
+    
 	# Get the indices of unit columns. 
 	unitCols <- unlist(
 		
@@ -373,6 +376,7 @@ check_file_exists <- function( filename ) {
 		)
 	)
 	
+
 	# Combine the vector of unit column indices with the original one, and then
 	# sort them so the unit column indices are next to the correct non-unit
 	# column indices. E.g. if "Characteristics[ age ]" was the 2nd column out
@@ -386,6 +390,37 @@ check_file_exists <- function( filename ) {
 	allColIndices <- sort( c( colIndices, unitCols ) )
 
 	return( allColIndices )
+}
+
+
+.mergeUnits <- function( subsetSDRF ) {
+
+    # Find the unit columns.
+    unitCols <- grep( "Unit", subsetSDRF[ 1, ] )
+    
+    # Create some new merged columns.
+    mergedCols <- data.frame( 
+        sapply(
+            function( unitCol ) {
+                paste( subsetSDRF[ , unitCol - 1 ], subsetSDRF[ , unitCol ] )
+            }
+        ),
+        stringsAsFactors = FALSE
+    )
+
+    # Get the indices of the columns for which these unit columns apply.
+    valueCols <- unitCols - 1
+    
+    # Replace the first row (header) with the one from the original SDRF.
+    mergedCols[ 1 , ] <- subsetSDRF[ 1, valueCols ]
+    
+    # Replace the original value columns with the new merged columns.
+    subsetSDRF[ , valueCols ] <- mergedCols
+
+    # Delete the Unit columns.
+    subsetSDRF <- subsetSDRF[ , -unitCols ]
+
+    return( subsetSDRF )
 }
 
 
