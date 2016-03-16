@@ -190,7 +190,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 
 	atlasExperimentSummary <- SimpleList( atlasExperimentSummary )
     
-    cat( "Experiment summary created." )
+    cat( "Experiment summary created.\n" )
 
 	return( atlasExperimentSummary )
 
