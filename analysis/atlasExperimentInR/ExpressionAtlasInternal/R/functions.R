@@ -228,6 +228,8 @@ check_file_exists <- function( filename ) {
 	# find the Charactersitic and Factor names. Set stringsAsFactors=FALSE so
 	# that we can use grep.
 	completeSDRF <- read.delim( filename, header = FALSE, stringsAsFactors = FALSE )
+    
+    cat( "Getting characteristic and factor column indices\n" )
 
 	# Get the Characteristics column indices, and any unit columns next to them.
 	charColIndices <- grep( "^Characteristics", ignore.case = FALSE, completeSDRF[ 1, ] )
@@ -237,10 +239,14 @@ check_file_exists <- function( filename ) {
 	factorColIndices <- grep( "^Factor\\s?Value", ignore.case = FALSE, completeSDRF[ 1, ] )
 	factorColIndices <- .addUnitCols( factorColIndices, completeSDRF )
 
+    cat( "Checking for technical replicates\n" )
+
 	# Get the index of the Comment[technical replicate group] column, if there
 	# is one.
 	techRepGroupColIndex <- grep( "Comment\\s?\\[\\s?technical[ _]replicate[ _]group\\s?\\]", ignore.case = TRUE, completeSDRF[ 1, ] )
 	
+    cat( "Locating assay names...\n" )
+
 	# Get the column index for assay names. For microarray data, this is "Assay
 	# Name" or "Hybridization Name". For RNA-seq data, this is "Comment[ENA_RUN]"
 	if( grepl( "rnaseq", atlasExperimentType ) ) {
@@ -280,6 +286,8 @@ check_file_exists <- function( filename ) {
 		}
 	}
 	
+    cat( "Found assay names. Subsetting SDRF...\n" )
+
 	# Now we should have everything we need to get the right columns and make a
 	# more friendly SDRF.
 	if( grepl( "2colour", atlasExperimentType ) ) {
@@ -291,14 +299,20 @@ check_file_exists <- function( filename ) {
 		subsetSDRF <- completeSDRF[ , c( assayNameColIndex, charColIndices, factorColIndices ) ]
 	}
 
+    cat( "Finished subsetting SDRF.\n" )
+
 	# If we got a technical replicate group column, add this at the end of the
 	# subsetSDRF.
 	if( length( techRepGroupColIndex ) > 0 ) {
 		subsetSDRF <- cbind( subsetSDRF, completeSDRF[ , techRepGroupColIndex ] )
 	}
+
+    cat( "Merging unit columns...\n" )
     
     # Next, merge the contents of unit columns with the column before.
     subsetSDRF <- .mergeUnits( subsetSDRF )
+    
+    cat( "Finished merging unit columns.\n" )
 
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
