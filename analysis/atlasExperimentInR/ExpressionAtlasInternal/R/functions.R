@@ -413,7 +413,8 @@ check_file_exists <- function( filename ) {
     
     # Create some new merged columns.
     mergedCols <- data.frame( 
-        sapply(
+        sapply( 
+            unitCols,
             function( unitCol ) {
                 paste( subsetSDRF[ , unitCol - 1 ], subsetSDRF[ , unitCol ] )
             }
