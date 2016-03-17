@@ -160,7 +160,7 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
     cat( paste( "Reading SDRF from", sdrfPath, "...\n" ) )
 
 	# Parse the SDRF.
-	atlasSDRF <- .parseSDRF( sdrfPath, atlasExperimentType )
+	atlasSDRF <- parseSDRF( sdrfPath, atlasExperimentType )
 
     cat( "Finished reading SDRF\n" )
 
@@ -212,7 +212,7 @@ check_file_exists <- function( filename ) {
 # Non-exported functions #
 ##########################
 
-# .parseSDRF
+# parseSDRF
 # 	- Take an SDRF filename and the experiment type from the XML config, and
 # 	return a subset of the SDRF containing only the assay names (or ENA runs),
 # 	the Characteristics, and FactorValue columns. 
@@ -221,7 +221,7 @@ check_file_exists <- function( filename ) {
 # 	- It removes duplicated columns, e.g. if genotype is a Characteristic and a
 # 	Factor.
 # 	- It returns the new "SDRF" as a data frame.
-.parseSDRF <- function( filename, atlasExperimentType ) {
+parseSDRF <- function( filename, atlasExperimentType ) {
 
 	# Read in the SDRF file. Set header=FALSE because we don't want the column
 	# headings to be made "R-safe" -- this confuses things when we're trying to
@@ -307,12 +307,10 @@ check_file_exists <- function( filename ) {
 		subsetSDRF <- cbind( subsetSDRF, completeSDRF[ , techRepGroupColIndex ] )
 	}
 
-    cat( "Merging unit columns...\n" )
-    
     # Next, merge the contents of unit columns with the column before.
     subsetSDRF <- .mergeUnits( subsetSDRF )
     
-    cat( "Finished merging unit columns.\n" )
+    cat( "Fixing column headings...\n" )
 
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
@@ -328,6 +326,10 @@ check_file_exists <- function( filename ) {
 	
 	# Replace spaces with underscores.
 	newColNames <- gsub( " ", "_", newColNames )
+    
+    cat( "Finished fixing column headings.\n" )
+
+    cat( "Removing duplicated columns...\n" )
 
 	# Now we've got the new names for the columns, check if any are the same
 	# (use "tolower" function to convert all to lower case).
@@ -339,18 +341,28 @@ check_file_exists <- function( filename ) {
 		subsetSDRF <- subsetSDRF[ , -duplicateColIndices ]
 		newColNames <- newColNames[ -duplicateColIndices ]
 	}
-	
+
+    cat( "Finished removing duplicated columns.\n" )
+
 	# Remove the first row of the SDRF (this is the old column headings)
 	subsetSDRF <- subsetSDRF[ -1, ]
 	
+    cat( "Applying new column headings...\n" )
+
 	# Add the new column names as the column headings.
 	colnames( subsetSDRF ) <- newColNames
+
+    cat( "Finished applying new column headings.\n" )
 	
+    cat( "Removing duplicated rows...\n" )
+
 	# Remove duplicated rows, which occur e.g. if an assay has more than one file.
 	duplicateRowIndices <- which( duplicated( subsetSDRF ) )
 	if( length( duplicateRowIndices ) > 0 ) {
 		subsetSDRF <- subsetSDRF[ -duplicateRowIndices, ]
 	}
+
+    cat( "Finished removing duplicated rows.\n" )
 
 	# Make assay names "R-safe".
 	subsetSDRF$AssayName <- make.names( subsetSDRF$AssayName )
@@ -411,30 +423,43 @@ check_file_exists <- function( filename ) {
     # Find the unit columns.
     unitCols <- grep( "Unit", subsetSDRF[ 1, ] )
     
-    # Create some new merged columns.
-    mergedCols <- data.frame( 
-        sapply( 
-            unitCols,
-            function( unitCol ) {
-                paste( subsetSDRF[ , unitCol - 1 ], subsetSDRF[ , unitCol ] )
-            }
-        ),
-        stringsAsFactors = FALSE
-    )
-
-    # Get the indices of the columns for which these unit columns apply.
-    valueCols <- unitCols - 1
+    if( length( unitCols ) > 0 ) {
+        
+        cat( "Merging unit columns...\n" )
     
-    # Replace the first row (header) with the one from the original SDRF.
-    mergedCols[ 1 , ] <- subsetSDRF[ 1, valueCols ]
+        # Create some new merged columns.
+        mergedCols <- data.frame( 
+            sapply( 
+                unitCols,
+                function( unitCol ) {
+                    paste( subsetSDRF[ , unitCol - 1 ], subsetSDRF[ , unitCol ] )
+                }
+            ),
+            stringsAsFactors = FALSE
+        )
+
+        # Get the indices of the columns for which these unit columns apply.
+        valueCols <- unitCols - 1
+        
+        # Replace the first row (header) with the one from the original SDRF.
+        mergedCols[ 1 , ] <- subsetSDRF[ 1, valueCols ]
+        
+        # Replace the original value columns with the new merged columns.
+        subsetSDRF[ , valueCols ] <- mergedCols
+
+        # Delete the Unit columns.
+        subsetSDRF <- subsetSDRF[ , -unitCols ]
+
+        cat( "Finished merging unit columns.\n" )
     
-    # Replace the original value columns with the new merged columns.
-    subsetSDRF[ , valueCols ] <- mergedCols
+        return( subsetSDRF )
 
-    # Delete the Unit columns.
-    subsetSDRF <- subsetSDRF[ , -unitCols ]
+    } else {
 
-    return( subsetSDRF )
+        # If there aren't any Unit columns, just return without doing anything.
+        cat( "No Unit columns found.\n" )
+        return( subsetSDRF )
+    }
 }
 
 
