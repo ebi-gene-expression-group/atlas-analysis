@@ -310,12 +310,8 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 		subsetSDRF <- cbind( subsetSDRF, completeSDRF[ , techRepGroupColIndex ] )
 	}
 
-    cat( "Merging unit columns...\n" )
-    
     # Next, merge the contents of unit columns with the column before.
     subsetSDRF <- .mergeUnits( subsetSDRF )
-    
-    cat( "Finished merging unit columns.\n" )
     
     # FIXME
     print( subsetSDRF )
@@ -437,30 +433,43 @@ parseSDRF <- function( filename, atlasExperimentType ) {
     # Find the unit columns.
     unitCols <- grep( "Unit", subsetSDRF[ 1, ] )
     
-    # Create some new merged columns.
-    mergedCols <- data.frame( 
-        sapply( 
-            unitCols,
-            function( unitCol ) {
-                paste( subsetSDRF[ , unitCol - 1 ], subsetSDRF[ , unitCol ] )
-            }
-        ),
-        stringsAsFactors = FALSE
-    )
-
-    # Get the indices of the columns for which these unit columns apply.
-    valueCols <- unitCols - 1
+    if( length( unitCols ) > 0 ) {
+        
+        cat( "Merging unit columns...\n" )
     
-    # Replace the first row (header) with the one from the original SDRF.
-    mergedCols[ 1 , ] <- subsetSDRF[ 1, valueCols ]
+        # Create some new merged columns.
+        mergedCols <- data.frame( 
+            sapply( 
+                unitCols,
+                function( unitCol ) {
+                    paste( subsetSDRF[ , unitCol - 1 ], subsetSDRF[ , unitCol ] )
+                }
+            ),
+            stringsAsFactors = FALSE
+        )
+
+        # Get the indices of the columns for which these unit columns apply.
+        valueCols <- unitCols - 1
+        
+        # Replace the first row (header) with the one from the original SDRF.
+        mergedCols[ 1 , ] <- subsetSDRF[ 1, valueCols ]
+        
+        # Replace the original value columns with the new merged columns.
+        subsetSDRF[ , valueCols ] <- mergedCols
+
+        # Delete the Unit columns.
+        subsetSDRF <- subsetSDRF[ , -unitCols ]
+
+        cat( "Finished merging unit columns.\n" )
     
-    # Replace the original value columns with the new merged columns.
-    subsetSDRF[ , valueCols ] <- mergedCols
+        return( subsetSDRF )
 
-    # Delete the Unit columns.
-    subsetSDRF <- subsetSDRF[ , -unitCols ]
+    } else {
 
-    return( subsetSDRF )
+        # If there aren't any Unit columns, just return without doing anything.
+        cat( "No Unit columns found.\n" )
+        return( subsetSDRF )
+    }
 }
 
 
