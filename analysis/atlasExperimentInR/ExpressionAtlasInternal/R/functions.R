@@ -301,9 +301,6 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 
     cat( "Finished subsetting SDRF.\n" )
 
-    # FIXME
-    print( subsetSDRF )
-    
 	# If we got a technical replicate group column, add this at the end of the
 	# subsetSDRF.
 	if( length( techRepGroupColIndex ) > 0 ) {
@@ -312,9 +309,6 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 
     # Next, merge the contents of unit columns with the column before.
     subsetSDRF <- .mergeUnits( subsetSDRF )
-    
-    # FIXME
-    print( subsetSDRF )
     
     cat( "Fixing column headings...\n" )
 
@@ -354,10 +348,6 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 	subsetSDRF <- subsetSDRF[ -1, ]
 	
     cat( "Applying new column headings...\n" )
-
-    # FIXME: remove this!
-    print( newColNames )
-    print( subsetSDRF )
 
 	# Add the new column names as the column headings.
 	colnames( subsetSDRF ) <- newColNames
