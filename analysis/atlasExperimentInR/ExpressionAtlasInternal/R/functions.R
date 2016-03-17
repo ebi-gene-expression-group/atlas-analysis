@@ -422,7 +422,7 @@ check_file_exists <- function( filename ) {
 }
 
 
-mergeUnits <- function( subsetSDRF ) {
+.mergeUnits <- function( subsetSDRF ) {
 
     # Find the unit columns.
     unitCols <- grep( "Unit", subsetSDRF[ 1, ] )
