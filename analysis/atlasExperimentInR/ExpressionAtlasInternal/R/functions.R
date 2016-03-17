@@ -353,6 +353,10 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 	
     cat( "Applying new column headings...\n" )
 
+    # FIXME: remove this!
+    print( newColNames )
+    print( subsetSDRF )
+
 	# Add the new column names as the column headings.
 	colnames( subsetSDRF ) <- newColNames
 
