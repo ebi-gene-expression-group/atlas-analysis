@@ -221,7 +221,7 @@ check_file_exists <- function( filename ) {
 # 	- It removes duplicated columns, e.g. if genotype is a Characteristic and a
 # 	Factor.
 # 	- It returns the new "SDRF" as a data frame.
-.parseSDRF <- function( filename, atlasExperimentType ) {
+parseSDRF <- function( filename, atlasExperimentType ) {
 
 	# Read in the SDRF file. Set header=FALSE because we don't want the column
 	# headings to be made "R-safe" -- this confuses things when we're trying to
@@ -313,6 +313,8 @@ check_file_exists <- function( filename ) {
     subsetSDRF <- .mergeUnits( subsetSDRF )
     
     cat( "Finished merging unit columns.\n" )
+    
+    cat( "Fixing column headings...\n" )
 
 	# Next thing is to name the columns so they have nice names.
 	newColNames <- gsub( "Characteristics\\s?\\[", "", subsetSDRF[1,] )
@@ -328,6 +330,10 @@ check_file_exists <- function( filename ) {
 	
 	# Replace spaces with underscores.
 	newColNames <- gsub( " ", "_", newColNames )
+    
+    cat( "Finished fixing column headings.\n" )
+
+    cat( "Removing duplicated columns...\n" )
 
 	# Now we've got the new names for the columns, check if any are the same
 	# (use "tolower" function to convert all to lower case).
@@ -339,18 +345,28 @@ check_file_exists <- function( filename ) {
 		subsetSDRF <- subsetSDRF[ , -duplicateColIndices ]
 		newColNames <- newColNames[ -duplicateColIndices ]
 	}
-	
+
+    cat( "Finished removing duplicated columns.\n" )
+
 	# Remove the first row of the SDRF (this is the old column headings)
 	subsetSDRF <- subsetSDRF[ -1, ]
 	
+    cat( "Applying new column headings...\n" )
+
 	# Add the new column names as the column headings.
 	colnames( subsetSDRF ) <- newColNames
+
+    cat( "Finished applying new column headings.\n" )
 	
+    cat( "Removing duplicated rows...\n" )
+
 	# Remove duplicated rows, which occur e.g. if an assay has more than one file.
 	duplicateRowIndices <- which( duplicated( subsetSDRF ) )
 	if( length( duplicateRowIndices ) > 0 ) {
 		subsetSDRF <- subsetSDRF[ -duplicateRowIndices, ]
 	}
+
+    cat( "Finished removing duplicated rows.\n" )
 
 	# Make assay names "R-safe".
 	subsetSDRF$AssayName <- make.names( subsetSDRF$AssayName )
@@ -364,7 +380,7 @@ check_file_exists <- function( filename ) {
 # 	- Given a vector of column indices and a data frame with the complete SDRF,
 # 	return a vector of column indices containing the original ones plus any
 # 	Unit[] columns that are next to them.
-.addUnitCols <- function( colIndices, SDRF ) {
+addUnitCols <- function( colIndices, SDRF ) {
     
 	# Get the indices of unit columns. 
 	unitCols <- unlist(
@@ -406,7 +422,7 @@ check_file_exists <- function( filename ) {
 }
 
 
-.mergeUnits <- function( subsetSDRF ) {
+mergeUnits <- function( subsetSDRF ) {
 
     # Find the unit columns.
     unitCols <- grep( "Unit", subsetSDRF[ 1, ] )
