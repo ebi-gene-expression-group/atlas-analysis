@@ -221,7 +221,7 @@ check_file_exists <- function( filename ) {
 # 	- It removes duplicated columns, e.g. if genotype is a Characteristic and a
 # 	Factor.
 # 	- It returns the new "SDRF" as a data frame.
-parseSDRF <- function( filename, atlasExperimentType ) {
+.parseSDRF <- function( filename, atlasExperimentType ) {
 
 	# Read in the SDRF file. Set header=FALSE because we don't want the column
 	# headings to be made "R-safe" -- this confuses things when we're trying to
@@ -380,7 +380,7 @@ parseSDRF <- function( filename, atlasExperimentType ) {
 # 	- Given a vector of column indices and a data frame with the complete SDRF,
 # 	return a vector of column indices containing the original ones plus any
 # 	Unit[] columns that are next to them.
-addUnitCols <- function( colIndices, SDRF ) {
+.addUnitCols <- function( colIndices, SDRF ) {
     
 	# Get the indices of unit columns. 
 	unitCols <- unlist(
