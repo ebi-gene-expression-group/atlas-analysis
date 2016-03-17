@@ -13,7 +13,7 @@ use 5.10.0;
 # XML config parsing.
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
 # Site config
-use Atlas::Common qw( get_atlas_site_config );
+use Atlas::Common qw( create_atlas_site_config );
 # MAGE-TAB parsing.
 use Atlas::Magetab4Atlas;
 
@@ -38,7 +38,7 @@ my $logger = Log::Log4perl::get_logger;
 
 
 my $atlasProdDir = $ENV{ "ATLAS_PROD" };
-my $atlasSiteConfig = get_atlas_site_config;
+my $atlasSiteConfig = create_atlas_site_config;
 
 # Experiment accession.
 my $exptAccession = shift;

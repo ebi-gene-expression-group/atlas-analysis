@@ -25,7 +25,7 @@ use File::Spec;
 use EBI::FGPT::Config qw( $CONFIG );
 use Log::Log4perl;
 use IPC::Cmd qw( can_run );
-use Atlas::Common qw( get_atlas_site_config );
+use Atlas::Common qw( create_atlas_site_config );
 
 $| = 1;
 
@@ -47,7 +47,7 @@ unless( $atlasProdDir ) {
 	$logger->logdie( "ATLAS_PROD environment variable is not defined, cannot continue." );
 }
 
-my $atlasSiteConfig = get_atlas_site_config;
+my $atlasSiteConfig = create_atlas_site_config;
 
 # Helpful message
 my $usage = "Usage:
