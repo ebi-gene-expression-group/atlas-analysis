@@ -149,23 +149,23 @@ args <- commandArgs( TRUE )
 # build the other filenames from that.
 if( length( args ) == 2 ) {
 	
+    # Experiment accession.
+    atlasExperimentAccession <- args[ 1 ]
+
     # Path to the Atlas experiment directory.
-	atlasExperimentDirectory <- args[ 1 ]
+	atlasExperimentDirectory <- args[ 2 ]
     
     # Name of file containing expressions matrix
-    expressionsFile <- args[ 2 ]
+    #expressionsFile <- args[ 2 ]
 } else {
 	# Print a usage message and exit.
 	stop( "\nUsage:\n\trun_coexpression_for_experiment.R <Atlas experiment directory> <expressions filename with quartiles>\n\n" )
 }
 
-# get the experiment accession
-atlasExperimentAccession <- unlist(strsplit(expressionsFile, "[.]"))[1]
-
 message( paste( "Experiment accession is:", atlasExperimentAccession ) )
 
-# combine file path
-expressionsFile <- file.path( atlasExperimentDirectory, expressionsFile )
+# Create path to expressions matrix file.
+expressionsFile <- file.path( atlasExperimentDirectory, paste( atlasExperimentAccession, ".tsv", sep = "" ) )
 
 # Check the directory provided exists, die if not.
 check_file_exists(expressionsFile)
