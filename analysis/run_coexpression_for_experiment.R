@@ -174,6 +174,17 @@ message( paste( "Reading expression data from file:", expressionsFile ) )
 
 # read file
 exp <- read.delim(expressionsFile)
+
+# Make sure there are at least four columns (gene ID, gene name, expression
+# columns) -- doesn't make sense to try coexpression with only one column of
+# expression data.
+if( ncol( exp ) < 4 ) {
+    warning( "Fewer than four columns in total. Cannot do coexpression on only one data column." )
+    
+    # Quit without exit code.
+    q( save="no" )
+}
+
 exp[,3:ncol(exp)] <- sapply(exp[3:ncol(exp)], function(x) sub("(^[^,]+[,][^,]+[,])([^,]+)(,.+$)", "\\2",x))  #get the middle value for each gene/tissue
 expL <- sapply(exp[,3:ncol(exp)], as.numeric) # make sure the values are numeric
 rownames(expL) <- exp[,1]
