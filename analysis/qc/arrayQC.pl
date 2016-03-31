@@ -128,7 +128,7 @@ $logger->info( "Successfully read MAGE-TAB" );
 # 	  ...
 # Only consider assays that are in the XML config file.
 $logger->info( "Collecting factor values and raw data filenames for assays listed in XML config only..." );
-my ($arraysToFactorValuesToFiles, $experimentType) = makeArraysToFactorValuesToFiles($magetab4atlas, $loadDir, $experimentConfig);
+my ($arraysToFactorValuesToFiles, $experimentType) = make_arrays_to_factors_to_files($magetab4atlas, $loadDir, $experimentConfig);
 $logger->info( "Successfully collected factor values and raw data filenames." );
 
 
@@ -146,7 +146,7 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 	$logger->info( "Running QC in R for array design \"$arrayDesign\"..." );
 
 	# Write annotations (factor value(s), filenames, [labels]) to a temp file. This will be read by R and then deleted.
-	my ($tempFile, $miRBaseFile) = writeAnnotations($arrayDesign, $arraysToFactorValuesToFiles, $miRBaseFileHash, $experimentType);
+	my ($tempFile, $miRBaseFile) = write_annotations($arrayDesign, $arraysToFactorValuesToFiles, $miRBaseFileHash, $experimentType);
 
 	# Create directory name for this experiment/array design.
 	my $reportDir = $exptAccession."_$arrayDesign"."_QM";
@@ -167,7 +167,7 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 	
 	# Look for assays that failed QC and remove them from the experiment config.
 	$logger->info( "Checking for assays that failed QC..." );
-	($experimentConfig, $failed) = removeRejectedAssays($experimentConfig, $qcRscriptOutput, $arrayDesign);
+	($experimentConfig, $failed) = remove_rejected_assays($experimentConfig, $qcRscriptOutput, $arrayDesign);
 	
 	unless( $failed ) {
 		$logger->info( "All assays for \"$arrayDesign\" passed QC." );
@@ -177,7 +177,7 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 	# directory. This looks annoying and is not necessary, so remove it. The
 	# path is in index.html and arrayQualityMetrics.js.
 	$logger->info( "Removing full paths to data files from QC HTML report..." );
-	removeLoadDirFromReport($reportDir, $loadDir);
+	apply_report_fixes($reportDir, $loadDir);
 	$logger->info( "Successfully removed paths from HTML report." );
 
 	$logger->info( "Successfully finished QC for \"$arrayDesign\"" );
@@ -186,7 +186,7 @@ foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
 # If we are still here, rewrite XML config file without failing assays and
 # contrasts without enough replicates as a result. Use assay group IDs from
 # contrast (assay group pair) IDs to write back to XML.
-if($failed) {
+if( $failed ) {
 	
 	# Rename the original config file by appending ".beforeQC" to the filename.
 	$logger->info( "Renaming original XML config file to \"$atlasXMLfile.beforeQC\"" );
@@ -212,7 +212,7 @@ if($failed) {
 ###############
 
 
-# makeArraysToFactoValuesToFiles
+# make_arrays_to_factors_to_files
 #  - Creates a hash sorting out the data files by array design and then factor value.
 #  - E.g.:
 # 	$H->{ <array design 1> }->{ <factor value(s) 1> }->{ <assay name 1> } = <file 1>
@@ -223,7 +223,7 @@ if($failed) {
 # 	- $magetab4atlas : a Atlas::Magetab4Atlas object
 # 	- $loadDir : path to load directory containing raw data files.
 # 	- $experimentConfig : Atlas::AtlasConfig::ExperimentConfig object.
-sub makeArraysToFactorValuesToFiles {
+sub make_arrays_to_factors_to_files {
 	# Atlas::Magetab4Atlas object and path to load directory.
 	my ($magetab4atlas, $loadDir, $experimentConfig) = @_;
 	
@@ -303,7 +303,7 @@ sub makeArraysToFactorValuesToFiles {
 }
 
 
-# writeAnnotations
+# write_annotations
 # 	- Writes the raw data filenames, factor values and assay names [and labels
 # 	for 2-colour] to a temporary file.
 # ARGUMENTS:
@@ -311,7 +311,7 @@ sub makeArraysToFactorValuesToFiles {
 # 	- $arraysToFactorValuesToFiles : reference to hash of array designs, factor values, assay names and filenames.
 # 	- $miRBaseFileHash : reference to hash of array designs that are for microRNA.
 # 	- $experimentType : affy, agil1, or agil2.
-sub writeAnnotations {
+sub write_annotations {
 	my ($arrayDesign, $arraysToFactorValuesToFiles, $miRBaseFileHash, $experimentType) = @_;
 
 	# Check if the array design has a miRBase mapping file
@@ -378,18 +378,22 @@ sub writeAnnotations {
 }
 
 
-# removeLoadDirFromReport
+# apply_report_fixes
 # 	- Remove the full path to the load directory from index.html and arrayQualityMetrics.js.
+# 	- Replaces the broken "hrwiter" link with the correct one in index.html.
+# 	- Replaces the arrayQualityMetrics.css filename with the Atlas CSS filename in index.html.
 # Arguments:
 # 	- $reportDir : the directory containing the output arrayQualityMetrics.
 # 	- $loadDir : the load directory path to remove.
-sub removeLoadDirFromReport {
-	my ($reportDir, $loadDir) = @_;
+sub apply_report_fixes {
+
+	my ( $reportDir, $loadDir ) = @_;
 	
 	# We need to fix the HTML report and the JavaScript file.
-	my @filesToFix = ("$reportDir/index.html", "$reportDir/arrayQualityMetrics.js");
+	my @filesToFix = ( "$reportDir/index.html", "$reportDir/arrayQualityMetrics.js" );
 
-	foreach my $original (@filesToFix) {
+	foreach my $original ( @filesToFix ) {
+
 		# A filename for a temp file to write to, in /tmp with process ID.
 		my $temp = "/tmp/$$.temp";
 		
@@ -400,11 +404,20 @@ sub removeLoadDirFromReport {
 		
 		# Go through the report line by line...
 		while(defined(my $line = <$originalFH>)) {
+
 			# Remove the load directory path if it's there.
 			$line =~ s/$loadDir\/*//g;
-			# Write the line to the temp file.
+            
+            # Replace the hwriter link with the correct one if needed.
+            $line =~ s/http:\/\/www\.embl\.de\/~gpau\/hwriter\/index\.html/https:\/\/cran\.r-project\.org\/web\/packages\/hwriter\/index\.html/g;
+
+            # Replace the CSS filename with the Atlas one if neede.
+            $line =~ s/arrayQualityMetrics\.css/\/gxa\/resources\/css\/quality-metrics\.css/g;
+			
+            # Write the line to the temp file.
 			print $tempFH $line;
 		}
+
 		# Close them.
 		close($originalFH);
 		close($tempFH);
@@ -415,7 +428,7 @@ sub removeLoadDirFromReport {
 }
 
 
-# removeRejectedAssays
+# remove_rejected_assays
 #	- Find names of assays that failed QC in the R script output and remove
 #	them from the experiment config. Also remove contrasts containing them if the
 #	contrast no longer has enough replicates without failed assays.
@@ -423,7 +436,7 @@ sub removeLoadDirFromReport {
 # 	- $experimentConfig : Atlas::AtlasConfig::ExperimenConfig object.
 # 	- $qcRscriptOutput : variable containing all output from R script (STDOUT, STDERR)
 # 	- $arrayDesign : ArrayExpress array design accession
-sub removeRejectedAssays {
+sub remove_rejected_assays {
 	my ($experimentConfig, $qcRscriptOutput, $arrayDesign) = @_;
 	
 	# Flag to set if we see any failed assays (hence XML needs re-write).
