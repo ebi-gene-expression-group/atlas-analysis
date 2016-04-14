@@ -6,7 +6,7 @@ use warnings;
 use 5.10.0;
 
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
-use Atlas::Common qw( get_atlas_site_config );
+use Atlas::Common qw( create_atlas_site_config );
 use File::Spec;
 use Log::Log4perl;
 use IPC::Cmd qw( can_run );
@@ -31,7 +31,7 @@ unless( $atlasProdDir ) {
 	$logger->logdie( "ATLAS_PROD environment variable is not defined, cannot continue." );
 }
 
-my $atlasSiteConfig = get_atlas_site_config;
+my $atlasSiteConfig = create_atlas_site_config;
 
 # Path to script for checking RNA-seq QC results.
 my $getQCresultsScript = File::Spec->catfile( 

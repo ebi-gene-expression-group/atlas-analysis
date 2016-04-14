@@ -87,8 +87,8 @@ use File::Spec;
 use Data::Dumper;
 
 use Atlas::Common qw(
-	get_atlas_site_config
     create_non_strict_magetab4atlas
+	create_atlas_site_config
 );
 
 use Atlas::AtlasConfig::Setup qw(
@@ -102,7 +102,7 @@ use Atlas::AtlasConfig::ExperimentConfigFactory qw( create_experiment_config );
 # Auto flush buffer.
 $| = 1;
 
-my $atlasSiteConfig = get_atlas_site_config;
+my $atlasSiteConfig = create_atlas_site_config;
 
 # Parse command line arguments.
 my $args = parse_args();
