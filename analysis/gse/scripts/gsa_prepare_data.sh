@@ -4,9 +4,6 @@
 
 scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source ${scriptDir}/../../bash_util/generic_routines.sh
-atlasEnv=`atlas_env`
-# The following config file is needed for big_genomes setting - that is shared with the Atlas production
-source ${ATLAS_PROD}/sw/atlasinstall_${atlasEnv}/atlasprod/irap/gxa_preirap.conf
 
 # quit if not prod user
 check_prod_user
