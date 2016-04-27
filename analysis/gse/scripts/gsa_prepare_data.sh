@@ -3,7 +3,7 @@
 # This script creates database files (one per organism in Atlas) to be used in the on-the-fly gene set enrichment against differentially expressed genes in each comparisons in a given Atlas organism
 
 scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source ${scriptDir}/../../bash_util/generic_routines.sh
+source ${scriptDir}/../../../bash_util/generic_routines.sh
 
 # quit if not prod user
 check_prod_user
