@@ -22,9 +22,9 @@ app.enable('trust proxy');
 app.use(validator());
 
 var workingDir="/tmp";
-var dataDir = "/ebi/ftp/pub/databases/arrayexpress/data/atlas/gse";
+var dataDir = "/ebi/ftp/pub/databases/arrayexpress/data/atlas/gsa";
 // Based on https://github.com/expressjs/morgan (log file rotation example)
-var logDir = "$ATLAS_PROD/atlas_gse_api/logs";
+var logDir = "$ATLAS_PROD/atlas_gsa_api/logs";
 // ensure log directory exists
 fs.existsSync(logDir) || fs.mkdirSync(logDir)
 // create a rotating write stream
@@ -148,15 +148,15 @@ app.get('/:FORMAT/getOverlappingComparisons/:ORGANISM/:GENE_IDS', function (req,
 
         var hrTime = process.hrtime();
         var timeInMicros = hrTime[0] * 1000000 + hrTime[1] / 1000;
-        var resultFile = workingDir+"/gse."+req.params.ORGANISM+timeInMicros;
+        var resultFile = workingDir+"/gsa."+req.params.ORGANISM+timeInMicros;
 	try {
-	    var gseCmd="$ATLAS_PROD/sw/atlasinstall_prod/atlasprod/irap/atlas_gse/scripts/gsa_run.R  --db " + dataDir + "/" + req.params.ORGANISM + ".po --gs '"+ req.params.GENE_IDS +"'  --pvalue 0.05 --out " + resultFile + " -c 4";
-	    console.log("Running command: " + gseCmd);
+	    var gsaCmd="gsa_run.R  --db " + dataDir + "/" + req.params.ORGANISM + ".po --gs '"+ req.params.GENE_IDS +"'  --pvalue 0.05 --out " + resultFile + " -c 4";
+	    console.log("Running command: " + gsaCmd);
 	    var start = new Date().getTime() / 1000;
-	    var gseRun = childProcess(gseCmd);
+	    var gsaRun = childProcess(gsaCmd);
 	    var duration = Math.floor((new Date().getTime() / 1000) - start);
-	    console.log("Completed successfully in " + duration + " seconds command: " + gseCmd);
-	    // process.stdout.write(gseRun); // output from gsa_run.R of the above command
+	    console.log("Completed successfully in " + duration + " seconds command: " + gsaCmd);
+	    // process.stdout.write(gsaRun); // output from gsa_run.R of the above command
 	} catch (ex) {
 	    returnResults(res, ex, null, req.params.FORMAT, "Error retrieving overlapping Atlas comparisons for organism: '" + req.params.ORGANISM + "' and genes: '" + req.params.GENE_IDS + "'");
 	    return;
