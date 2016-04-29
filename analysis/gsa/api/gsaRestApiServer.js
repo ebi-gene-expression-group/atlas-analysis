@@ -18,8 +18,14 @@ app.use(bodyParser.json());
 // c.f. http://stackoverflow.com/questions/7139369/remote-ip-address-with-node-js-behind-amazon-elb 
 app.enable('trust proxy');
 
-// Input parameters validator
-app.use(validator());
+// Additional custom validator for checking if the number of genes is less tha the maximum allowed
+app.use(validator({
+ customValidators: {
+     numGenesNoMoreThan: function(value, max) {
+         return value.split(" ").length <= max;
+    },
+ }
+}));
 
 var workingDir="/tmp";
 var dataDir = "/ebi/ftp/pub/databases/arrayexpress/data/atlas/gsa";
@@ -94,8 +100,10 @@ function paramsValid(req, res) {
 	req.checkParams("FORMAT","The only formats allowed are tsv and json").isIn(['tsv','json']);
     if (req.params.ORGANISM)
 	req.checkParams("ORGANISM","Invalid organism name").isWhitelisted(defaultWhiteList);
-    if (req.params.GENE_IDS)
+    if (req.params.GENE_IDS) {
 	req.checkParams("GENE_IDS","Invalid gene identifiers").isWhitelisted(defaultWhiteList);
+	req.checkParams('GENE_IDS', 'The number of gene identifiers must be no more than 100').numGenesNoMoreThan(100);
+    }
 
     errors=req.validationErrors();
     if (errors) {
