@@ -39,8 +39,12 @@
 # 	- cols2 : comma-separated list of column headings to select from file 2.
 # 	- outFile : name of PDF file to write plot of correlation to.
 # 	- corType : either "pearson" for Pearson's product-moment correlation, or "spearman" for Spearman Rank correlation.
-correlate <<- function(genes, countsFile1, cols1, countsFile2, cols2, outFile, corType) {
+correlate <<- function(genes, countsFile1, cols1, countsFile2, cols2, outFile, corType, makePlot = "plot") {
 	
+    if( makePlot != "plot" && makePlot != "noplot" ) {
+        stop( "makePlot value must be either plot or noplot" )
+    }
+
 	# Get labels for plot axes from filenames.
 	counts1Lab <- basename(countsFile1)
 	counts2Lab <- basename(countsFile2)
@@ -61,7 +65,7 @@ correlate <<- function(genes, countsFile1, cols1, countsFile2, cols2, outFile, c
 
 		counts1 <- counts1[,cols1, drop=FALSE]
 	} else {
-		cat(paste("Using all columns from", countsFile1, "\n"))
+		message(paste("Using all columns from", countsFile1, "\n"))
 	}
 	
 	# Subset selected columns from the second file if need be.
@@ -71,13 +75,13 @@ correlate <<- function(genes, countsFile1, cols1, countsFile2, cols2, outFile, c
 
 		counts2 <- counts2[,cols2, drop=FALSE]
 	} else {
-		cat(paste("Using all columns from", countsFile2, "\n"))
+		message(paste("Using all columns from", countsFile2, "\n"))
 	}
 
 	# Read genes from a file unless "all" is passed.
 	if(genes != "all") {
 		
-		cat(paste("Using genes from", genes, "\n"))
+		message(paste("Using genes from", genes, "\n"))
 		genes <- scan(file=genes, what="character")
 		
 		counts1 <- counts1[genes, , drop=FALSE]
@@ -88,9 +92,9 @@ correlate <<- function(genes, countsFile1, cols1, countsFile2, cols2, outFile, c
 			unwantedGenes1 <- genes[grep("NA", rownames(counts1))]
 			
 			# Log that they weren't found and will be removed.
-			cat(paste("The following genes were not found in", countsFile1, "\n"))
-			cat(paste(unwantedGenes1, collapse="\n"))
-			cat("\nThey will be removed.\n\n")
+			message(paste("The following genes were not found in", countsFile1, "\n"))
+			message(paste(unwantedGenes1, collapse="\n"))
+			message("\nThey will be removed.\n\n")
 			
 			# Remove them from counts1.
 			counts1 <- counts1[-grep("NA", rownames(counts1)),,drop=FALSE]
@@ -109,9 +113,9 @@ correlate <<- function(genes, countsFile1, cols1, countsFile2, cols2, outFile, c
 			unwantedGenes2 <- genes[grep("NA", rownames(counts2))]
 			
 			# Log that they weren't found and will be removed.
-			cat(paste("The following genes were not found in", countsFile2, "\n"))
-			cat(paste(unwantedGenes2, collapse="\n"))
-			cat("\nThey will be removed.\n\n")
+			message(paste("The following genes were not found in", countsFile2, "\n"))
+			message(paste(unwantedGenes2, collapse="\n"))
+			message("\nThey will be removed.\n\n")
 			
 			# Remove them from counts2.
 			counts2 <- counts2[-grep("NA", rownames(counts2)),,drop=FALSE]
@@ -123,7 +127,7 @@ correlate <<- function(genes, countsFile1, cols1, countsFile2, cols2, outFile, c
 		}
 			
 	} else {
-		cat("\nUsing all genes\n")
+		message("\nUsing all genes\n")
 	}
 
 	# Sort rows by gene IDs.
@@ -141,7 +145,7 @@ correlate <<- function(genes, countsFile1, cols1, countsFile2, cols2, outFile, c
 	sumDF <- data.frame(counts1Sum=counts1Sum, counts2Sum=counts2Sum)
 
 	# Correlate and plot.
-	cor.scatterplot(sumDF, "counts1Sum", "counts2Sum", counts1Lab, counts2Lab, outFile, corType)
+	cor.scatterplot(sumDF, "counts1Sum", "counts2Sum", counts1Lab, counts2Lab, outFile, corType, makePlot )
 }
 
 
@@ -154,7 +158,7 @@ correlate <<- function(genes, countsFile1, cols1, countsFile2, cols2, outFile, c
 # 	- counts2Lab : name of second data file.
 # 	- outFile : name of PDF file to write to.
 # 	- corType : "pearson" or "spearman".
-cor.scatterplot <- function(df, colA, colB, counts1Lab, counts2Lab, outFile, corType) {
+cor.scatterplot <- function(df, colA, colB, counts1Lab, counts2Lab, outFile, corType, makePlot) {
   	
 	# Check corType makes sense
 	if(corType != "pearson" && corType != "spearman") {
@@ -164,26 +168,32 @@ cor.scatterplot <- function(df, colA, colB, counts1Lab, counts2Lab, outFile, cor
 	# add 0.1 to all counts (why??).
 	del <- 0.1
 
-	cat(paste("Running correlation with method =", corType, "\n"))
+	message(paste("Running correlation with method =", corType, "\n"))
 
 	# use cor() to get Pearson's or Spearman's correlation coefficient, and round it to 2 decimal places.
     x<-round(cor(df[,colA], df[,colB], method=corType), 2)
-	
-	# Start PDF device to write plot to.
-	pdf(file=outFile)
 
-	# Plot!
-	# Name for plot depends on correlation type:
-	if(corType == "pearson") {
-		plotNameStart <- "Pearson's coefficient = "
-	} else {
-		plotNameStart <- "Spearman's coefficient = "
-	}
-	plot(df[,colA]+del, df[,colB]+del, log="xy", type="p", pch=".", xlab=counts1Lab, ylab=counts2Lab, main=paste(plotNameStart, x, sep=""))
-	# add line y=x
-	abline(0, 1, col="red")
-	# close PDF.
-	dev.off()
+    if( makePlot == "noplot" ) {
+        cat( paste( x, "\n" ) )
+    }
+    else {
+	
+        # Start PDF device to write plot to.
+        pdf(file=outFile)
+
+        # Plot!
+        # Name for plot depends on correlation type:
+        if(corType == "pearson") {
+            plotNameStart <- "Pearson's coefficient = "
+        } else {
+            plotNameStart <- "Spearman's coefficient = "
+        }
+        plot(df[,colA]+del, df[,colB]+del, log="xy", type="p", pch=".", xlab=counts1Lab, ylab=counts2Lab, main=paste(plotNameStart, x, sep=""))
+        # add line y=x
+        abline(0, 1, col="red")
+        # close PDF.
+        dev.off()
+    }
 }
 
 
