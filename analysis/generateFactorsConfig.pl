@@ -75,10 +75,10 @@ http://www.ebi.ac.uk/gxa/baseline/experiments . See above for examples.
 
 Optional. Specify which factor to use as the default query factor.
 
-=item -o, --output_dir
+=item -s, --sequence
 
-Optional. Directory to write the factors config file. If not provided, the
-current working directory is used.
+Optional. Add the flag that the heatmap columns should follow the same sequence
+as the assay groups in the experiment XML config file.
 
 =item -u, --url
 
@@ -101,6 +101,11 @@ Optional. Use if this dataset requires that the Fort Lauderdale agreement be
 displayed when users download the data from the Atlas website. See
 http://www.wellcome.ac.uk/About-us/Publications/Reports/Biomedical-science/WTD003208.htm
 for more information about the agreement.
+
+=item -o, --output_dir
+
+Optional. Directory to write the factors config file. If not provided, the
+current working directory is used.
 
 =item -d, --debug
 
@@ -188,6 +193,7 @@ sub parse_args {
         "u|url=s"           => \$args{ "provider_url" },
         "p|provider=s"      => \$args{ "provider_name" },
         "f|fort_lauderdale" => \$args{ "fort_lauderdale" },
+        "s|sequence"        => \$args{ "sequence" },
         "d|debug"           => \$args{ "debug" }
     );
 
