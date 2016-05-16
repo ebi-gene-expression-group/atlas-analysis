@@ -10,6 +10,7 @@ use Atlas::Common qw( create_atlas_site_config );
 use File::Spec;
 use Log::Log4perl;
 use IPC::Cmd qw( can_run );
+use Config::YAML;
 
 $| = 1;
 
@@ -26,12 +27,49 @@ my $logger_config = q(
 Log::Log4perl::init( \$logger_config );
 my $logger = Log::Log4perl::get_logger;
 
+my ( $expAcc ) = @ARGV;
+
+my $usage = "Usage:
+	rnaseqQC.pl <experiment accession>
+";
+
+unless( $expAcc ) { die $usage; }
+
+unless( $expAcc =~ /^E-\w{4}-\d+$/ ) { die $usage; }
+
 my $atlasProdDir = $ENV{ "ATLAS_PROD" };
 unless( $atlasProdDir ) {
 	$logger->logdie( "ATLAS_PROD environment variable is not defined, cannot continue." );
 }
 
 my $atlasSiteConfig = create_atlas_site_config;
+
+# Path to file listing non-standard experiments. This file contains a list of
+# experiments for which there is no QC information stored in the database, and
+# hence for which the QC process will not work.
+my $nonStandardExpsFile = File::Spec->catfile(
+    $atlasProdDir,
+    $atlasSiteConfig->get_non_standard_experiments_file
+);
+
+unless( -f $nonStandardExpsFile ) {
+    $logger->logdie( 
+        "Cannot find file $nonStandardExpsFile"
+    );
+}
+
+# Check that the accession is not in the list of experiments with no QC info.
+my $nonStandardExps = Config::YAML->new(
+    config => $nonStandardExpsFile
+);
+
+if( grep $_ eq $expAcc, @{ $nonStandardExps->get_no_qc_info } ) {
+    
+    $logger->warn( "$expAcc is on the list of experiments with no QC information. Skipping QC checks." );
+
+    exit;
+}
+
 
 # Path to script for checking RNA-seq QC results.
 my $getQCresultsScript = File::Spec->catfile( 
@@ -67,16 +105,6 @@ while( defined( my $line = <$fh> ) ) {
 	}
 }
 close $fh;
-
-my ( $expAcc ) = @ARGV;
-
-my $usage = "Usage:
-	rnaseqQC.pl <experiment accession>
-";
-
-unless( $expAcc ) { die $usage; }
-
-unless( $expAcc =~ /^E-\w{4}-\d+$/ ) { die $usage; }
 
 my $atlasXMLfile = "$expAcc-configuration.xml";
 
