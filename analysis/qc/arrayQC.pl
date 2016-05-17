@@ -289,8 +289,8 @@ sub make_arrays_to_factors_to_files {
 
 		# Push all factor values onto an array.
 		my @factorValues = ();
-		foreach my $factor (keys %{ $factors }) {
-			push @factorValues, keys %{ $factors->{ $factor } };
+		foreach my $factor (sort keys %{ $factors }) {
+			push @factorValues, ( sort keys %{ $factors->{ $factor } } );
 		}
 
 		# Stick the factor values together if there's more than one. If there's
