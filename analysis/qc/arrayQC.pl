@@ -22,17 +22,10 @@ use warnings;
 use Atlas::Magetab4Atlas;
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
 use File::Spec;
-use File::Basename;
 use EBI::FGPT::Config qw( $CONFIG );
 use Log::Log4perl;
 use IPC::Cmd qw( can_run );
-use Atlas::Common qw( 
-    create_atlas_site_config 
-    create_non_strict_magetab4atlas
-    make_ae_idf_path
-);
-
-use Data::Dumper;
+use Atlas::Common qw( create_atlas_site_config );
 
 $| = 1;
 
@@ -93,6 +86,9 @@ unless( can_run( "R" ) ) {
     $logger->logdie( "R not found. Please ensure it is installed and you can run it." );
 }
 
+# Path to directory with ArrayExpress/Atlas load directories underneath.
+my $exptsLoadStem = File::Spec->catdir( $CONFIG->get_AE2_LOAD_DIR, "EXPERIMENT" );
+
 # miRBase mapped array designs -- we need to subset probes if we find one of these.
 # Get an array of miRBase mapping files.
 my $miRBaseDirectory = File::Spec->catdir( $atlasProdDir, $atlasSiteConfig->get_mirbase_mappings_directory );
@@ -107,9 +103,12 @@ foreach my $miRBaseFile (@miRBaseFiles) {
 	$miRBaseFileHash->{ $arrayDesign } = $miRBaseFile;
 }
 
-my $idfFilename = make_ae_idf_path( $exptAccession );
+# Get the pipeline (e.g. MEXP, MTAB, GEOD, ...) for this experiment.
+(my $pipeline = $exptAccession) =~ s/E-(\w{4})-\d+/$1/;
 
-my $loadDir = dirname( $idfFilename );
+# Experiment load directory and IDF filename.
+my $loadDir = "$exptsLoadStem/$pipeline/$exptAccession";
+my $idfFilename = "$loadDir/$exptAccession.idf.txt";
 
 # Die if the IDF doesn't exist.
 unless(-e $idfFilename) {
@@ -117,7 +116,9 @@ unless(-e $idfFilename) {
 }
 
 # Read the MAGE-TAB.
-my $magetab4atlas = create_non_strict_magetab4atlas( $exptAccession );
+$logger->info( "Reading MAGE-TAB from \"$idfFilename\"..." );
+my $magetab4atlas = Atlas::Magetab4Atlas->new( "idf_filename" => $idfFilename );
+$logger->info( "Successfully read MAGE-TAB" );
 
 # Next need to sort the raw data files by array design and within that
 # by factor value. Use a hash like:
@@ -288,8 +289,8 @@ sub make_arrays_to_factors_to_files {
 
 		# Push all factor values onto an array.
 		my @factorValues = ();
-		foreach my $factor (sort keys %{ $factors }) {
-			push @factorValues, ( sort keys %{ $factors->{ $factor } } );
+		foreach my $factor (keys %{ $factors }) {
+			push @factorValues, keys %{ $factors->{ $factor } };
 		}
 
 		# Stick the factor values together if there's more than one. If there's
@@ -412,6 +413,15 @@ sub apply_report_fixes {
 
             # Replace the CSS filename with the Atlas one if neede.
             $line =~ s/arrayQualityMetrics\.css/\/gxa\/resources\/css\/quality-metrics\.css/g;
+
+            # For the javascript file, also need to add an extra line at line 87.
+            if( $original =~ /arrayQualityMetrics\.js$/ ) {
+
+                if( $. == 87 ) {
+
+                    $line = "                i++;\n$line";
+                }
+            }
 			
             # Write the line to the temp file.
 			print $tempFH $line;
