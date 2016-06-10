@@ -141,7 +141,7 @@ $logger->info( "Successfully collected factor values and raw data filenames." );
 # arrayQualityMetrics.
 # Flag to set if any failed assays are found.
 my $failed;
-foreach my $arrayDesign (keys %{ $arraysToFactorValuesToFiles }) {
+foreach my $arrayDesign ( sort keys %{ $arraysToFactorValuesToFiles }) {
 	
 	$logger->info( "Running QC in R for array design \"$arrayDesign\"..." );
 
@@ -289,8 +289,8 @@ sub make_arrays_to_factors_to_files {
 
 		# Push all factor values onto an array.
 		my @factorValues = ();
-		foreach my $factor (keys %{ $factors }) {
-			push @factorValues, keys %{ $factors->{ $factor } };
+		foreach my $factor ( sort keys %{ $factors } ) {
+			push @factorValues, sort keys %{ $factors->{ $factor } };
 		}
 
 		# Stick the factor values together if there's more than one. If there's
@@ -334,9 +334,9 @@ sub write_annotations {
 		# Ref to empty hash to remember two-colour annotations and filenames.
 		my $twoColourAnnotations = {};
 		# Go through the factor values for this array design...
-		foreach my $factorValue (keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign } }) {
+		foreach my $factorValue ( sort keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign } }) {
 			# Go through the assays for this factor value...
-			foreach my $assayName (keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue } }) {
+			foreach my $assayName ( sort keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue } }) {
 				# Get the label (Cy3 or Cy5)
 				(my $label = $assayName) =~ s/.*\.(Cy\d)$/$1/;
 				# Make a version of the assay name without the label.
@@ -352,7 +352,7 @@ sub write_annotations {
 		# Write header.
 		print $tmpFH "AssayName\tCy3\tCy5\tFileName";
 		# Write the annotations.
-		foreach my $assayNameNoLabel (keys %{ $twoColourAnnotations }) {
+		foreach my $assayNameNoLabel ( sort keys %{ $twoColourAnnotations }) {
 			print $tmpFH "\n$assayNameNoLabel\t";
 			print $tmpFH $twoColourAnnotations->{ $assayNameNoLabel }->{ "Cy3" }, "\t";
 			print $tmpFH $twoColourAnnotations->{ $assayNameNoLabel }->{ "Cy5" }, "\t";
@@ -364,9 +364,9 @@ sub write_annotations {
 		# Write header.
 		print $tmpFH "AssayName\tFactorValue\tFileName";
 		# Go through the factor values for this array...
-		foreach my $factorValue (keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign } }) {
+		foreach my $factorValue ( sort keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign } }) {
 			# Go through the assays for this factor value...
-			foreach my $assayName (keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue } }) {
+			foreach my $assayName ( sort keys %{ $arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue } }) {
 				# Write annotations.
 				print $tmpFH "\n$assayName\t$factorValue\t".$arraysToFactorValuesToFiles->{ $arrayDesign }->{ $factorValue }->{ $assayName };
 			}
