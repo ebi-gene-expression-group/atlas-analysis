@@ -12,10 +12,10 @@ if [ $? -ne 0 ]; then
 fi
 
 pushd $ATLAS_EXPS
-wDir=~/tmp/gse
+wDir=~/tmp/gsa
 mkdir -p $wDir
 rm -rf $wDir/*
-gseFTPDir=/ebi/ftp/pub/databases/arrayexpress/data/atlas/gse/
+gsaFTPDir=/ebi/ftp/pub/databases/arrayexpress/data/atlas/gsa/
 
 echo "About to assemble organism-experiments tuples"
 grep organism contrastdetails.tsv | grep -P '\torganism\t' | awk -F"\t" '{print $6"\t"$1}' | sort | uniq | sed 's| |_|g' > ${wDir}/exps.aux
@@ -46,9 +46,9 @@ done
 echo "About to prepare database files against which enrichment of the user-provided gene sets will be tested"
 for o in $(awk '{print $1}' ${wDir}/exps.aux | sort | uniq); do
     echo $o
-    $ATLAS_PROD/sw/atlasinstall_prod/atlasprod/irap/atlas_gse/scripts/gsa_prepare_data.R -c 4 -i ${wDir}/${o}.tsvlist.aux -o ${wDir}/${o}.po 1> ${wDir}/${o}.out 2> ${wDir}/${o}.err 
+    $ATLAS_PROD/sw/atlasinstall_prod/atlasprod/analysis/gsa/scripts/gsa_prepare_data.R -c 4 -i ${wDir}/${o}.tsvlist.aux -o ${wDir}/${o}.po 1> ${wDir}/${o}.out 2> ${wDir}/${o}.err 
      if [ $? -ne 0 ]; then 
-     	echo "Command: '$ATLAS_PROD/sw/atlasinstall_prod/atlasprod/irap/atlas_gse/scripts/gsa_prepare_data.R -c 4 -i ${wDir}/${o}.tsvlist.aux -o ${wDir}/${o}.po' failed"
+        echo "Command: '$ATLAS_PROD/sw/atlasinstall_prod/atlasprod/analysis/gsa/scripts/gsa_prepare_data.R -c 4 -i ${wDir}/${o}.tsvlist.aux -o ${wDir}/${o}.po' failed"
 	break
      fi
 done
@@ -62,7 +62,7 @@ for l in $(cat $ATLAS_EXPS/contrastdetails.tsv | awk -F"\t" '{print $1"\t"$2}' |
 done |  perl -p -e "s|\\\\u0027|'|g" >  ${wDir}/contrastTitles.tsv
 
 echo "About to move the files to the Atlas ftp sever"
-mv ${wDir}/*.po $gseFTPDir
-mv ${wDir}/contrastTitles.tsv $gseFTPDir
+mv ${wDir}/*.po $gsaFTPDir
+mv ${wDir}/contrastTitles.tsv $gsaFTPDir
 
 popd
