@@ -27,7 +27,7 @@ my $logger_config = q(
 Log::Log4perl::init( \$logger_config );
 my $logger = Log::Log4perl::get_logger;
 
-my ( $expAcc ) = @ARGV;
+my ( $expAcc, $atlasProcessingDir ) = @ARGV;
 
 my $usage = "Usage:
 	rnaseqQC.pl <experiment accession>
@@ -242,7 +242,7 @@ else {
 }
 
 # Also check that all QC'ed runs exist in the raw counts matrix.
-my $countsMatrixFile = File::Spec->catfile( $ENV{ "IRAP_SINGLE_LIB" }, "studies", $expAcc, "genes.raw.tsv" );
+my $countsMatrixFile = File::Spec->catfile( $atlasProcessingDir, $expAcc . "-raw-counts.tsv.undecorated" );
 
 $logger->info( "Checking that all runs that passed QC exist in counts matrix $countsMatrixFile" );
 

@@ -139,15 +139,11 @@ if( $atlasExperimentType =~ /array/ ) {
 # write results, and create MvA plots.
 elsif( $atlasExperimentType =~ /rnaseq/ ) {
 	
-	# Create the path to the raw counts matrix.
-	my $countsMatrixFilePath = get_counts_matrix_path( $args->{ "experiment_accession" } );
-	
 	run_rnaseq_differential_expression(
 		$deseqScript,
 		$args->{ "experiment_accession" },
 		$experimentConfig,
 		$args->{ "processing_directory" },
-		$countsMatrixFilePath
 	);
 
 	# Get the results, write them out, make MvA plots.
@@ -394,34 +390,6 @@ sub read_limma_results {
 }
 
 
-# get_counts_matrix_path
-#  - create the path for raw counts matrix file, and check the file is readable
-#  before returning the path.
-sub get_counts_matrix_path {
-
-	my ( $expAcc ) = @_;
-	
-	my $irapSingleLibDir = $ENV{ "IRAP_SINGLE_LIB" };
-
-	unless( $irapSingleLibDir ) {
-		$logger->logdie( "IRAP_SINGLE_LIB environment variable is not defined. Cannot continue." );
-	}
-	
-	# Build path to raw counts matrix.
-	my $countsMatrixFilePath = File::Spec->catfile( $irapSingleLibDir, "studies", $expAcc, "genes.raw.tsv" );
-	
-	# Make sure the file exists and is readable.
-	unless( -r $countsMatrixFilePath ) {
-		$logger->logdie( 
-			"Cannot read counts matrix for $expAcc from $countsMatrixFilePath\nPlease verify this file exists and is readable."
-		);
-	}
-	
-	# If all's OK, return the file path.
-	return $countsMatrixFilePath;
-}
-
-
 # run_rnaseq_differential_expression
 # 	- Run differential expression analysis using DESeq script.
 # 	- Combine results for all contrasts and write adjusted p-values, moderated
@@ -429,7 +397,12 @@ sub get_counts_matrix_path {
 # 	- Create MvA plots for each contrast using MvA plotting script.
 sub run_rnaseq_differential_expression {
 
-	my ( $deseqScript, $expAcc, $experimentConfig, $atlasProcessingDir, $countsMatrixFile ) = @_;
+	my ( $deseqScript, $expAcc, $experimentConfig, $atlasProcessingDir ) = @_;
+
+    my $countsMatrixFile = File::Spec->catfile(
+        $atlasProcessingDir,
+        $expAcc . "-raw-counts.tsv.undecorated"
+    );
 
 	$logger->info( "Running differential expression analysis in R..." );
 	

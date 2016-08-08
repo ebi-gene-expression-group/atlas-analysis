@@ -16,7 +16,7 @@ expTargetDir=$2
 pushd ${expTargetDir}
 rm -rf qc
 
-${ATLAS_PROD}/sw/atlasinstall_${atlasEnv}/atlasprod/analysis/qc/rnaseqQC.pl $expAcc > ${expAcc}.qc.log
+${ATLAS_PROD}/sw/atlasinstall_${atlasEnv}/atlasprod/analysis/qc/rnaseqQC.pl $expAcc $expTargetDir > ${expAcc}.qc.log
 exitCode=$?
 if [ $exitCode -eq 1 ]; then
     rm -rf ${expAcc}.qc.log
