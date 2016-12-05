@@ -23,15 +23,15 @@ manual curation before it can be used in production.
 
 The display name should follow the same formatting convention as other baseline
 expeirments, with the "main" factor type first in Title Case, a " - ", and then
-the number of values and the first/main author or consortium name. Note that we
-use the word "Tissues" instead of "organism part". 
+the first/main author or consortium name. Note that we use the word "Tissues"
+instead of "organism part". 
 
 For example:
 
- - Tissues - 49 FANTOM5 project
- - Tissues - 39 Roslin
- - Tissues - 5 Palumbo et al
- - Cell Lines - 675 Genentech
+ - Tissues - FANTOM5 project
+ - Tissues - Roslin
+ - Tissues - Palumbo et al
+ - Cell Lines - Genentech
  - Developmental Stages - modENCODE
 
 See the baseline experiments page for more examples. If in doubt, check with
