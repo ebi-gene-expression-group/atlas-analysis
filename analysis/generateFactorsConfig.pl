@@ -95,12 +95,14 @@ this option is passed, the provider URL must also be passed, using the "-u"
 option. The URL and name are used to display a link to the data provder beneath
 the title on the Atlas experiment page.
 
-=item -f, --fort_lauderdale
+=item -a, --agreement
 
-Optional. Use if this dataset requires that the Fort Lauderdale agreement be
-displayed when users download the data from the Atlas website. See
-http://www.wellcome.ac.uk/About-us/Publications/Reports/Biomedical-science/WTD003208.htm
-for more information about the agreement.
+Optional. Specify a data usage agreement be displayed when users download the
+data from the Atlas website. E.g. the BLUEPRINT datasets require this.
+Currently allowed terms for this option are:
+
+fortLauderdale : BLUEPRINT agreement (E-MTAB-3819, E-MTAB-3827, E-MTAB-4754)
+zebrafish : Sanger zebrafish dataset (E-ERAD-475)
 
 =item -o, --output_dir
 
@@ -192,7 +194,7 @@ sub parse_args {
         "q|query_factor=s"  => \$args{ "default_query_factor" },
         "u|url=s"           => \$args{ "provider_url" },
         "p|provider=s"      => \$args{ "provider_name" },
-        "f|fort_lauderdale" => \$args{ "fort_lauderdale" },
+        "a|agreement=s"       => \$args{ "agreement" },
         "s|sequence"        => \$args{ "sequence" },
         "d|debug"           => \$args{ "debug" }
     );
