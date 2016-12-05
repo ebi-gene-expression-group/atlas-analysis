@@ -102,6 +102,7 @@ data from the Atlas website. E.g. the BLUEPRINT datasets require this.
 Currently allowed terms for this option are:
 
 fortLauderdale : BLUEPRINT agreement (E-MTAB-3819, E-MTAB-3827, E-MTAB-4754)
+
 zebrafish : Sanger zebrafish dataset (E-ERAD-475)
 
 =item -o, --output_dir
