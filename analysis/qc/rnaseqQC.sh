@@ -48,12 +48,36 @@ IFS="
             echo $qcLine
         done
     fi
+
+    # See if there are any warnings about QC fails.
+    failedQCruns=`grep QC_FAIL ${expAcc}.qc.log`
+
+    if [ ! -z "$failedQCruns" ]; then
+IFS="
+"
+        for line in $failedQCruns; do
+            failedLine=${line/WARN  - /}
+            echo $failedLine
+        done
+    fi
+
+    # Print the info about percentage of runs that passed QC.
+    pctPassed=`grep PCT_PASSED ${expAcc}.qc.log`
+
+    if [ ! -z "$pctPassed" ]; then
+IFS="
+"
+        for line in $pctPassed; do
+            pctLine=${line/INFO  - /}
+            echo $pctLine
+        done
+    fi
     
     rm -rf ${expAcc}.qc.log
 
-    # Move the findCRAMFiles.sh list to the qc/ dir.
+    # Move the API results file to the qc/ dir.
 	mkdir -p qc
-	mv ${expAcc}-findCRAMFiles-report.tsv qc
+	mv ${expAcc}-rnaseq-api-results.tsv qc
 	popd
 fi
 
