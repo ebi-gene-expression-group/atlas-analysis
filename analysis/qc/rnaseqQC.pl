@@ -11,8 +11,6 @@ use File::Spec;
 use Log::Log4perl;
 use IPC::Cmd qw( can_run );
 use Config::YAML;
-use Bio::EBI::RNAseqAPI;
-use Data::Dumper;
 
 $| = 1;
 
@@ -32,7 +30,7 @@ my $logger = Log::Log4perl::get_logger;
 my ( $expAcc, $atlasProcessingDir ) = @ARGV;
 
 my $usage = "Usage:
-	rnaseqQC.pl <experiment accession> <atlas processing directory>
+	rnaseqQC.pl <experiment accession>
 ";
 
 unless( $expAcc ) { die $usage; }
@@ -72,6 +70,20 @@ if( grep $_ eq $expAcc, @{ $nonStandardExps->get_no_qc_info } ) {
     exit;
 }
 
+
+# Path to script for checking RNA-seq QC results.
+my $islResultsScript = File::Spec->catfile( 
+	$atlasProdDir,
+	$atlasSiteConfig->get_isl_results_script
+);
+
+# Check this user can run the QC results script.
+unless( can_run( $islResultsScript ) ) {
+	$logger->logdie(
+		"Cannot run script to get RNA-seq QC results: $islResultsScript"
+	);
+}
+
 my $atlasXMLfile = "$expAcc-configuration.xml";
 
 unless( -r $atlasXMLfile ) {
@@ -95,98 +107,95 @@ unless( $experimentConfig->get_atlas_experiment_type =~ /rnaseq/ ) {
 # about QC failures of runs that aren't in the experiment config.
 my $configRuns = _get_all_config_runs( $experimentConfig );
 
-$logger->info( "Retrieving QC results via RNA-seq API ..." );
+$logger->info( "Retrieving QC results via $islResultsScript ..." );
+# Get the RNA-seq QC results
+my $rnaseqQCresults = `$islResultsScript $expAcc 2>&1`;
+
+# Check whether RNA-seq QC results script ran successfully.
+if( $? ) {
+	$logger->logdie( "Errors encountered running script $islResultsScript\n$rnaseqQCresults" );
+}
+else {
+	$logger->info( "Successfully retrieved QC results." );
+}
+
+$logger->info( "Parsing QC results..." );
+# Otherwise, what we have should be the table of results for each run in the
+# experiment.
+my @resultsRows = split /\n/, $rnaseqQCresults;
 
 # Collect all the run accessions found in the QC results so that we can check
 # that none are missing afterwards. Also remember failed runs, and runs with
 # lower than 70% mapped reads.
-$_ = {} for my ( $passedQC, $failedRuns, $lowMappedReads, $missing, $inProgress );
+$_ = {} for my ( $qcRuns, $passedQC, $failedRuns, $lowMappedReads, $inProgress );
 
-# A new RNA-seq API object to run queries with.
-my $rnaseqAPI = Bio::EBI::RNAseqAPI->new;
+foreach my $row ( @resultsRows ) {
 
-# Put the run accessions from the experiment config into an array for easy
-# access.
-my @configRunAccs = keys %{ $configRuns };
+	# Skip the header.
+	if( $row =~ /^study/ ) { next; }
 
-# Get the results for these runs from the RNA-seq API. Set minimum_mapped_reads
-# to zero to get all of the runs.
-my $runInfo = $rnaseqAPI->get_runs_by_list( runs => \@configRunAccs, minimum_mapped_reads => 0 );
+	my @splitRow = split /\t/, $row;
 
-# Create a hash mapping the run accessions to their info from the API. This
-# makes it easier to access their results.
-my $mappedRunInfo = _map_info_by_run_acc( $runInfo );
+	my $runAcc = $splitRow[ 1 ];
+	my $qcStatus = $splitRow[ 6 ];
 
-# Write the API we got results into a file for the record. These results can
-# change so it's good to record what we got this time.
-_write_api_results_to_file( $runInfo, $expAcc );
+    # Save the run accession.
+    $qcRuns->{ $runAcc } = 1;
 
-# Go through the run accessions from the experiment config, and check their status.
-foreach my $runAcc ( @configRunAccs ) {
+	# Skip if this run is not in the experiment config.
+	unless( $configRuns->{ $runAcc } ) { next; }
 
-    # Check the run exists in the API results.
-    unless( $mappedRunInfo->{ $runAcc } ) {
-
-        $logger->warn( "$runAcc is missing from API results." );
-
-        $missing->{ $runAcc } = 1;
-
-        next;
-    }
-
-    # Check if the run is still in progress in ISL.
-    if( $mappedRunInfo->{ $runAcc }->{ "STATUS" } eq "In_progress" ) {
-
-        $logger->warn( "$runAcc is still in progress in ISL." );
-
-        $inProgress->{ $runAcc } = 1;
-
-        next;
-    }
-
-    # Any status other than Complete is considered a failure from here.
-    unless( $mappedRunInfo->{ $runAcc }->{ "STATUS" } eq "Complete" ) {
-
-        $logger->warn( 
-            "QC_FAIL: ",
-            $runAcc,
-            " has failed QC with status \"",
-            $mappedRunInfo->{ $runAcc }->{ "STATUS" },
-            "\""
-        );
-
-        $failedRuns->{ $runAcc } = 1;
-
-        next;
-    }
-    
-    # If we got here, the run must have passed QC and been processed OK.
-    else {
-
+	# Add failed run accessions to the hash.
+	if( $qcStatus eq "completed" || $qcStatus eq "on_ftp" ) {
+        
         $passedQC->{ $runAcc } = 1;
 
-        # Store for logging later if percentage mapped reads < 70%.
-        if( $mappedRunInfo->{ $runAcc }->{ "MAPPING_QUALITY" } < 70 ) {
+        # Also see if we got less than 70% reads mapped. If so, add them to
+        # the hash to save them.
+        my $percentMappedReads = $splitRow[ 7 ];
 
-            $lowMappedReads->{ $runAcc } = $mappedRunInfo->{ $runAcc }->{ "MAPPING_QUALITY" };
+        if( $percentMappedReads < 70 ) {
+
+            $lowMappedReads->{ $runAcc } = $percentMappedReads;
         }
+    }
+    elsif( $qcStatus eq "irap_single_lib" ) {
+
+        $inProgress->{ $runAcc } = 1;
+    }
+    else {
+		
+        $logger->warn( "QC_FAIL: $runAcc failed QC with status: \"$qcStatus\"" );
+
+		$failedRuns->{ $runAcc } = 1;
+	}
+}
+
+$logger->info( "Successfully parsed QC results." );
+
+$logger->info( "Checking that all runs in experiment config have been QC'ed..." );
+# Check that all runs from the XML config were found in the QC results. Die if
+# not.
+my $runsMissing = 0;
+
+foreach my $runAcc ( keys %{ $configRuns } ) {
+
+    unless( $qcRuns->{ $runAcc } ) {
+
+        $logger->error( "$runAcc was not found in QC results." );
+ 
+        $runsMissing++;
     }
 }
 
-# Do some sanity checking.
-# We don't want to continue if not all of the runs were present in the API results
-if( keys %{ $missing } ) {
-    
-    my $missingRuns = join "\n", keys %{ $missing };
-
-    $logger->logdie(
-        "The following runs are missing from the RNA-seq API results:\n",
-        $missingRuns,
-        "\nCannot continue when runs are missing from API results."
-    );
+if( $runsMissing ) {
+    $logger->logdie( "Not all runs in XML config were found in QC results. Cannot continue." );
 }
 
-# We don't want to continue if any of the runs are still doing ISL processing.
+$logger->info( "All runs in XML config have been QC'ed." );
+
+# Check if any runs were in progress, die here if so, as the experiment should
+# not have been submitted to ISL.
 if( keys %{ $inProgress } ) {
 
     my $inprogRuns = join "\n", keys %{ $inProgress };
@@ -197,8 +206,6 @@ if( keys %{ $inProgress } ) {
         "\nCannot continue when some runs are still in progress in iRAP single-lib."
     );
 }
-
-$logger->info( "All runs in XML config have been QC'ed." );
 
 $logger->info( "Checking mapping quality for runs that passed QC..." );
 
@@ -261,17 +268,28 @@ if( keys %{ $missingFromCounts } ) {
 # If we're still alive, log that all was OK.
 $logger->info( "All runs that passed QC were found in the counts matrix." );
 
+my $qcFileName = $expAcc . "-findCRAMFiles-report.tsv";
+
+$logger->info( "Writing QC results to file $qcFileName ..." );
+
+open( my $qcfh, ">", $qcFileName ) or $logger->logdie( "Cannot write to file $qcFileName : $!" );
+say $qcfh $rnaseqQCresults;
+close $qcfh;
+
+$logger->info( "Successfully written QC results." );
+
+# Report what percentage of runs passed QC.
+my $totalRuns = keys %{ $configRuns };
+my $totalFailed = keys %{ $failedRuns };
+my $totalPassed = $totalRuns - $totalFailed;
+
+my $pctPassed = ( $totalPassed / $totalRuns ) * 100;
+
+$logger->info( "PCT_PASSED: $pctPassed % ($totalPassed/$totalRuns) of the runs passed QC." );
+
 # If there were any failed runs, go through the XML and remove them.
 if( keys %{ $failedRuns } ) {
     
-    my $totalRuns = keys %{ $configRuns };
-    my $totalFailed = keys %{ $failedRuns };
-    my $totalPassed = $totalRuns - $totalFailed;
-
-    my $pctPassed = ( $totalPassed / $totalRuns ) * 100;
-
-    $logger->info( "PCT_PASSED: $pctPassed % ($totalPassed/$totalRuns) of the runs passed QC." );
-
 	# Remove from config.
 	$experimentConfig = _remove_rejected_runs( $experimentConfig, $failedRuns );
 
@@ -338,39 +356,3 @@ sub _remove_rejected_runs {
 
 	return $experimentConfig;
 }
-
-sub _map_info_by_run_acc {
-
-    my ( $runInfo ) = @_;
-
-    my %mappedRunInfo = map { $_->{ "RUN_IDS" } => $_ } @{ $runInfo };
-
-    return \%mappedRunInfo;
-}
-
-sub _write_api_results_to_file {
-
-    my ( $runInfo, $expAcc ) = @_;
-
-    my $apiResultsFile = $expAcc . "-rnaseq-api-results.tsv";
-
-    $logger->info( 
-        "Writing API results to ",
-        $apiResultsFile,
-        " ..."
-    );
-
-    open my $fh, ">", $apiResultsFile 
-        or $logger->logdie( 
-        "Cannot open $apiResultsFile for writing: $!"
-    );
-
-    say $fh Dumper( $runInfo );
-
-    close $fh;
-
-    $logger->info(
-        "Successfully written API results."
-    );
-}
-
