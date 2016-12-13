@@ -72,28 +72,6 @@ if( grep $_ eq $expAcc, @{ $nonStandardExps->get_no_qc_info } ) {
     exit;
 }
 
-# Get the list of accessions of experiments that have runs rejected by iRAP for
-# having too-short reads (less than 30bp).
-my $tooShortReadsFile = File::Spec->catfile(
-	$atlasProdDir,
-	$atlasSiteConfig->get_exps_with_runs_rejected_for_small_read_size
-);
-
-# Read the accessions of experiments that have been rejected for having
-# too-short reads.
-my $tooShortAccs = {};
-open my $fh, "<", $tooShortReadsFile
-	or $logger->logdie( "Cannot read file $tooShortReadsFile: $!" );
-while( defined( my $line = <$fh> ) ) {
-
-	chomp $line;
-	
-	if( $line =~ /^E-\w{4}-\d+$/ ) {
-		$tooShortAccs->{ $line } = 1;
-	}
-}
-close $fh;
-
 my $atlasXMLfile = "$expAcc-configuration.xml";
 
 unless( -r $atlasXMLfile ) {
@@ -118,10 +96,6 @@ unless( $experimentConfig->get_atlas_experiment_type =~ /rnaseq/ ) {
 my $configRuns = _get_all_config_runs( $experimentConfig );
 
 $logger->info( "Retrieving QC results via RNA-seq API ..." );
-
-# A flag to set if we need to add a new accession to the "too short reads"
-# file.
-my $newTooShort = 0;
 
 # Collect all the run accessions found in the QC results so that we can check
 # that none are missing afterwards. Also remember failed runs, and runs with
@@ -182,15 +156,6 @@ foreach my $runAcc ( @configRunAccs ) {
         );
 
         $failedRuns->{ $runAcc } = 1;
-
-        # If the status is about reads being too short, save this.
-        if( $mappedRunInfo->{ $runAcc }->{ "STATUS" } =~ /FastqInfo: Read size smaller than/i ) {
-
-            unless( $tooShortAccs->{ $expAcc } ) {
-                $newTooShort++;
-                $tooShortAccs->{ $expAcc } = 1;
-            }
-        }
 
         next;
     }
@@ -295,25 +260,6 @@ if( keys %{ $missingFromCounts } ) {
 
 # If we're still alive, log that all was OK.
 $logger->info( "All runs that passed QC were found in the counts matrix." );
-
-# If there were any new accessions to add to the "too-short reads" file,
-# re-write it now.
-if( $newTooShort ) {
-
-	$logger->info( "Adding experiment accession to $tooShortReadsFile ..." );
-
-	open my $tsfh, ">", $tooShortReadsFile
-		or $logger->logdie( "Cannot write to file $tooShortReadsFile : $!" );
-
-	foreach my $acc ( keys %{ $tooShortAccs } ) {
-		say $tsfh $acc;
-	}
-
-	close( $tsfh );
-
-	$logger->info( "Successfully written accessions." );
-}
-
 
 # If there were any failed runs, go through the XML and remove them.
 if( keys %{ $failedRuns } ) {
