@@ -6,7 +6,10 @@ use warnings;
 use 5.10.0;
 
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
-use Atlas::Common qw( create_atlas_site_config );
+use Atlas::Common qw( 
+    create_atlas_site_config
+    check_privacy_in_ae
+);
 use File::Spec;
 use Log::Log4perl;
 use IPC::Cmd qw( can_run );
@@ -268,7 +271,7 @@ if( keys %{ $missingFromCounts } ) {
 # If we're still alive, log that all was OK.
 $logger->info( "All runs that passed QC were found in the counts matrix." );
 
-my $qcFileName = $expAcc . "-findCRAMFiles-report.tsv";
+my $qcFileName = $expAcc . "-irap-single-lib-report.tsv";
 
 $logger->info( "Writing QC results to file $qcFileName ..." );
 

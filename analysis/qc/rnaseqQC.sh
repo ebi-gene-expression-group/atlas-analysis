@@ -77,7 +77,7 @@ IFS="
 
     # Move the API results file to the qc/ dir.
 	mkdir -p qc
-	mv ${expAcc}-rnaseq-api-results.tsv qc
+	mv ${expAcc}-irap-single-lib-report.tsv qc
 	popd
 fi
 
