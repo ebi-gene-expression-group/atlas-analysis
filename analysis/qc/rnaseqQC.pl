@@ -6,7 +6,10 @@ use warnings;
 use 5.10.0;
 
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
-use Atlas::Common qw( create_atlas_site_config );
+use Atlas::Common qw( 
+    create_atlas_site_config
+    check_privacy_in_ae
+);
 use File::Spec;
 use Log::Log4perl;
 use IPC::Cmd qw( can_run );
@@ -45,6 +48,22 @@ unless( $atlasProdDir ) {
 }
 
 my $atlasSiteConfig = create_atlas_site_config;
+
+# First, check if the experiment is private. If it is, we cannot do QC on it,
+# as no information is available from the RNA-seq API.
+my $privacy = check_privacy_in_ae( $expAcc );
+
+if( $privacy eq "private" ) {
+
+    $logger->info(
+        $expAcc,
+        " is currently private in ArrayExpress. Cannot retrieve info from RNA-seq API to check QC results."
+    );
+    
+    _write_api_results_to_file( $expAcc );
+    
+    exit;
+}
 
 # Path to file listing non-standard experiments. This file contains a list of
 # experiments for which there is no QC information stored in the database, and
@@ -350,7 +369,7 @@ sub _map_info_by_run_acc {
 
 sub _write_api_results_to_file {
 
-    my ( $runInfo, $expAcc ) = @_;
+    my ( $expAcc, $runInfo ) = @_;
 
     my $apiResultsFile = $expAcc . "-rnaseq-api-results.tsv";
 
@@ -364,8 +383,12 @@ sub _write_api_results_to_file {
         or $logger->logdie( 
         "Cannot open $apiResultsFile for writing: $!"
     );
-
-    say $fh Dumper( $runInfo );
+    
+    if( $runInfo ) {
+        say $fh Dumper( $runInfo );
+    } else {
+        say $fh "No results on RNA-seq API";
+    }
 
     close $fh;
 
