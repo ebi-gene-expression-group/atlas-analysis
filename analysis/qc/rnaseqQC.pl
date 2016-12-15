@@ -122,6 +122,16 @@ else {
 	$logger->info( "Successfully retrieved QC results." );
 }
 
+my $qcFileName = $expAcc . "-irap-single-lib-report.tsv";
+
+$logger->info( "Writing QC results to file $qcFileName ..." );
+
+open( my $qcfh, ">", $qcFileName ) or $logger->logdie( "Cannot write to file $qcFileName : $!" );
+say $qcfh $rnaseqQCresults;
+close $qcfh;
+
+$logger->info( "Successfully written QC results." );
+
 $logger->info( "Parsing QC results..." );
 # Otherwise, what we have should be the table of results for each run in the
 # experiment.
@@ -270,16 +280,6 @@ if( keys %{ $missingFromCounts } ) {
 
 # If we're still alive, log that all was OK.
 $logger->info( "All runs that passed QC were found in the counts matrix." );
-
-my $qcFileName = $expAcc . "-irap-single-lib-report.tsv";
-
-$logger->info( "Writing QC results to file $qcFileName ..." );
-
-open( my $qcfh, ">", $qcFileName ) or $logger->logdie( "Cannot write to file $qcFileName : $!" );
-say $qcfh $rnaseqQCresults;
-close $qcfh;
-
-$logger->info( "Successfully written QC results." );
 
 # Report what percentage of runs passed QC.
 my $totalRuns = keys %{ $configRuns };
