@@ -57,6 +57,7 @@ IFS="
 "
         for line in $failedQCruns; do
             failedLine=${line/WARN  - /}
+            failedLine=${line/ERROR - /}
             echo $failedLine
         done
     fi
