@@ -72,13 +72,6 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory, countsMatrixF
 		
 		cat( "Successfully read raw counts.\n" )
 		
-		# Remove "_pe" and "_se" from the column headings.
-		cat( "Removing _pe/_se from counts matrix column headings...\n" )
-
-		colnames( countsMatrix ) <- sub( "_[ps]e$", "", colnames( countsMatrix ) )
-
-		cat( "Column headings altered successfully.\n" )
-
 		# Get the contrasts, assay groups, and batch effects.
 		expContrasts <- atlas_contrasts( analytics )
 		expAssayGroups <- assay_groups( analytics )
