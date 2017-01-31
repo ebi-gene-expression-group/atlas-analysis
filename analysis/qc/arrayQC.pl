@@ -414,12 +414,10 @@ sub apply_report_fixes {
             # Replace the CSS filename with the Atlas one if neede.
             $line =~ s/arrayQualityMetrics\.css/\/gxa\/resources\/css\/quality-metrics\.css/g;
 
-            # For the javascript file, also need to add an extra line at line 87.
+            # For the JavaScript file, we also need to fix the loop at line 87
             if( $original =~ /arrayQualityMetrics\.js$/ ) {
-
                 if( $. == 87 ) {
-
-                    $line = "                i++;\n$line";
+                    $line = "            {\n                i++;\n            $line\n            }\n";
                 }
             }
 			
