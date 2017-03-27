@@ -50,7 +50,7 @@ if( length( args ) == 2 ) {
 message( paste( "Experiment accession is:", atlasExperimentAccession ) )
 
 # Create path to expressions matrix file.
-expressionsFile <- file.path( atlasExperimentDirectory, paste( atlasExperimentAccession, "-fpkms.tsv", sep = "" ) )
+expressionsFile <- file.path( atlasExperimentDirectory, paste( atlasExperimentAccession, ".tsv", sep = "" ) )
 
 # Check the directory provided exists, die if not.
 check_file_exists(expressionsFile)

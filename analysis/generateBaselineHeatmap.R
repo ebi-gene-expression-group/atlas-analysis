@@ -274,7 +274,7 @@ if( exists( "dataOrganism" ) ) {
 	experimentAccessionForFilename <- paste( experimentAccessionForFilename, dataOrganism, sep="_" )
 	
 	# The undecorated FPKM matrix for this organism.
-	dataOrganismFPKMsFile <- file.path( atlasExperimentDirectory, paste( experimentAccessionForFilename, "-fpkms.tsv.undecorated.aggregated", sep="" ) )
+	dataOrganismFPKMsFile <- file.path( atlasExperimentDirectory, paste( experimentAccessionForFilename, ".tsv.undecorated", sep="" ) )
 
 	# Check it exists.
 	check_file_exists( dataOrganismFPKMsFile )
@@ -291,7 +291,7 @@ if( exists( "dataOrganism" ) ) {
 	cat( "Getting path to FPKMs matrix file...\n" )
 
 	# FPKMs matrix file.
-	fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, "-fpkms.tsv", sep="" ) )
+	fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, ".tsv", sep="" ) )
 
 	#FIXME
 	cat( "Got FPKMs matrix file\n" )
