@@ -291,7 +291,7 @@ if( exists( "dataOrganism" ) ) {
 	cat( "Getting path to FPKMs matrix file...\n" )
 
 	# FPKMs matrix file.
-	fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, ".tsv", sep="" ) )
+	fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, "-fpkms.tsv", sep="" ) )
 
 	#FIXME
 	cat( "Got FPKMs matrix file\n" )
