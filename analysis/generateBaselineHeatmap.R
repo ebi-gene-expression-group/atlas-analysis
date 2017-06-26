@@ -85,7 +85,7 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
     # Check that the FPKM columns all have comma-separated values, quit if not.
     if( !all( apply( fpkmsDataFrame[ , startCol:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
 
-        stop( "quartiles option provied but your values are not comma-separated lists of quartiles. Please check." )
+        stop( "your values are not comma-separated lists of quartiles. Please check." )
     }
 
     # Get just the columns of expression levels.
@@ -111,90 +111,6 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
     return( medians )
 }
 
-make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOrganismEnsgeneFile, dataType ) {
-
-	# Read in the files now we have them.
-	cat( paste( "Reading FPKMs from", dataOrganismFPKMsFile, "...\n" ) )
-
-    fpkmsDataFrame <- read.delim( dataOrganismFPKMsFile, stringsAsFactors=FALSE, header=TRUE )
-
-    count_data_columns( fpkmsDataFrame, "undecorated" )
-
-    if( dataType == "quartiles" ) {
-
-        fpkmsDataFrame <- get_median_fpkms( fpkmsDataFrame, "undecorated" )
-
-    } else if( dataType == "noquartiles" ) {
-
-        # Check data frame  doesn't have commas.
-        if( any( apply( fpkmsDataFrame[ , 3:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
-            stop( paste(
-                "You specified noquartiles option but I found commas in ",
-                dataOrganismFPKMsFile,
-                " -- please check."
-            ))
-        }
-
-    } else {
-
-        stop( paste( "Don't know what to do with option \"", dataType, "\"" ) )
-    }
-
-	cat( "Successfully read FPKMs\n" )
-
-	cat( paste( "Reading Ensembl gene annotations from", dataOrganismEnsgeneFile, "...\n" ) )
-	ensgene <- read.delim( dataOrganismEnsgeneFile, stringsAsFactors=FALSE, header=TRUE )
-	cat( "Successfully read Ensembl gene annotations\n" )
-
-	cat( "Adding gene names to FPKMs data frame...\n" )
-
-	# Just need the "ensgene" and "symbol" columns from the bioentity
-	# properties file. These are the gene names and gene IDs, respectively.
-	ensgene <- ensgene[ , c( "ensgene", "symbol" ) ]
-
-	# Get all the gene names from ensgene in the same order as the gene IDs in
-	# the FPKMs matrix. If there is no name for a gene, use an emtpy string.
-	geneNames <- sapply( fpkmsDataFrame$GeneID, function( geneID ) {
-
-		# Get the index of the gene ID in the ensgene data frame.
-		ensGeneIdx <- which( ensgene$ensgene == geneID )
-
-		# If the index has length >0 then there was a match.
-		if( length( ensGeneIdx ) > 0 ) {
-			# Get the gene name at that index.
-			name <- ensgene$symbol[ ensGeneIdx ]
-		} else {
-			# If there wasn't a match, use an empty string.
-			name <- ""
-		}
-	})
-
-	# Add the gene names to the FPKMs data frame.
-	fpkmsDataFrame$Gene.Name <- geneNames
-
-	# Need to do some reshuffling and renaming of columns in the FPKMs data frame.
-	# Count the columns.
-	numCol <- ncol( fpkmsDataFrame )
-	# Get column indices for GeneID and Gene.Name columns
-	geneIDcol <- which( colnames( fpkmsDataFrame ) == "GeneID" )
-	geneNameCol <- which( colnames( fpkmsDataFrame ) == "Gene.Name" )
-
-	# The assay group columns are the rest of the columns.
-	assayGroupCols <- 1:numCol
-	assayGroupCols <- assayGroupCols[ -c( geneIDcol, geneNameCol ) ]
-
-	# Re-shuffle the column order.
-	fpkmsDataFrame <- fpkmsDataFrame[ , c( geneIDcol, geneNameCol, assayGroupCols ) ]
-
-	# Rename the GeneID column so it's the same as the decorated FPKMs matrices
-	# for single-organism experiments when it's read in.
-	colnames( fpkmsDataFrame )[ 1 ] <- "Gene.ID"
-
-	cat( "Successfully added gene names to FPKMs data frame\n" )
-
-	return( fpkmsDataFrame )
-}
-
 ###############################
 # Script start.
 
@@ -205,18 +121,11 @@ args <- commandArgs( TRUE )
 # Stop if we don't have the requisite number of arguments.
 # For now this is 1 -- we just want the Atlas experiment directory. We can
 # build the other filenames from that.
-if( length( args ) == 2 ) {
-	# Otherwise, collect the path to the Atlas experiment directory.
+if( length( args ) > 0 ) {
 	atlasExperimentDirectory <- args[ 1 ]
-    # Do we have comma-separated quartiles or just averages?
-    dataType <- args[ 2 ]
-} else if( length( args ) == 3 ) {
-	atlasExperimentDirectory <- args[ 1 ]
-    dataType <- args[ 2 ]
-	dataOrganism <- args[ 3 ]
 } else {
 	# Print a usage message and exit.
-	stop( "\nUsage:\n\tgenerateBaselineHeatmap.R <Atlas experiment directory> [ quartiles | noquartiles ] [<organism>]\n\n" )
+	stop( "\nUsage:\n\tgenerateBaselineHeatmap.R <Atlas experiment directory>\n\n" )
 }
 
 # Check the directory provided exists, die if not.
@@ -276,25 +185,8 @@ fpkmsDataFrame <- read.delim( fpkmsMatrixFile, stringsAsFactors = FALSE, header 
 count_data_columns( fpkmsDataFrame, "decorated" )
 
 # Read in the FPKMs.
-if( dataType == "quartiles" ) {
+fpkmsDataFrame <- get_median_fpkms( fpkmsDataFrame, "decorated" )
 
-    fpkmsDataFrame <- get_median_fpkms( fpkmsDataFrame, "decorated" )
-
-} else if( dataType == "noquartiles" ) {
-
-    # Check data frame  doesn't have commas.
-    if( any( apply( fpkmsDataFrame[ , 3:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
-        stop( paste(
-            "You specified noquartiles option but I found commas in ",
-            fpkmsMatrixFile,
-            " -- please check."
-        ))
-    }
-
-} else {
-
-    stop( paste( "Don't know what to do with option \"", dataType, "\"" ) )
-}
 
 cat( "Successfully read FPKMs\n" )
 
