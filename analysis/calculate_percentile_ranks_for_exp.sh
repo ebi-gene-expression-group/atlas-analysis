@@ -1,5 +1,5 @@
 #!/bin/bash
-# A wrapper script - so that this can be called from decorate_all_experiments.sh
+# A wrapper script - so that this can be called from recalculate_all_experiments.sh
 expAcc=$1
 expTargetDir=$2
 
