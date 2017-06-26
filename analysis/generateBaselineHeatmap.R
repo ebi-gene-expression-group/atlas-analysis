@@ -30,7 +30,7 @@ check_file_exists <- function( filename ) {
 get_start_col <- function( dataFrameType ) {
 
     if( dataFrameType == "decorated" ) {
-        
+
         startCol = 3
 
     } else if( dataFrameType == "undecorated" ) {
@@ -39,10 +39,10 @@ get_start_col <- function( dataFrameType ) {
 
     } else {
 
-        stop( paste( 
-            "Don't know what to do with data frame type ", 
-            dataFrameType, 
-            ". Type can be either decorated or undecorated; please check." 
+        stop( paste(
+            "Don't know what to do with data frame type ",
+            dataFrameType,
+            ". Type can be either decorated or undecorated; please check."
         ) )
     }
 
@@ -58,14 +58,14 @@ count_data_columns <- function( fpkmsDataFrame, dataFrameType ) {
     if( ncol( fpkmsDataFrame[ startCol:ncol( fpkmsDataFrame ) ] ) < 2 ) {
         # Warn what has happened.
         warning( "Less than two columns of FPKMs found. Cannot continue." )
-        
+
         # Exit without exit code.
         q( save="no" )
     }
 }
 
 get_ensgene_filename <- function( dataOrganism, atlasProdDir ) {
-	
+
 	# Parse site config to a list.
 	siteConfig <- createAtlasSiteConfig()
 
@@ -104,7 +104,7 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
             as.numeric( vec[ 3 ] )
         })
     }) )
-   
+
 
     medians <- data.frame( fpkmsDataFrame[ , 1:(startCol - 1), drop=FALSE ], medians, stringsAsFactors=FALSE )
 
@@ -115,20 +115,20 @@ make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOr
 
 	# Read in the files now we have them.
 	cat( paste( "Reading FPKMs from", dataOrganismFPKMsFile, "...\n" ) )
-	
+
     fpkmsDataFrame <- read.delim( dataOrganismFPKMsFile, stringsAsFactors=FALSE, header=TRUE )
 
     count_data_columns( fpkmsDataFrame, "undecorated" )
-    
+
     if( dataType == "quartiles" ) {
-        
+
         fpkmsDataFrame <- get_median_fpkms( fpkmsDataFrame, "undecorated" )
 
     } else if( dataType == "noquartiles" ) {
 
         # Check data frame  doesn't have commas.
         if( any( apply( fpkmsDataFrame[ , 3:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
-            stop( paste( 
+            stop( paste(
                 "You specified noquartiles option but I found commas in ",
                 dataOrganismFPKMsFile,
                 " -- please check."
@@ -136,7 +136,7 @@ make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOr
         }
 
     } else {
-        
+
         stop( paste( "Don't know what to do with option \"", dataType, "\"" ) )
     }
 
@@ -155,10 +155,10 @@ make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOr
 	# Get all the gene names from ensgene in the same order as the gene IDs in
 	# the FPKMs matrix. If there is no name for a gene, use an emtpy string.
 	geneNames <- sapply( fpkmsDataFrame$GeneID, function( geneID ) {
-		
+
 		# Get the index of the gene ID in the ensgene data frame.
 		ensGeneIdx <- which( ensgene$ensgene == geneID )
-		
+
 		# If the index has length >0 then there was a match.
 		if( length( ensGeneIdx ) > 0 ) {
 			# Get the gene name at that index.
@@ -171,7 +171,7 @@ make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOr
 
 	# Add the gene names to the FPKMs data frame.
 	fpkmsDataFrame$Gene.Name <- geneNames
-	
+
 	# Need to do some reshuffling and renaming of columns in the FPKMs data frame.
 	# Count the columns.
 	numCol <- ncol( fpkmsDataFrame )
@@ -182,7 +182,7 @@ make_dataOrganism_specific_data_frame <- function( dataOrganismFPKMsFile, dataOr
 	# The assay group columns are the rest of the columns.
 	assayGroupCols <- 1:numCol
 	assayGroupCols <- assayGroupCols[ -c( geneIDcol, geneNameCol ) ]
-	
+
 	# Re-shuffle the column order.
 	fpkmsDataFrame <- fpkmsDataFrame[ , c( geneIDcol, geneNameCol, assayGroupCols ) ]
 
@@ -257,77 +257,47 @@ invisible( lapply( rnaseqAssayGroups, function( assayGroup) {
 cat( "All assay groups have labels.\n" )
 
 
+#FIXME
+cat( "Getting path to FPKMs matrix file...\n" )
 
-# If organism was provided, we want to append to accession, but there won't
-# always be a organism provided, so we have a new variable that can be either
-# just accession, or accession_organism. This is used for FPKM matrix and
-# heatmap filenames.
-experimentAccessionForFilename <- experimentAccession
+# FPKMs matrix file.
+fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, "-fpkms.tsv", sep="" ) )
 
-# If organism was provided...
-if( exists( "dataOrganism" ) ) {
+#FIXME
+cat( "Got FPKMs matrix file\n" )
 
-	# Log organism.
-	cat( paste( "Species is:", dataOrganism, "\n" ) )
-	
-	# Add the organism to the accession, for filenames.
-	experimentAccessionForFilename <- paste( experimentAccessionForFilename, dataOrganism, sep="_" )
-	
-	# The undecorated FPKM matrix for this organism.
-	dataOrganismFPKMsFile <- file.path( atlasExperimentDirectory, paste( experimentAccessionForFilename, ".tsv.undecorated", sep="" ) )
+# Check the FPKMs matrix exists.
+check_file_exists( fpkmsMatrixFile )
 
-	# Check it exists.
-	check_file_exists( dataOrganismFPKMsFile )
-	
-	# Get the Ensembl bioentity properties "ensgene" file name.
-	dataOrganismEnsgeneFile <- get_ensgene_filename( dataOrganism, atlasProdDir )
-	check_file_exists( dataOrganismEnsgeneFile )
+cat( paste( "Reading file", fpkmsMatrixFile, "...\n" ) )
 
-	fpkmsDataFrame <- make_dataOrganism_specific_data_frame( dataOrganismFPKMsFile, dataOrganismEnsgeneFile, dataType )
+fpkmsDataFrame <- read.delim( fpkmsMatrixFile, stringsAsFactors = FALSE, header = TRUE )
+
+count_data_columns( fpkmsDataFrame, "decorated" )
+
+# Read in the FPKMs.
+if( dataType == "quartiles" ) {
+
+    fpkmsDataFrame <- get_median_fpkms( fpkmsDataFrame, "decorated" )
+
+} else if( dataType == "noquartiles" ) {
+
+    # Check data frame  doesn't have commas.
+    if( any( apply( fpkmsDataFrame[ , 3:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
+        stop( paste(
+            "You specified noquartiles option but I found commas in ",
+            fpkmsMatrixFile,
+            " -- please check."
+        ))
+    }
 
 } else {
 
-	#FIXME
-	cat( "Getting path to FPKMs matrix file...\n" )
-
-	# FPKMs matrix file.
-	fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, "-fpkms.tsv", sep="" ) )
-
-	#FIXME
-	cat( "Got FPKMs matrix file\n" )
-
-	# Check the FPKMs matrix exists.
-	check_file_exists( fpkmsMatrixFile )
-
-    cat( paste( "Reading file", fpkmsMatrixFile, "...\n" ) )
-
-    fpkmsDataFrame <- read.delim( fpkmsMatrixFile, stringsAsFactors = FALSE, header = TRUE )
-
-    count_data_columns( fpkmsDataFrame, "decorated" )
-
-    # Read in the FPKMs.
-    if( dataType == "quartiles" ) {
-        
-        fpkmsDataFrame <- get_median_fpkms( fpkmsDataFrame, "decorated" )
-
-    } else if( dataType == "noquartiles" ) {
-
-        # Check data frame  doesn't have commas.
-        if( any( apply( fpkmsDataFrame[ , 3:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
-            stop( paste( 
-                "You specified noquartiles option but I found commas in ",
-                fpkmsMatrixFile,
-                " -- please check."
-            ))
-        }
-
-    } else {
-        
-        stop( paste( "Don't know what to do with option \"", dataType, "\"" ) )
-    }
-    
-    cat( "Successfully read FPKMs\n" )
+    stop( paste( "Don't know what to do with option \"", dataType, "\"" ) )
 }
+
+cat( "Successfully read FPKMs\n" )
+
 
 # Assign gene IDs as row names.
 rownames( fpkmsDataFrame ) <- fpkmsDataFrame$Gene.ID
@@ -382,7 +352,7 @@ top100geneNames <- geneIDsToGeneNames[ rownames( top100geneFPKMs ) , ]
 # Scale and center the expression levels using Z-score transformation, so they
 # have mean 0 and standard deviation 1. This makes the clustering and heatmap
 # colours look better than leaving them as they are (very long tail).
-top100geneFPKMs <- t( scale( t( top100geneFPKMs ))) 
+top100geneFPKMs <- t( scale( t( top100geneFPKMs )))
 
 # Get the assay group labels to use as the labels for the heatmap columns.
 assayGroupLabels <- sapply( colnames( top100geneFPKMs ), function( assayGroupID ) {
@@ -391,7 +361,7 @@ assayGroupLabels <- sapply( colnames( top100geneFPKMs ), function( assayGroupID 
 } )
 
 # Make the heatmap filename.
-heatmapFilename <- paste( experimentAccessionForFilename, "-heatmap.pdf", sep="" )
+heatmapFilename <- paste( experimentAccession, "-heatmap.pdf", sep="" )
 # Prepend path to experiment directory.
 heatmapFilename <- file.path( atlasExperimentDirectory, heatmapFilename )
 
@@ -429,9 +399,9 @@ if( longestLabel / 3 > 8 ) {
 # Make the heatmap.
 cat( paste( "Drawing heatmap in", heatmapFilename, "\n" ) )
 pdf( heatmapFilename, height=imageHeight, width=imageWidth )
-heatmap.2( 
-	as.matrix( top100geneFPKMs ), 
-	col = colours, 
+heatmap.2(
+	as.matrix( top100geneFPKMs ),
+	col = colours,
 	labRow = top100geneNames,
 	labCol = assayGroupLabels,
 	key = FALSE,
@@ -441,6 +411,3 @@ heatmap.2(
 	margins = c( marginHeight, 6 )
 )
 invisible( dev.off() )
-
-
-
