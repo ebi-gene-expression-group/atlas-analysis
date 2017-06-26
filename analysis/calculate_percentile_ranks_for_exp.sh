@@ -1,10 +1,9 @@
 #!/bin/bash
 # A wrapper script - so that this can be called from recalculate_all_experiments.sh
-expAcc=$1
-expTargetDir=$2
+expTargetDir=$1
 
-if [ $# -lt 2 ]; then
-  echo "Usage: $0 expAcc expPath"
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 expPath"
   exit 1
 fi
 
