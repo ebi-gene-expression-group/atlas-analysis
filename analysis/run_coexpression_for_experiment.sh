@@ -21,4 +21,4 @@ elif [ -s "${expPath}/$FPKMexpressionsFile" ]; then
 	$(dirname "${BASH_SOURCE[0]}")/run_coexpression_for_experiment.R "${expPath}/$FPKMexpressionsFile" "$outputPath"
 else
 	>&2 echo "$0 data file not found in $1" ; exit 1
-if
+fi
