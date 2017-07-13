@@ -1,8 +1,9 @@
 #!/usr/bin/env Rscript
 # Create a gene coexpression matrix for a baseline Expression Atlas experiment
+# Input: undecorated tsv file, first column gene identifier, subsequent columns
 
 # Load BiocParallel package
-library(clusterSeq)
+suppressMessages(library(clusterSeq))
 
 # Get the commandline arguments
 args <- commandArgs( TRUE )
@@ -34,7 +35,6 @@ exp[,2:ncol(exp)] <- sapply(exp[2:ncol(exp)], function(x) sub("(^[^,]+[,][^,]+[,
 expL <- sapply(exp[,2:ncol(exp)], as.numeric) # make sure the values are numeric
 rownames(expL) <- exp[,1]
 expL <- log(expL) # get the natural logarithm
-
 
 expL[is.na(expL)] <- 0 # turn any NAs to 0
 
