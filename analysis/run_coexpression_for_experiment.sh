@@ -15,10 +15,10 @@ TPMexpressionsFile="${expPath}/${e}-tpms.tsv.undecorated.aggregated"
 
 outputPath="${expPath}/${e}-coexpressions.tsv.gz"
 
-if [ -s "${expPath}/$TPMexpressionsFile" ]; then
-	$(dirname "${BASH_SOURCE[0]}")/run_coexpression_for_experiment.R "${expPath}/$TPMexpressionsFile" "$outputPath"
-elif [ -s "${expPath}/$FPKMexpressionsFile" ]; then
-	$(dirname "${BASH_SOURCE[0]}")/run_coexpression_for_experiment.R "${expPath}/$FPKMexpressionsFile" "$outputPath"
+if [ -s "$TPMexpressionsFile" ]; then
+	$(dirname "${BASH_SOURCE[0]}")/run_coexpression_for_experiment.R "$TPMexpressionsFile" "$outputPath"
+elif [ -s "$FPKMexpressionsFile" ]; then
+	$(dirname "${BASH_SOURCE[0]}")/run_coexpression_for_experiment.R "$FPKMexpressionsFile" "$outputPath"
 else
 	>&2 echo "$0 data file not found in $1" ; exit 1
 fi
