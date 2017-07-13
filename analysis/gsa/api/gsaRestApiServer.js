@@ -17,7 +17,7 @@ var cluster = require('cluster');
 app.use(bodyParser.json());
 
 // Allow access to the X-Forwarded-* header fields - to recover IP address of the client behind the EBI load balancer
-// c.f. http://stackoverflow.com/questions/7139369/remote-ip-address-with-node-js-behind-amazon-elb 
+// c.f. http://stackoverflow.com/questions/7139369/remote-ip-address-with-node-js-behind-amazon-elb
 app.enable('trust proxy');
 
 // Additional custom validator for checking if the number of genes is less tha the maximum allowed
@@ -63,13 +63,13 @@ function logError(err) {
 }
 
 // Return data in JSON format: format (json or tsv);
-function returnResults(res, err, resultS, format, errMessage) { 
-    if (format === "json") { 
+function returnResults(res, err, resultS, format, errMessage) {
+    if (format === "json") {
 	res.set('Content-Type', 'application/json');
 	if (err) {
 	    res.status(500).send(JSON.stringify({ status: 500, message: errMessage }));
 	} else {
-	    var converter = new csv2json({delimiter:"\t"}); 
+	    var converter = new csv2json({delimiter:"\t"});
 	    //end_parsed will be emitted once parsing finished
 	    converter.on("end_parsed", function (jsonArray) {
 		    // console.log(jsonArray); // debug of the resulting jsonarray
@@ -90,7 +90,7 @@ function returnResults(res, err, resultS, format, errMessage) {
 	res.status(500).send("Unrecognised data format:" + format);
 	logError("Unrecognised format:" + format);
     }
-} 
+}
 
 // Validate all possible parameters
 function paramsValid(req, res) {
@@ -116,9 +116,9 @@ function paramsValid(req, res) {
     }
 }
 
-// ********* REST API calls start here ***********  
+// ********* REST API calls start here ***********
 
-// e.g. http://plantain:3001/getOrganisms 
+// e.g. http://plantain:3001/getOrganisms
 app.get('/getOrganisms', function (req, res) {
         "use strict";
         if (!paramsValid(req, res)) return;
@@ -191,7 +191,7 @@ app.get('/:FORMAT/getOverlappingComparisons/:ORGANISM/:GENE_IDS', function (req,
 		    var arrExp = exp.split(":");
 		    var expAcc = arrExp[0].split("_")[0];
 		    var contrastId = arrExp[3];
-		    var expURL = "http://www.ebi.ac.uk/gxa/experiments/"+expAcc+"?queryFactorValues="+contrastId+"&_specific=on";
+		    var expURL = "http://www.ebi.ac.uk/gxa/experiments/"+expAcc+;
 		    var outLineArr = [];
 		    outLineArr.push(expAcc); // expAcc
 		    outLineArr.push(contrastId); // contrastId
@@ -202,14 +202,14 @@ app.get('/:FORMAT/getOverlappingComparisons/:ORGANISM/:GENE_IDS', function (req,
 		    outLineArr.push(arr[5]); // effectSize
                     if (exp2ContrastId2Title.has(expAcc)) {
                         outLineArr.push(exp2ContrastId2Title.get(expAcc).get(contrastId)); // contrastTitle
-                    } 
+                    }
 		    outLineArr.push(expURL); // experiment Atlas URL
 		    outArr.push(outLineArr.join("\t"));
 		}
 	    });
 	lr.on('end', function (err) {
 		// All lines are read, file is closed now - output outArr as the final result in format: req.params.FORMAT
-		returnResults(res, err, outArr.join("\n"), req.params.FORMAT, null); 
+		returnResults(res, err, outArr.join("\n"), req.params.FORMAT, null);
 
 		// Delete temporary files.
 		fs.unlinkSync(resultFile+".tsv");
@@ -258,9 +258,8 @@ if(cluster.isMaster) {
 		exp2ContrastId2Title.get(expAcc).set(contrastID,contrastTitle);
 	    });
 
-	console.log('Read in expAcc->contrastID->contrastTitle mapping successfully'); 
+	console.log('Read in expAcc->contrastID->contrastTitle mapping successfully');
 
 	console.log(' Server is listening at http://%s:%s', host, port);
 	});
 }
-
