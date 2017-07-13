@@ -7,8 +7,8 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-pushd $expTargetDir
+pushd $expTargetDir 
 
-$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/calculate_percentile_ranks_for_exp.pl
+$(dirname "${BASH_SOURCE[0]}")/calculate_percentile_ranks_for_exp.pl
 
 popd

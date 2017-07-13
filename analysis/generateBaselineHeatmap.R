@@ -11,7 +11,7 @@ suppressMessages( library( gplots ) )
 # Load RColorBrewer package for nice colours.
 suppressMessages( library( RColorBrewer ) )
 
-atlasProdDir <- Sys.getenv( "ATLAS_PROD" )
+suppressMessages( library(optparse))
 
 #############
 # Functions #
@@ -27,69 +27,18 @@ check_file_exists <- function( filename ) {
 	}
 }
 
-get_start_col <- function( dataFrameType ) {
+get_median_fpkms <- function( dataFrame ) {
 
-    if( dataFrameType == "decorated" ) {
-
-        startCol = 3
-
-    } else if( dataFrameType == "undecorated" ) {
-
-        startCol = 2
-
-    } else {
-
-        stop( paste(
-            "Don't know what to do with data frame type ",
-            dataFrameType,
-            ". Type can be either decorated or undecorated; please check."
-        ) )
-    }
-
-    return( startCol )
-}
-
-count_data_columns <- function( fpkmsDataFrame, dataFrameType ) {
-
-    startCol = get_start_col( dataFrameType )
-
-    # Check that there is more than one column of FPKMs. We can't make a heatmap
-    # with less than two columns of data.
-    if( ncol( fpkmsDataFrame[ startCol:ncol( fpkmsDataFrame ) ] ) < 2 ) {
-        # Warn what has happened.
-        warning( "Less than two columns of FPKMs found. Cannot continue." )
-
-        # Exit without exit code.
-        q( save="no" )
-    }
-}
-
-get_ensgene_filename <- function( dataOrganism, atlasProdDir ) {
-
-	# Parse site config to a list.
-	siteConfig <- createAtlasSiteConfig()
-
-	# Get the Ensembl bioentity properties directory.
-	ensemblDirectory <- siteConfig$bioentity_properties_ensembl
-
-	# Create path to ensgene file.
-	ensgeneFilePath <- file.path( atlasProdDir, ensemblDirectory, paste( dataOrganism, "ensgene", "tsv", sep="." ) )
-
-	return( ensgeneFilePath )
-}
-
-get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
-
-    startCol <- get_start_col( dataFrameType )
+    startCol <- 3
 
     # Check that the FPKM columns all have comma-separated values, quit if not.
-    if( !all( apply( fpkmsDataFrame[ , startCol:ncol( fpkmsDataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
+    if( !all( apply( dataFrame[ , startCol:ncol( dataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
 
         stop( "your values are not comma-separated lists of quartiles. Please check." )
     }
 
     # Get just the columns of expression levels.
-    fpkmCols <- fpkmsDataFrame[ , startCol:ncol( fpkmsDataFrame ) ]
+    fpkmCols <- dataFrame[ , startCol:ncol( dataFrame ) ]
 
     # Go through the rows ...
     medians <- t( apply( fpkmCols, 1, function( fpkmsRow ) {
@@ -106,13 +55,30 @@ get_median_fpkms <- function( fpkmsDataFrame, dataFrameType ) {
     }) )
 
 
-    medians <- data.frame( fpkmsDataFrame[ , 1:(startCol - 1), drop=FALSE ], medians, stringsAsFactors=FALSE )
+    medians <- data.frame( dataFrame[ , 1:(startCol - 1), drop=FALSE ], medians, stringsAsFactors=FALSE )
 
     return( medians )
 }
 
 ###############################
 # Script start.
+
+args <- parse_args(OptionParser(option_list= list(
+	make_option(
+		c("-i", "--input"),
+		help="Input tsv file : Ensembl identifier, gene name, data columns with quartiles"
+	), #fpkmsMatrixFile
+	make_option(
+	 c("-c", "--configuration"),
+	 help="Configuration file"
+	 ), #experimentConfigFile
+	 make_option(
+		 c("-o", "--output"),
+		 help="Where to save the output PDF file"
+	 )
+)))
+check_file_exists(args$input)
+check_file_exists(args$configuration)
 
 
 # Get the commandline arguments.
@@ -128,25 +94,13 @@ if( length( args ) > 0 ) {
 	stop( "\nUsage:\n\tgenerateBaselineHeatmap.R <Atlas experiment directory>\n\n" )
 }
 
-# Check the directory provided exists, die if not.
-check_file_exists( atlasExperimentDirectory )
-
 # Build the XML config file name and the FPKM matrix filename.
 # Need to get the experiment accession out of the path passed.
 experimentAccession <- basename( atlasExperimentDirectory )
 
-# Log accession.
-cat( paste( "Experiment accession is:", experimentAccession, "\n" ) )
-
-# XML config file.
-experimentConfigFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, "-configuration.xml", sep="" ) )
-# Check it exists.
-check_file_exists( experimentConfigFile )
 
 # Parse XML config to a list.
-cat( paste( "Reading experiment XML config from", experimentConfigFile, "...\n" ) )
-experimentConfigList <- parseAtlasConfig( experimentConfigFile )
-cat( "Successfully read experiment XML config\n" )
+experimentConfigList <- parseAtlasConfig( args$configuration )
 
 # Get the AssayGroup objects from the experiment config ready to use later.
 # First get list of analytics.
@@ -166,48 +120,28 @@ invisible( lapply( rnaseqAssayGroups, function( assayGroup) {
 cat( "All assay groups have labels.\n" )
 
 
-#FIXME
-cat( "Getting path to FPKMs matrix file...\n" )
 
-# FPKMs matrix file.
-fpkmsMatrixFile <- file.path( atlasExperimentDirectory, paste( experimentAccession, "-fpkms.tsv", sep="" ) )
-
-#FIXME
-cat( "Got FPKMs matrix file\n" )
-
-# Check the FPKMs matrix exists.
-check_file_exists( fpkmsMatrixFile )
-
-cat( paste( "Reading file", fpkmsMatrixFile, "...\n" ) )
-
-fpkmsDataFrame <- read.delim( fpkmsMatrixFile, stringsAsFactors = FALSE, header = TRUE )
-
-count_data_columns( fpkmsDataFrame, "decorated" )
-
-# Read in the FPKMs.
-fpkmsDataFrame <- get_median_fpkms( fpkmsDataFrame, "decorated" )
-
-
-cat( "Successfully read FPKMs\n" )
-
+dataFrame <- get_median_fpkms(
+	read.delim( args$input, stringsAsFactors = FALSE, header = TRUE )
+)
 
 # Assign gene IDs as row names.
-rownames( fpkmsDataFrame ) <- fpkmsDataFrame$Gene.ID
+rownames( dataFrame ) <- dataFrame$Gene.ID
 # Remove the Gene.ID column.
-fpkmsDataFrame$Gene.ID <- NULL
+dataFrame$Gene.ID <- NULL
 
 # Create data frame of just Ensembl IDs and gene names. We have to use Ensembl
 # IDs as row names in R because it doesn't allow non-unique row names.
-geneIDsToGeneNames <- data.frame( Gene.Name = fpkmsDataFrame$Gene.Name, stringsAsFactors=FALSE )
+geneIDsToGeneNames <- data.frame( Gene.Name = dataFrame$Gene.Name, stringsAsFactors=FALSE )
 # Add the Ensembl gene IDs as the row names.
-rownames( geneIDsToGeneNames ) <- rownames( fpkmsDataFrame )
+rownames( geneIDsToGeneNames ) <- rownames( dataFrame )
 
 # Replace any empty gene names with the gene ID.
 emptyGeneNameIdxs <- which( geneIDsToGeneNames == "" )
 geneIDsToGeneNames[ emptyGeneNameIdxs , ] <- rownames( geneIDsToGeneNames )[ emptyGeneNameIdxs ]
 
 # Now remove the Gene.Name column from the data frame.
-fpkmsDataFrame$Gene.Name <- NULL
+dataFrame$Gene.Name <- NULL
 
 
 # The FPKMs data frame can contain non-numeric values, such as "LOWDATA", which
@@ -216,7 +150,7 @@ fpkmsDataFrame$Gene.Name <- NULL
 # "as.numeric" function does this for us. Here we apply it to each column of
 # the FPKMs data frame, to create a new one, without any non-numeric values.
 cat( "Converting all values to numeric...\n" )
-fpkmsNumeric <- data.frame( lapply( fpkmsDataFrame, function( x ) {
+fpkmsNumeric <- data.frame( lapply( dataFrame, function( x ) {
 	# Suppress warnings about coercion to NA -- that's why we're using this
 	# function anyway!
 	suppressWarnings( as.numeric( x ) )
@@ -224,7 +158,7 @@ fpkmsNumeric <- data.frame( lapply( fpkmsDataFrame, function( x ) {
 cat( "Numeric conversion complete\n" )
 
 # Conversion to numeric-only has removed the row names, so we have to add them back.
-rownames( fpkmsNumeric ) <- rownames( fpkmsDataFrame )
+rownames( fpkmsNumeric ) <- rownames( dataFrame )
 
 # To create the heatmap, we need to take the top 100 most variable genes. To do
 # this, we will use the "rowVars" function from the genefilter package, which
@@ -251,11 +185,6 @@ assayGroupLabels <- sapply( colnames( top100geneFPKMs ), function( assayGroupID 
 	assayGroup <- rnaseqAssayGroups[[ assayGroupID ]]
 	assayGroupLabel <- assay_group_label( assayGroup )
 } )
-
-# Make the heatmap filename.
-heatmapFilename <- paste( experimentAccession, "-heatmap.pdf", sep="" )
-# Prepend path to experiment directory.
-heatmapFilename <- file.path( atlasExperimentDirectory, heatmapFilename )
 
 # Some nice colours.
 colours <- colorRampPalette( brewer.pal( 9, "Blues" ) )( 100 )
@@ -289,8 +218,7 @@ if( longestLabel / 3 > 8 ) {
 }
 
 # Make the heatmap.
-cat( paste( "Drawing heatmap in", heatmapFilename, "\n" ) )
-pdf( heatmapFilename, height=imageHeight, width=imageWidth )
+pdf( args$output, height=imageHeight, width=imageWidth )
 heatmap.2(
 	as.matrix( top100geneFPKMs ),
 	col = colours,
