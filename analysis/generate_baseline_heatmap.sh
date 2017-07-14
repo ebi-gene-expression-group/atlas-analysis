@@ -31,6 +31,8 @@ fi
 
 outputPath="${expPath}/${e}-heatmap.pdf"
 
+[[ ! -e "$outputPath" ]] || rm "$outputPath"
+
 if [ -s "$outputPathTpm" ]; then
 	ln -s "$outputPathTpm" "$outputPath"
 elif [ -s "$outputPathFpkm" ]; then
