@@ -11,22 +11,30 @@ fi
 expPath=$1
 e=`basename ${expPath}`
 
-TPMexpressionsFile="${expPath}/${e}-tpms.tsv"
-FPKMexpressionsFile="${expPath}/${e}-fpkms.tsv"
+expressionsFileTpm="${expPath}/${e}-tpms.tsv"
+expressionsFileFpkm="${expPath}/${e}-fpkms.tsv"
 
 configurationXml="${expPath}/${e}-configuration.xml"
+outputPathTpm="${expPath}/${e}-heatmap-tpms.pdf"
+outputPathFpkm="${expPath}/${e}-heatmap-fpkms.pdf"
+
+if [ -s "$expressionsFileTpm" ]; then
+	$(dirname "${BASH_SOURCE[0]}")/generateBaselineHeatmap.R --configuration "$configurationXml" \
+		--input "$expressionsFileTpm" \
+		--output "$outputPathTpm"
+fi
+if [ -s "$expressionsFileFpkm" ]; then
+	$(dirname "${BASH_SOURCE[0]}")/generateBaselineHeatmap.R --configuration "$configurationXml" \
+		--input "$expressionsFileFpkm" \
+		--output "$outputPathFpkm"
+fi
+
 outputPath="${expPath}/${e}-heatmap.pdf"
 
-if [ -s "$TPMexpressionsFile" ]; then
-	$(dirname "${BASH_SOURCE[0]}")/generateBaselineHeatmap.R \
-		--input "$TPMexpressionsFile" \
-		--configuration "$configurationXml" \
-		--output "$outputPath"
-elif [ -s "$FPKMexpressionsFile" ]; then
-	$(dirname "${BASH_SOURCE[0]}")/generateBaselineHeatmap.R \
-		--input "$FPKMexpressionsFile" \
-		--configuration "$configurationXml" \
-		--output "$outputPath"
+if [-s "$outputPathTpm"]; then
+	ln -s "$outputPathTpm" "$outputPath"
+elif [-s "$outputPathFpkm"]; then
+	ln -s "$outputPathFpkm" "$outputPath"
 else
-	>&2 echo "$0 data file not found in $1" ; exit 1
+	>&2 echo "$0 No heatmap produced! $1" ; exit 1
 fi
