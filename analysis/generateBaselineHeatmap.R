@@ -27,11 +27,11 @@ check_file_exists <- function( filename ) {
 	}
 }
 
-get_median_fpkms <- function( dataFrame ) {
+get_median_expressions <- function( dataFrame ) {
 
     startCol <- 3
 
-    # Check that the FPKM columns all have comma-separated values, quit if not.
+    # Check that the expression value columns all have comma-separated values, quit if not.
     if( !all( apply( dataFrame[ , startCol:ncol( dataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
 
         stop( "your values are not comma-separated lists of quartiles. Please check." )
@@ -63,7 +63,7 @@ get_median_fpkms <- function( dataFrame ) {
 ###############################
 # Script start.
 
-args <- parse_args(OptionParser(option_list= list(
+args = parse_args(OptionParser(option_list= list(
 	make_option(
 		c("-i", "--input"),
 		help="Input tsv file : Ensembl identifier, gene name, data columns with quartiles"
@@ -81,24 +81,6 @@ check_file_exists(args$input)
 check_file_exists(args$configuration)
 
 
-# Get the commandline arguments.
-args <- commandArgs( TRUE )
-
-# Stop if we don't have the requisite number of arguments.
-# For now this is 1 -- we just want the Atlas experiment directory. We can
-# build the other filenames from that.
-if( length( args ) > 0 ) {
-	atlasExperimentDirectory <- args[ 1 ]
-} else {
-	# Print a usage message and exit.
-	stop( "\nUsage:\n\tgenerateBaselineHeatmap.R <Atlas experiment directory>\n\n" )
-}
-
-# Build the XML config file name and the FPKM matrix filename.
-# Need to get the experiment accession out of the path passed.
-experimentAccession <- basename( atlasExperimentDirectory )
-
-
 # Parse XML config to a list.
 experimentConfigList <- parseAtlasConfig( args$configuration )
 
@@ -111,17 +93,13 @@ rnaseqAnalytics <- experimentAnalytics$rnaseq
 rnaseqAssayGroups <- assay_groups( rnaseqAnalytics )
 
 # Check that all assay groups have a label, we cannot continue without one.
-cat( "Verifying that all assay groups in XML config have labels...\n" )
 invisible( lapply( rnaseqAssayGroups, function( assayGroup) {
 	if( length( assay_group_label( assayGroup ) ) == 0 ) {
 		stop( paste( "Assay group", assay_group_id( assayGroup ), "does not have a label. Cannot continue." ) )
 	}
 } ) )
-cat( "All assay groups have labels.\n" )
 
-
-
-dataFrame <- get_median_fpkms(
+dataFrame <- get_median_expressions(
 	read.delim( args$input, stringsAsFactors = FALSE, header = TRUE )
 )
 
@@ -144,44 +122,42 @@ geneIDsToGeneNames[ emptyGeneNameIdxs , ] <- rownames( geneIDsToGeneNames )[ emp
 dataFrame$Gene.Name <- NULL
 
 
-# The FPKMs data frame can contain non-numeric values, such as "LOWDATA", which
+# The expression values data frame can contain non-numeric values, such as "LOWDATA", which
 # come from Cufflinks. We treat this as missing data, and in order for R to
 # understand that we have to convert all non-numeric values to NA. The
 # "as.numeric" function does this for us. Here we apply it to each column of
-# the FPKMs data frame, to create a new one, without any non-numeric values.
-cat( "Converting all values to numeric...\n" )
-fpkmsNumeric <- data.frame( lapply( dataFrame, function( x ) {
+# the expression values data frame, to create a new one, without any non-numeric values.
+expressionsNumeric <- data.frame( lapply( dataFrame, function( x ) {
 	# Suppress warnings about coercion to NA -- that's why we're using this
 	# function anyway!
 	suppressWarnings( as.numeric( x ) )
 } ) )
-cat( "Numeric conversion complete\n" )
 
 # Conversion to numeric-only has removed the row names, so we have to add them back.
-rownames( fpkmsNumeric ) <- rownames( dataFrame )
+rownames( expressionsNumeric ) <- rownames( dataFrame )
 
 # To create the heatmap, we need to take the top 100 most variable genes. To do
 # this, we will use the "rowVars" function from the genefilter package, which
 # calculates the variance of each row of a data frame.
-rowVariances <- rowVars( fpkmsNumeric )
+rowVariances <- rowVars( expressionsNumeric )
 
-# Sort FPKMs by the row variances in descending order (largest first).
-fpkmsNumeric <- fpkmsNumeric[ order( rowVariances, decreasing = TRUE ) , ]
+# Sort expression values by the row variances in descending order (largest first).
+expressionsNumeric <- expressionsNumeric[ order( rowVariances, decreasing = TRUE ) , ]
 
-# Get the FPKMs of the top 100 most variable genes.
-top100geneFPKMs <- fpkmsNumeric[ 1:100 , ]
+# Get the expression values of the top 100 most variable genes.
+top100geneExpressions <- expressionsNumeric[ 1:100 , ]
 
 # Get the gene names for the top 100 gene IDs, to use as labels for the
 # heatmape rows.
-top100geneNames <- geneIDsToGeneNames[ rownames( top100geneFPKMs ) , ]
+top100geneNames <- geneIDsToGeneNames[ rownames( top100geneExpressions ) , ]
 
 # Scale and center the expression levels using Z-score transformation, so they
 # have mean 0 and standard deviation 1. This makes the clustering and heatmap
 # colours look better than leaving them as they are (very long tail).
-top100geneFPKMs <- t( scale( t( top100geneFPKMs )))
+top100geneExpressions <- t( scale( t( top100geneExpressions )))
 
 # Get the assay group labels to use as the labels for the heatmap columns.
-assayGroupLabels <- sapply( colnames( top100geneFPKMs ), function( assayGroupID ) {
+assayGroupLabels <- sapply( colnames( top100geneExpressions ), function( assayGroupID ) {
 	assayGroup <- rnaseqAssayGroups[[ assayGroupID ]]
 	assayGroupLabel <- assay_group_label( assayGroup )
 } )
@@ -220,7 +196,7 @@ if( longestLabel / 3 > 8 ) {
 # Make the heatmap.
 pdf( args$output, height=imageHeight, width=imageWidth )
 heatmap.2(
-	as.matrix( top100geneFPKMs ),
+	as.matrix( top100geneExpressions ),
 	col = colours,
 	labRow = top100geneNames,
 	labCol = assayGroupLabels,
