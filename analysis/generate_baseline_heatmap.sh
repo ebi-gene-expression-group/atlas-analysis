@@ -31,9 +31,9 @@ fi
 
 outputPath="${expPath}/${e}-heatmap.pdf"
 
-if [-s "$outputPathTpm"]; then
+if [ -s "$outputPathTpm" ]; then
 	ln -s "$outputPathTpm" "$outputPath"
-elif [-s "$outputPathFpkm"]; then
+elif [ -s "$outputPathFpkm" ]; then
 	ln -s "$outputPathFpkm" "$outputPath"
 else
 	>&2 echo "$0 No heatmap produced! $1" ; exit 1
