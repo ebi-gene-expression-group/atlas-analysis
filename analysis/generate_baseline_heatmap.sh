@@ -1,5 +1,7 @@
 #!/bin/bash
 # A wrapper script for the baseline heatmap
+# "strict mode"
+set -euo pipefail
 
 if [ $# -lt 1 ]; then
         echo "Usage: $0 PATH_TO_EXPERIMENT "

@@ -63,7 +63,7 @@ get_median_expressions <- function( dataFrame ) {
 ###############################
 # Script start.
 
-args = parse_args(OptionParser(option_list= list(
+args <- parse_args(OptionParser(option_list= list(
 	make_option(
 		c("-i", "--input"),
 		help="Input tsv file : Ensembl identifier, gene name, data columns with quartiles"
@@ -98,28 +98,29 @@ invisible( lapply( rnaseqAssayGroups, function( assayGroup) {
 		stop( paste( "Assay group", assay_group_id( assayGroup ), "does not have a label. Cannot continue." ) )
 	}
 } ) )
-
+#Expected format:
+#gene id | gene name | g1 | .. gn
 dataFrame <- get_median_expressions(
 	read.delim( args$input, stringsAsFactors = FALSE, header = TRUE )
 )
 
 # Assign gene IDs as row names.
-rownames( dataFrame ) <- dataFrame$Gene.ID
-# Remove the Gene.ID column.
-dataFrame$Gene.ID <- NULL
+rownames( dataFrame ) <- dataFrame[[1]]
+# Remove the gene id column.
+dataFrame[[1]] <- NULL
 
 # Create data frame of just Ensembl IDs and gene names. We have to use Ensembl
 # IDs as row names in R because it doesn't allow non-unique row names.
-geneIDsToGeneNames <- data.frame( Gene.Name = dataFrame$Gene.Name, stringsAsFactors=FALSE )
+geneIDsToGeneNames <- data.frame( id = dataFrame[[1]], stringsAsFactors=FALSE )
 # Add the Ensembl gene IDs as the row names.
 rownames( geneIDsToGeneNames ) <- rownames( dataFrame )
 
 # Replace any empty gene names with the gene ID.
-emptyGeneNameIdxs <- which( geneIDsToGeneNames == "" )
-geneIDsToGeneNames[ emptyGeneNameIdxs , ] <- rownames( geneIDsToGeneNames )[ emptyGeneNameIdxs ]
+emptyGeneNameIndices <- which( geneIDsToGeneNames == "" )
+geneIDsToGeneNames[ emptyGeneNameIndices , ] <- rownames( geneIDsToGeneNames )[ emptyGeneNameIndices ]
 
 # Now remove the Gene.Name column from the data frame.
-dataFrame$Gene.Name <- NULL
+dataFrame[[1]] <- NULL
 
 
 # The expression values data frame can contain non-numeric values, such as "LOWDATA", which
