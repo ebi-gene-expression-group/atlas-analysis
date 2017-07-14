@@ -32,7 +32,7 @@ get_median_expressions <- function( dataFrame ) {
     startCol <- 3
 
     # Check that the expression value columns all have comma-separated values, quit if not.
-    if( !all( apply( dataFrame[ , startCol:ncol( dataFrame ) ], 2, function( x ) { grepl( ",", x ) } ) ) ) {
+    if( !all( apply( as.matrix(dataFrame[ , startCol:ncol( dataFrame ) ]), 2, function( x ) { grepl( ",", x ) } ) ) ) {
 
         stop( "your values are not comma-separated lists of quartiles. Please check." )
     }
