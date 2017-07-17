@@ -144,7 +144,7 @@ if( ( length( assayGroupLabels ) / 2 ) > 8 ) {
 # need to make the image height and margin height larger.
 # Get the lengths of all the assay group labels.
 # How long is the longest one?
-longestLabel <- max(lapply( assayGroupLabels, function( x ) nchar( x ) ))
+longestLabel <- max(unlist(lapply( assayGroupLabels, function( x ) nchar( x ) )))
 
 # Some messing around with image and margin height to get the column (assay
 # group) labels to fit on the page. This is not ideal and in the long run we
