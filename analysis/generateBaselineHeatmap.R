@@ -148,7 +148,7 @@ marginHeight <- 8
 # See how long the longest assay group label is. If it's over 16 characters,
 # need to make the image height and margin height larger.
 # Get the lengths of all the assay group labels.
-assayGroupLabelLengths <- sapply( assayGroupLabels, function( x ) nchar( x ) )
+assayGroupLabelLengths <- apply( assayGroupLabels, 1, function( x ) nchar( x ) )
 # How long is the longest one?
 longestLabel <- assayGroupLabelLengths[ which.max( assayGroupLabelLengths ) ]
 
