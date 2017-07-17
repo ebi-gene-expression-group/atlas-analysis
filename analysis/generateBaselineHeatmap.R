@@ -140,17 +140,11 @@ if( ( length( assayGroupLabels ) / 2 ) > 8 ) {
 	imageWidth <- length( assayGroupLabels ) / 2
 }
 
-# Stater value for overall image height,
-imageHeight <- 8
-# and image margin height.
-marginHeight <- 8
-
 # See how long the longest assay group label is. If it's over 16 characters,
 # need to make the image height and margin height larger.
 # Get the lengths of all the assay group labels.
-assayGroupLabelLengths <- lapply( assayGroupLabels, function( x ) nchar( x ) )
 # How long is the longest one?
-longestLabel <- assayGroupLabelLengths[ which.max( assayGroupLabelLengths ) ]
+longestLabel <- max(lapply( assayGroupLabels, function( x ) nchar( x ) ))
 
 # Some messing around with image and margin height to get the column (assay
 # group) labels to fit on the page. This is not ideal and in the long run we
@@ -158,6 +152,9 @@ longestLabel <- assayGroupLabelLengths[ which.max( assayGroupLabelLengths ) ]
 if( longestLabel / 3 > 8 ) {
 	imageHeight <- ( longestLabel / 3 )
 	marginHeight <- ( longestLabel / 3 )
+} else {
+	imageHeight <- 8
+	marginHeight <- 8
 }
 
 # Make the heatmap.
