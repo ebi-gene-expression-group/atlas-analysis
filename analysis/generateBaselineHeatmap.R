@@ -33,7 +33,7 @@ get_median_expressions <- function( dataFrame ) {
     if( !all( apply( expressionLevels, c(1,2), function( x ) { grepl( ",", x ) } ) ) ) {
         stop( "your values are not comma-separated lists of quartiles. Please check." )
     }
-    medians <- apply(expressionLevels, c(1,2), function(x){as.numeric(strsplit( x, "," )[[1]][3])})
+    medians <- apply(expressionLevels, c(1,2), function(x){suppressWarnings(as.numeric(strsplit( x, "," )[[1]][3]))})
     return (
 		data.frame( dataFrame[ , 1:(startCol - 1), drop=FALSE ], medians, stringsAsFactors=FALSE )
 	)
@@ -79,42 +79,27 @@ invisible( lapply( rnaseqAssayGroups, function( assayGroup) {
 } ) )
 #Expected format:
 #gene id | gene name | g1 | .. gn
-dataFrame <- get_median_expressions(
+expressionsNumeric <- get_median_expressions(
 	read.delim( args$input, stringsAsFactors = FALSE, header = TRUE )
 )
 
 # Assign gene IDs as row names.
-rownames( dataFrame ) <- dataFrame[[1]]
+rownames( expressionsNumeric ) <- expressionsNumeric[[1]]
 # Remove the gene id column.
-dataFrame[[1]] <- NULL
+expressionsNumeric[[1]] <- NULL
 
 # Create data frame of just Ensembl IDs and gene names. We have to use Ensembl
 # IDs as row names in R because it doesn't allow non-unique row names.
-geneIDsToGeneNames <- data.frame( id = dataFrame[[1]], stringsAsFactors=FALSE )
+geneIDsToGeneNames <- data.frame( id = expressionsNumeric[[1]], stringsAsFactors=FALSE )
 # Add the Ensembl gene IDs as the row names.
-rownames( geneIDsToGeneNames ) <- rownames( dataFrame )
+rownames( geneIDsToGeneNames ) <- rownames( expressionsNumeric )
 
 # Replace any empty gene names with the gene ID.
 emptyGeneNameIndices <- which( geneIDsToGeneNames == "" )
 geneIDsToGeneNames[ emptyGeneNameIndices , ] <- rownames( geneIDsToGeneNames )[ emptyGeneNameIndices ]
 
 # Now remove the Gene.Name column from the data frame.
-dataFrame[[1]] <- NULL
-
-
-# The expression values data frame can contain non-numeric values, such as "LOWDATA", which
-# come from Cufflinks. We treat this as missing data, and in order for R to
-# understand that we have to convert all non-numeric values to NA. The
-# "as.numeric" function does this for us. Here we apply it to each column of
-# the expression values data frame, to create a new one, without any non-numeric values.
-expressionsNumeric <- data.frame( lapply( dataFrame, function( x ) {
-	# Suppress warnings about coercion to NA -- that's why we're using this
-	# function anyway!
-	suppressWarnings( as.numeric( x ) )
-} ) )
-
-# Conversion to numeric-only has removed the row names, so we have to add them back.
-rownames( expressionsNumeric ) <- rownames( dataFrame )
+expressionsNumeric[[1]] <- NULL
 
 # To create the heatmap, we need to take the top 100 most variable genes. To do
 # this, we will use the "rowVars" function from the genefilter package, which
