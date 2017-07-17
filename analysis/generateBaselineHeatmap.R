@@ -83,6 +83,7 @@ expressionsNumeric <- get_median_expressions(
 	read.delim( args$input, stringsAsFactors = FALSE, header = TRUE )
 )
 
+expressionsNumeric <- get_median_expressions(dataFrame)
 # Assign gene IDs as row names.
 rownames( expressionsNumeric ) <- expressionsNumeric[[1]]
 # Remove the gene id column.
@@ -104,17 +105,20 @@ expressionsNumeric[[1]] <- NULL
 # To create the heatmap, we need to take the top 100 most variable genes. To do
 # this, we will use the "rowVars" function from the genefilter package, which
 # calculates the variance of each row of a data frame.
-rowVariances <- rowVars( expressionsNumeric )
+if(dim(expressionsNumeric)[2] > 1) {
+	rowVariances <- rowVars( expressionsNumeric )
+} else {
+	# can't calculate variance of one row, use the FPKM values (alhough the heatmap isn't as valuable then)
+	rowVariances <- expressionsNumeric[1]
+}
 
-# Sort expression values by the row variances in descending order (largest first).
-expressionsNumeric <- expressionsNumeric[ order( rowVariances, decreasing = TRUE ) , ]
-
-# Get the expression values of the top 100 most variable genes.
-top100geneExpressions <- expressionsNumeric[ 1:100 , ]
+# Get the indices of the top 100 most variable genes.
+chosenColumnIndices<- order( rowVariances, decreasing = TRUE )[1:100]
+top100geneExpressions <- expressionsNumeric[ chosenColumnIndices , ]
 
 # Get the gene names for the top 100 gene IDs, to use as labels for the
 # heatmape rows.
-top100geneNames <- geneIDsToGeneNames[ rownames( top100geneExpressions ) , ]
+top100geneNames <- geneIDsToGeneNames[ chosenColumnIndices, ]
 
 # Scale and center the expression levels using Z-score transformation, so they
 # have mean 0 and standard deviation 1. This makes the clustering and heatmap
