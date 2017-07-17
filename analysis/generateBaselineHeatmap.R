@@ -124,7 +124,7 @@ top100geneNames <- geneIDsToGeneNames[ chosenColumnIndices, ]
 top100geneExpressions <- t( scale( t( top100geneExpressions )))
 
 # Get the assay group labels to use as the labels for the heatmap columns.
-assayGroupLabels <- sapply( colnames( top100geneExpressions ), function( assayGroupID ) {
+assayGroupLabels <- lapply( colnames( top100geneExpressions ), function( assayGroupID ) {
 	assayGroup <- rnaseqAssayGroups[[ assayGroupID ]]
 	assayGroupLabel <- assay_group_label( assayGroup )
 } )
