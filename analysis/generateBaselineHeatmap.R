@@ -79,9 +79,7 @@ invisible( lapply( rnaseqAssayGroups, function( assayGroup) {
 } ) )
 #Expected format:
 #gene id | gene name | g1 | .. gn
-expressionsNumeric <- get_median_expressions(
-	read.delim( args$input, stringsAsFactors = FALSE, header = TRUE )
-)
+dataFrame<-read.delim( args$input, stringsAsFactors = FALSE, header = TRUE )
 
 expressionsNumeric <- get_median_expressions(dataFrame)
 # Assign gene IDs as row names.
