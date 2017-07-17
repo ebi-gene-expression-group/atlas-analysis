@@ -18,12 +18,12 @@ configurationXml="${expPath}/${e}-configuration.xml"
 outputPathTpm="${expPath}/${e}-heatmap-tpms.pdf"
 outputPathFpkm="${expPath}/${e}-heatmap-fpkms.pdf"
 
-if [ -s "$expressionsFileTpm" -a $(head -n1 "$expressionsFileTpm" | awk '{print NF}' ) -gt 3 ]; then
+if [ -s "$expressionsFileTpm" ]; then
 	$(dirname "${BASH_SOURCE[0]}")/generateBaselineHeatmap.R --configuration "$configurationXml" \
 		--input "$expressionsFileTpm" \
 		--output "$outputPathTpm"
 fi
-if [ -s "$expressionsFileFpkm" -a $(head -n1 "$expressionsFileFpkm" | awk '{print NF}' ) -gt 3 ]; then
+if [ -s "$expressionsFileFpkm" ]; then
 	$(dirname "${BASH_SOURCE[0]}")/generateBaselineHeatmap.R --configuration "$configurationXml" \
 		--input "$expressionsFileFpkm" \
 		--output "$outputPathFpkm"
