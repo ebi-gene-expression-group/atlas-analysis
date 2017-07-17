@@ -28,36 +28,15 @@ check_file_exists <- function( filename ) {
 }
 
 get_median_expressions <- function( dataFrame ) {
-
     startCol <- 3
-
-    # Check that the expression value columns all have comma-separated values, quit if not.
-    if( !all( apply( as.matrix(dataFrame[ , startCol:ncol( dataFrame ) ]), 2, function( x ) { grepl( ",", x ) } ) ) ) {
-
+    expressionLevels <- as.matrix(dataFrame[ , startCol:ncol( dataFrame ) ])
+    if( !all( apply( expressionLevels, c(1,2), function( x ) { grepl( ",", x ) } ) ) ) {
         stop( "your values are not comma-separated lists of quartiles. Please check." )
     }
-
-    # Get just the columns of expression levels.
-    fpkmCols <- dataFrame[ , startCol:ncol( dataFrame ) ]
-
-    # Go through the rows ...
-    medians <- t( apply( fpkmCols, 1, function( fpkmsRow ) {
-
-        # Go through the row values (comma-separated lists)...
-        mediansRow <- sapply( fpkmsRow, function( x ) {
-
-            # Split on commas.
-            vec <- strsplit( x, "," )[[1]]
-
-            # Get the median.
-            as.numeric( vec[ 3 ] )
-        })
-    }) )
-
-
-    medians <- data.frame( dataFrame[ , 1:(startCol - 1), drop=FALSE ], medians, stringsAsFactors=FALSE )
-
-    return( medians )
+    medians <- apply(expressionLevels, c(1,2), function(x){as.numeric(strsplit( x, "," )[[1]][3])})
+    return (
+		data.frame( dataFrame[ , 1:(startCol - 1), drop=FALSE ], medians, stringsAsFactors=FALSE )
+	)
 }
 
 ###############################
