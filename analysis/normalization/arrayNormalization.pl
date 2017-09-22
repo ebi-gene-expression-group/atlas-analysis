@@ -59,7 +59,7 @@ unless( can_run( "R" ) ) {
 }
 
 # Path to directory with ArrayExpress/Atlas load directories underneath.
-my $exptsLoadStem = File::Spec->catdir( $CONFIG->get_AE2_LOAD_DIR, "EXPERIMENT" );
+my $exptsLoadStem = $ENV{"AE2_BASE_DIR"};
 
 # miRBase mapped array designs -- we need to subset probes if we find one of these.
 # Get an array of miRBase mapping files.
@@ -156,7 +156,7 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 	# NB: Using 2>&1 means that nothing from R is printed to STDOUT. If there's an
 	# error, then it's printed by the part following this line.
 	my $RscriptOutput = `$normalizationRscript $tempFile $normalizationMode $normalizedDataFile $miRBaseFile 2>&1`;
-	
+
 	# If there was an error in R die and print the error.
 	if($RscriptOutput =~ /error/i) {
 		$logger->logdie( "Error encountered during normalization of $exptAccession on array $arrayDesign. Full output from R is below:
@@ -186,7 +186,7 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 # Subroutines
 
 # &makeArraysToAssaysToFiles
-# 
+#
 # 	- Creates a hash matching each data file to each assay, for each array design.
 # 	- E.g.:
 # 		$H->{ <array design 1> }->{ <assay 1> } = <file 1>
@@ -200,7 +200,7 @@ foreach my $arrayDesign (keys %{ $H_arraysToAssaysToFiles }) {
 sub makeArraysToAssaysToFiles {
 	# Atlas::Magetab4Atlas object and path to load directory.
 	my ($magetab4atlas, $loadDir, $experimentConfig ) = @_;
-	
+
 	my $experimentType = $experimentConfig->get_atlas_experiment_type;
 
 	# Get all the assay names from the experiment config.
@@ -226,7 +226,7 @@ sub makeArraysToAssaysToFiles {
 
 	# Ref to empty hash to fill
 	my $H_arraysToAssaysToFiles = {};
-	
+
 	# Normalization mode.
 	my $normalizationMode = 0;
 
@@ -238,19 +238,19 @@ sub makeArraysToAssaysToFiles {
 
 		# Escape any metacharacters
 		my $assayNameEsc = quotemeta( $assayName );
-		
+
 		# Array design
 		my $arrayDesign = $assay4atlas->get_array_design;
 
 		# Check that we saw this assay in the XML config. If not, skip it.
-		unless( grep { /^$assayNameEsc$/ } @{ $arrayDesignsToAssayNames->{ $arrayDesign } } ) { 
+		unless( grep { /^$assayNameEsc$/ } @{ $arrayDesignsToAssayNames->{ $arrayDesign } } ) {
 			$logger->info( "Assay \"$assayName\" not found in XML config, not including in normalization." );
 			next;
 		}
 
 		# Raw data filename.
 		my $arrayDataFile = File::Spec->catfile( $loadDir, $assay4atlas->get_array_data_file );
-		
+
 		# For 1-colour array data, need to tell the R script whether this is
 		# Affymetrix or Agilent (or other -- for now we only handle Affy and Agil
 		# data). Work this out based on the file extension for now -- another
@@ -267,10 +267,10 @@ sub makeArraysToAssaysToFiles {
 			# Remove label name from assay name which was added by Atlas::Magetab4Atlas.
 			$assayName =~ s/\.Cy\d$//;
 		}
-		
+
 		# Add data to hash.
 		$H_arraysToAssaysToFiles->{ $arrayDesign }->{ $assayName } = $arrayDataFile;
 	}
-	
+
 	return ($H_arraysToAssaysToFiles, $normalizationMode);
 }
