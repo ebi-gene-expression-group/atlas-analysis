@@ -2,8 +2,7 @@
 
 # Source script from the same (prod or test) Atlas environment as this script
 scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source ${scriptDir}/../../bash_util/generic_routines.sh
-atlasEnv=`atlas_env`
+projectRoot=${scriptDir}/../..
 
 if [ $# -lt 1 ]; then
    echo "Usage: $0 expAcc"
@@ -15,7 +14,7 @@ expAcc=$1
 pushd ${ATLAS_PROD}/analysis/differential/microarray/experiments/$expAcc
 rm -rf qc
 
-${ATLAS_PROD}/sw/atlasinstall_${atlasEnv}/atlasprod/analysis/qc/arrayQC.pl $expAcc
+$projectRoot/analysis/qc/arrayQC.pl $expAcc
 exitCode=$?
 if [ $exitCode -eq 1 ]; then
     # The QC procedure succeeded but the experiment failed the QC
@@ -28,7 +27,7 @@ elif [ $exitCode -ne 0 ]; then
     # The QC procedure itself failed (e.g. due to lack of memory) - we don't know if the experiment passes or fails the QC
     # Perl die() returns exit code=255
     echo "ERROR: Failed to perform QC for ${expAcc} - exit code: $exitCode" >&2
-    exit 1       
+    exit 1
 else
     # Experiment has passed QC check - move quality report dir into qc/
     mkdir -p qc
