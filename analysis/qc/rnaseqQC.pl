@@ -6,7 +6,8 @@ use warnings;
 use 5.10.0;
 
 use Atlas::AtlasConfig::Reader qw( parseAtlasConfig );
-use Atlas::Common qw( 
+use Atlas::Common qw(
+    get_supporting_file
     create_atlas_site_config
     check_privacy_in_ae
 );
@@ -45,18 +46,13 @@ unless( $atlasProdDir ) {
 	$logger->logdie( "ATLAS_PROD environment variable is not defined, cannot continue." );
 }
 
-my $atlasSiteConfig = create_atlas_site_config;
-
 # Path to file listing non-standard experiments. This file contains a list of
 # experiments for which there is no QC information stored in the database, and
 # hence for which the QC process will not work.
-my $nonStandardExpsFile = File::Spec->catfile(
-    $atlasProdDir,
-    $atlasSiteConfig->get_non_standard_experiments_file
-);
+my $nonStandardExpsFile = get_supporting_file("non_standard_experiments.yml");
 
 unless( -f $nonStandardExpsFile ) {
-    $logger->logdie( 
+    $logger->logdie(
         "Cannot find file $nonStandardExpsFile"
     );
 }
@@ -67,15 +63,16 @@ my $nonStandardExps = Config::YAML->new(
 );
 
 if( grep $_ eq $expAcc, @{ $nonStandardExps->get_no_qc_info } ) {
-    
+
     $logger->warn( "$expAcc is on the list of experiments with no QC information. Skipping QC checks." );
 
     exit;
 }
 
+my $atlasSiteConfig = create_atlas_site_config;
 
 # Path to script for checking RNA-seq QC results.
-my $islResultsScript = File::Spec->catfile( 
+my $islResultsScript = File::Spec->catfile(
 	$atlasProdDir,
 	$atlasSiteConfig->get_isl_results_script
 );
@@ -100,7 +97,7 @@ $logger->info( "Successfully read experiment config." );
 
 # Make sure this is an RNA-seq experiment.
 unless( $experimentConfig->get_atlas_experiment_type =~ /rnaseq/ ) {
-	$logger->logdie( 
+	$logger->logdie(
 		"$expAcc does not look like an RNA-seq experiment: experiment type is ",
 		$experimentConfig->get_atlas_experiment_type
 	);
@@ -160,7 +157,7 @@ foreach my $row ( @resultsRows ) {
 
 	# Add failed run accessions to the hash.
 	if( $qcStatus eq "completed" || $qcStatus eq "on_ftp" ) {
-        
+
         $passedQC->{ $runAcc } = 1;
 
         # Also see if we got less than 70% reads mapped. If so, add them to
@@ -177,7 +174,7 @@ foreach my $row ( @resultsRows ) {
         $inProgress->{ $runAcc } = 1;
     }
     else {
-		
+
         $logger->warn( "QC_FAIL: $runAcc failed QC with status: \"$qcStatus\"" );
 
 		$failedRuns->{ $runAcc } = 1;
@@ -196,7 +193,7 @@ foreach my $runAcc ( keys %{ $configRuns } ) {
     unless( $qcRuns->{ $runAcc } ) {
 
         $logger->error( "QC_FAIL: $runAcc was not found in QC results." );
- 
+
         $runsMissing++;
     }
 }
@@ -225,7 +222,7 @@ $logger->info( "Checking mapping quality for runs that passed QC..." );
 if( keys %{ $lowMappedReads } ) {
 
     foreach my $runAcc ( sort keys %{ $lowMappedReads } ) {
-        
+
         $logger->warn( "LOW_MQ: Run ", $runAcc, " has less than 70% reads mapped (", $lowMappedReads->{ $runAcc }, "%)" );
     }
 }
@@ -292,19 +289,19 @@ $logger->info( "PCT_PASSED: $pctPassed % ($totalPassed/$totalRuns) of the runs p
 
 # If there were any failed runs, go through the XML and remove them.
 if( keys %{ $failedRuns } ) {
-    
+
 	# Remove from config.
 	$experimentConfig = _remove_rejected_runs( $experimentConfig, $failedRuns );
 
 	# Re-write config now we've removed the failed runs.
 	$logger->info( "Renaming original XML config file to \"$atlasXMLfile.beforeQC\"" );
-	
+
 	`mv $atlasXMLfile $atlasXMLfile.beforeQC`;
-	
+
 	if( $? ) {
 		$logger->logdie( "Could not rename file: $!" );
 	}
-	
+
 	$logger->info( "Writing new XML config file without assays that failed QC..." );
 	$experimentConfig->write_xml( "." );
 	$logger->info( "Successfully written new XML config file." );
