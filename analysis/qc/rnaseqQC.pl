@@ -72,7 +72,10 @@ if( grep $_ eq $expAcc, @{ $nonStandardExps->get_no_qc_info } ) {
 my $atlasSiteConfig = create_atlas_site_config;
 
 # Path to script for checking RNA-seq QC results.
-my $islResultsScript = $atlasSiteConfig->get_isl_results_script;
+my $islResultsScript = File::Spec->catfile(
+	$atlasProdDir,
+	$atlasSiteConfig->get_isl_results_script
+);
 
 # Check this user can run the QC results script.
 unless( can_run( $islResultsScript ) ) {
