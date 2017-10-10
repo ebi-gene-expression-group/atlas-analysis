@@ -10,8 +10,8 @@ if [ $# -lt 1 ]; then
    exit 1
 fi
 
-expAcc=$1
-expTargetDir=${ATLAS_PROD}/analysis/differential/microarray/experiments/$expAcc
+expTargetDir=$1
+expAcc="$(basename $expTargetDir)"
 
 fixArrayQualityMetricsFile(){
 	generatedFile=$1
