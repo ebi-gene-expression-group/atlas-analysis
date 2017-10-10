@@ -26,17 +26,17 @@ fixArrayQualityMetricsFile(){
 
 rm -rf $expTargetDir/qc
 
-pushd $expTargetDir > /dev/null
+pushd $expTargetDir || exit 1 > /dev/null
 $projectRoot/analysis/qc/arrayQC.pl $expAcc
 exitCode=$?
 if [ $exitCode -eq 1 ]; then
     # The QC procedure succeeded but the experiment failed the QC
-    popd > /dev/null
+    popd || exit 1 > /dev/null
     mv $expTargetDir ${ATLAS_PROD}/failedQC/microarray/
     echo "[QC] Quality control for ${expAcc} has failed - see http://www.ebi.ac.uk/~rpetry/atlas3/failedQC/microarray/${expAcc} for more info"
     exit 2
 elif [ $exitCode -ne 0 ]; then
-    popd > /dev/null
+    popd || exit 1 > /dev/null
     # The QC procedure itself failed (e.g. due to lack of memory) - we don't know if the experiment passes or fails the QC
     # Perl die() returns exit code=255
     echo "ERROR: Failed to perform QC for ${expTargetDir} - exit code: $exitCode" >&2
@@ -52,5 +52,5 @@ else
             > "$destination/arrayQualityMetrics.js"
         rm -rf "$qcDir"
     done
-    popd > /dev/null
+    popd || exit 1 > /dev/null
 fi
