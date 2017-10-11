@@ -24,7 +24,7 @@ exp <- read.delim(expressionsFile)
 # Make sure there are at least three columns (gene ID, expression
 # columns) -- doesn't make sense to try coexpression with only one or two
 # columns of expression data.
-if( ncol( exp ) < 4 ) {
+if( ncol( exp ) < 3 ) {
     warning( "Fewer than three columns in total. Cannot do coexpression on only one data column." )
 
     # Quit without exit code.
