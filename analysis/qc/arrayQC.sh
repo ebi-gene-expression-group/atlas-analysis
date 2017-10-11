@@ -13,6 +13,12 @@ fi
 expTargetDir=$1
 expAcc="$(basename $expTargetDir)"
 
+# This is still needed if the version of arrayQualityMetrics is < 3.32.0
+# If it's past April 2018 please check if you can upgrade:
+# https://bioconductor.org/packages/release/bioc/html/arrayQualityMetrics.html
+# If so use the newer package (arrayQualityMetrics.js got fixed upstream)
+# stop fixing up the JS files: change moving the qc folders to what it was before
+# Then delete the fixup code, the checked in arrayQualityMetrics.js, and this comment
 fixArrayQualityMetricsFile(){
 	generatedFile=$1
 	correctFile=$2
