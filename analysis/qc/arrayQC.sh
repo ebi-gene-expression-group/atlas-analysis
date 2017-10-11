@@ -10,27 +10,53 @@ if [ $# -lt 1 ]; then
    exit 1
 fi
 
-expAcc=$1
-pushd ${ATLAS_PROD}/analysis/differential/microarray/experiments/$expAcc
-rm -rf qc
+expTargetDir=$1
+expAcc="$(basename $expTargetDir)"
 
+# This is still needed if the version of arrayQualityMetrics is < 3.32.0
+# If it's past April 2018 please check if you can upgrade:
+# https://bioconductor.org/packages/release/bioc/html/arrayQualityMetrics.html
+# If so use the newer package (arrayQualityMetrics.js got fixed upstream)
+# stop fixing up the JS files: change moving the qc folders to what it was before
+# Then delete the fixup code, the checked in arrayQualityMetrics.js, and this comment
+fixArrayQualityMetricsFile(){
+	generatedFile=$1
+	correctFile=$2
+	matchPhrase='var highlightInitial\|var arrayMetadata\|var svgObjectNames'
+
+	echo "/* patch part 1 - lines from generated file */"
+	grep "$matchPhrase" < "$generatedFile"
+    echo "/* patch part 2 - lines from patch file */"
+	grep -v "$matchPhrase" < "$correctFile"
+}
+
+rm -rf $expTargetDir/qc
+
+pushd $expTargetDir || exit 1 > /dev/null
 $projectRoot/analysis/qc/arrayQC.pl $expAcc
 exitCode=$?
 if [ $exitCode -eq 1 ]; then
     # The QC procedure succeeded but the experiment failed the QC
-    popd
-    mv ${ATLAS_PROD}/analysis/differential/microarray/experiments/$expAcc ${ATLAS_PROD}/failedQC/microarray/
+    popd || exit 1 > /dev/null
+    mv $expTargetDir ${ATLAS_PROD}/failedQC/microarray/
     echo "[QC] Quality control for ${expAcc} has failed - see http://www.ebi.ac.uk/~rpetry/atlas3/failedQC/microarray/${expAcc} for more info"
     exit 2
 elif [ $exitCode -ne 0 ]; then
-    popd
+    popd || exit 1 > /dev/null
     # The QC procedure itself failed (e.g. due to lack of memory) - we don't know if the experiment passes or fails the QC
     # Perl die() returns exit code=255
-    echo "ERROR: Failed to perform QC for ${expAcc} - exit code: $exitCode" >&2
+    echo "ERROR: Failed to perform QC for ${expTargetDir} - exit code: $exitCode" >&2
     exit 1
 else
     # Experiment has passed QC check - move quality report dir into qc/
-    mkdir -p qc
-    mv *_QM qc
-    popd
+    find . -name "$expAcc*_QM" -type d | while read -r qcDir; do
+        destination="$expTargetDir/qc/$(basename $qcDir)"
+        mkdir -p $destination
+        cp $qcDir/* $destination
+        test -e "$qcDir/arrayQualityMetrics.js" \
+            && fixArrayQualityMetricsFile "$qcDir/arrayQualityMetrics.js" "$scriptDir/arrayQualityMetrics.js" \
+            > "$destination/arrayQualityMetrics.js"
+        rm -rf "$qcDir"
+    done
+    popd || exit 1 > /dev/null
 fi
