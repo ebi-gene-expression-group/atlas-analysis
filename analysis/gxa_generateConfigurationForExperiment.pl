@@ -28,7 +28,7 @@ Requred. ArrayExpress accession of experiment.
 
 =item -r --import
 
-Required. import route. Must be "annotare", "geo" or "ena".
+Required. import route. Must be "anno	tare", "geo" or "ena".
 
 =item -t --type
 
