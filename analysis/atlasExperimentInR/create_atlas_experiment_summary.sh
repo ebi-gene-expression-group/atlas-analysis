@@ -13,7 +13,7 @@ expPath=$1
 e=`basename ${expPath}`
 output="$expPath/$e-atlasExperimentSummary.Rdata"
 
-$(dirname "${BASH_SOURCE[0]}")/createAtlasExperimentSummary.R \
+"$(dirname "${BASH_SOURCE[0]}")"/createAtlasExperimentSummary.R \
 	--source "$expPath"\
 	--accession "$e" \
 	--output "$output"
