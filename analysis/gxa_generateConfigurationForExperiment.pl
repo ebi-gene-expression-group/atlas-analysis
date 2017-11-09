@@ -8,7 +8,7 @@ gxa_generateConfigurationForExperiment.pl - create an XML config file for an Exp
 
 =head1 SYNOPSIS
 
-gxa_generateConfigurationForExperiment.pl -e E-MTAB-1066 -t differential
+gxa_generateConfigurationForExperiment.pl -e E-MTAB-1066 -t differential -r annotare
 
 gxa_generateConfigurationForExperiment.pl -e E-MTAB-513 -t baseline -l paired
 
@@ -25,6 +25,10 @@ Atlas.
 =item -e --experiment
 
 Requred. ArrayExpress accession of experiment.
+
+=item -r --import
+
+Required. import route. Must be "annotare", "geo" or "ena".
 
 =item -t --type
 
@@ -157,7 +161,7 @@ if($args->{ "ignore_factor" }) {
 $logger->debug( "Parsing MAGE-TAB..." );
 
 # Read in the MAGE-TAB.
-my $magetab4atlas = create_non_strict_magetab4atlas( $args->{ "experiment_accession" } );
+my $magetab4atlas = create_non_strict_magetab4atlas( $args->{ "experiment_accession" }, $args->{ "import_route" } );
 
 # Make sure the Magetab4Atlas object contains the appropriate assays.
 $magetab4atlas = check_magetab4atlas_for_config($args, $ignoreFactorTypes, $magetab4atlas);
@@ -215,6 +219,13 @@ sub parse_args {
 		paired
 	);	
 	
+	# Possible imports.
+	my @allowed_imports = qw(
+		geo
+		annotare
+		ena
+	);
+
 	GetOptions(
 		"h|help"			=> \$want_help,
 		"e|experiment=s"	=> \$args{ "experiment_accession" },
@@ -225,6 +236,7 @@ sub parse_args {
 		"o|outdir=s"		=> \$args{ "output_directory" },	# dir for XML file
 		"a|assay-groups-only"	=> \$args{ "assay_groups_only" },	# only create assay groups for differential (no contrasts)
 		"d|debug"			=> \$args{ "debug" },
+		"r|import"			=> \$args{ "import_route" }, # geo, annotare or ena
 	);
 
 	if($want_help) {
@@ -276,6 +288,16 @@ sub parse_args {
 				-verbose => 1,
 			);
 		}
+	}
+
+	# Check import route is one of either "geo" or "annotare" or "ena".
+	unless(grep $_ eq $args{ "import_route" }, @allowed_imports) {
+		pod2usage(
+			-message => "\"". $args{ "import_route" }. "\" is not an allowed import route.\n",
+			-exitval => 255,
+			-output => \*STDOUT,
+			-verbose => 1,
+		);
 	}
 	
 	# If both "-t baseline" and "-r <value>" were passed, this doesn't make
