@@ -231,12 +231,12 @@ sub parse_args {
 		"e|experiment=s"	=> \$args{ "experiment_accession" },
 		"t|type=s"			=> \$args{ "analysis_type" },	# baseline or differential
 		"l|library=s"		=> \$args{ "library_layout" },	# paired or single
+		"r|import=s"			=> \$args{ "import_route" }, # geo, annotare or ena
 		"r|reference=s"		=> \$args{ "reference_value" },	# new reference factor value
 		"i|ignore=s"		=> \$args{ "ignore_factor" },	# factor type to ignore
 		"o|outdir=s"		=> \$args{ "output_directory" },	# dir for XML file
 		"a|assay-groups-only"	=> \$args{ "assay_groups_only" },	# only create assay groups for differential (no contrasts)
 		"d|debug"			=> \$args{ "debug" },
-		"r|import"			=> \$args{ "import_route" }, # geo, annotare or ena
 	);
 
 	if($want_help) {
