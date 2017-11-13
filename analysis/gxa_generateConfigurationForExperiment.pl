@@ -8,7 +8,7 @@ gxa_generateConfigurationForExperiment.pl - create an XML config file for an Exp
 
 =head1 SYNOPSIS
 
-gxa_generateConfigurationForExperiment.pl -e E-MTAB-1066 -t differential
+gxa_generateConfigurationForExperiment.pl -e E-MTAB-1066 -t differential -p annotare
 
 gxa_generateConfigurationForExperiment.pl -e E-MTAB-513 -t baseline -l paired
 
@@ -25,6 +25,10 @@ Atlas.
 =item -e --experiment
 
 Requred. ArrayExpress accession of experiment.
+
+=item -r --import
+
+Required. import route. Must be "anno	tare", "geo" or "ena".
 
 =item -t --type
 
@@ -157,7 +161,7 @@ if($args->{ "ignore_factor" }) {
 $logger->debug( "Parsing MAGE-TAB..." );
 
 # Read in the MAGE-TAB.
-my $magetab4atlas = create_non_strict_magetab4atlas( $args->{ "experiment_accession" } );
+my $magetab4atlas = create_non_strict_magetab4atlas( $args->{ "experiment_accession" }, $args->{ "import_path" } );
 
 # Make sure the Magetab4Atlas object contains the appropriate assays.
 $magetab4atlas = check_magetab4atlas_for_config($args, $ignoreFactorTypes, $magetab4atlas);
@@ -215,11 +219,19 @@ sub parse_args {
 		paired
 	);	
 	
+	# Possible imports.
+	my @allowed_imports = qw(
+		geo
+		annotare
+		ena
+	);
+
 	GetOptions(
 		"h|help"			=> \$want_help,
 		"e|experiment=s"	=> \$args{ "experiment_accession" },
 		"t|type=s"			=> \$args{ "analysis_type" },	# baseline or differential
 		"l|library=s"		=> \$args{ "library_layout" },	# paired or single
+		"p|import=s"		=> \$args{ "import_path" }, # geo, annotare or ena
 		"r|reference=s"		=> \$args{ "reference_value" },	# new reference factor value
 		"i|ignore=s"		=> \$args{ "ignore_factor" },	# factor type to ignore
 		"o|outdir=s"		=> \$args{ "output_directory" },	# dir for XML file
@@ -266,6 +278,16 @@ sub parse_args {
 		);
 	}
 
+	# Check import route is one of either "geo" or "annotare" or "ena".
+	unless(grep $_ eq $args{ "import_path" }, @allowed_imports) {
+		pod2usage(
+			-message => "\"". $args{ "import_path" }. "\" is not an allowed import path.\n",
+			-exitval => 255,
+			-output => \*STDOUT,
+			-verbose => 1,
+		);
+	}
+
 	# If we've been passed a library layout, check it's either "paired" or "single".
 	if($args{ "library_layout" }) {
 		unless(grep $_ eq $args{ "library_layout" }, @allowed_library_layouts) {
@@ -277,6 +299,7 @@ sub parse_args {
 			);
 		}
 	}
+
 	
 	# If both "-t baseline" and "-r <value>" were passed, this doesn't make
 	# sense -- don't need a reference for a baseline experiment. Die.
