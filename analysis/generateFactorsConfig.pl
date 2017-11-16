@@ -8,7 +8,7 @@ generateFactorsConfig.pl - create an XML factors config file for a baseline Expr
 
 =head1 SYNOPSIS
 
-generateFactorsConfig.pl -e E-GEOD-26284 -c E-GEOD-26284-configuration.xml -n "Cell Lines - ENCODE"
+generateFactorsConfig.pl -e E-GEOD-26284 -c E-GEOD-26284-configuration.xml --import "annotare" -n "Cell Lines - ENCODE"
 
 generateFactorsConfig.pl -e E-MTAB-2706 -c E-MTAB-2706-configuration.xml -n "Cell Lines - 675 Genentech" -u http://www.gene.com/ -p Genentech
 
@@ -157,7 +157,7 @@ Log::Log4perl->easy_init(
 my $logger = Log::Log4perl::get_logger;
 
 # Parse MAGE-TAB and get assays.
-my $magetab = create_non_strict_magetab4atlas( $args->{ "experiment_accession" } );
+my $magetab = create_non_strict_magetab4atlas( $args->{ "experiment_accession" }, $args->{ "import_path" } );
 
 # Get the assays into a hash.
 my %atlasAssays = map { $_->get_name => $_ } @{ $magetab->get_assays };
@@ -191,6 +191,7 @@ sub parse_args {
         "e|experiment=s"    => \$args{ "experiment_accession" },
         "c|config=s"        => \$args{ "experiment_config" },
         "n|name=s"          => \$args{ "display_name" },
+        "i|import=s"        => \$args{ "import_path" }, # geo, annotare or ena
         "o|output_dir=s"    => \$args{ "output_directory" },
         "q|query_factor=s"  => \$args{ "default_query_factor" },
         "u|url=s"           => \$args{ "provider_url" },
@@ -200,10 +201,10 @@ sub parse_args {
         "d|debug"           => \$args{ "debug" }
     );
 
-    unless( $args{ "experiment_accession" } && $args{ "experiment_config" } && $args{ "display_name" } ) {
+    unless( $args{ "experiment_accession" } && $args{ "experiment_config" } && $args{ "display_name" } && $args{ "import_path" } ) {
         
         my $message = 
-            "You must specify and experiment accession AND an experiment XML config file name AND a display name.\n";
+            "You must specify and experiment accession AND an experiment XML config file name AND import path AND a display name.\n";
         
         pod2usage(
             -message    => $message,
