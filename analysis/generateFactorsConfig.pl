@@ -71,6 +71,10 @@ Required. Expression Atlas experiment configuration file in XML format.
 Required. Display name for experiment, to show on
 http://www.ebi.ac.uk/gxa/baseline/experiments . See above for examples.
 
+=item -i, --import
+
+Required. Import route paths, either annotare, geo or ena.
+
 =item -q, --query_factor
 
 Optional. Specify which factor to use as the default query factor.
