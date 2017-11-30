@@ -10,6 +10,7 @@ use Atlas::Common qw(
     get_supporting_file
     create_atlas_site_config
     check_privacy_in_ae
+    get_ena_study_id
 );
 use File::Spec;
 use Log::Log4perl;
@@ -109,7 +110,17 @@ my $configRuns = _get_all_config_runs( $experimentConfig );
 
 $logger->info( "Retrieving QC results via $islResultsScript ..." );
 # Get the RNA-seq QC results
-my $rnaseqQCresults = `$islResultsScript $expAcc 2>&1`;
+
+( my $pipeline = $expAcc ) =~ s/E-(\w{4})-\d+/$1/;
+
+if ( $pipeline eq "ENAD" ) {
+ 	    my $ena_id = get_ena_study_id( $expAcc );
+		my $rnaseqQCresults = `$islResultsScript $ena_id 2>&1`;
+    }
+
+else {
+  	my $rnaseqQCresults = `$islResultsScript $expAcc 2>&1`;
+}
 
 # Check whether RNA-seq QC results script ran successfully.
 if( $? ) {
