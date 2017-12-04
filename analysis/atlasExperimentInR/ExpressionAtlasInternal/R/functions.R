@@ -143,11 +143,21 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	
 	# Get ArrayExpress site config to get path to experiment load directories.
 	aeSiteConfig <- createArrayExpressSiteConfig( )
-
-	ae2loadDir <- aeSiteConfig$AE2_LOAD_DIR
+	
 
 	# Complete path to SDRF file.
-	sdrfPath <- file.path( ae2loadDir, "EXPERIMENT", pipeline, experimentAccession, sdrfBasename )
+    if ( pipeline == "ENAD" ) {
+    	ae2loadDir <- aeSiteConfig$ENA_SUBMISSIONS_TARGET
+    	sdrfPath <- file.path( ae2loadDir, pipeline, experimentAccession, sdrfBasename )
+
+    } else if ( pipeline == "GEOD" ) {
+    	ae2loadDir <- aeSiteConfig$GEO_SUBMISSIONS_TARGET
+    	sdrfPath <- file.path( ae2loadDir, pipeline, experimentAccession, sdrfBasename )
+
+    } else {
+    	ae2loadDir <- aeSiteConfig$AE2_LOAD_DIR
+		sdrfPath <- file.path( ae2loadDir, "EXPERIMENT", pipeline, experimentAccession, sdrfBasename )
+	}
 
 	# Check SDRF exists, die if not.
 	if( !file.exists( sdrfPath ) ) {
