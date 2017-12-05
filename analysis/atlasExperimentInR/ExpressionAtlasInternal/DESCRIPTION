@@ -3,7 +3,7 @@ Version: 1.5
 Date: 2017/12/05
 Title: Functions and classes for EMBL-EBI Expression Atlas data
 Author: EMBL-EBI Expression Atlas team
-Maintainer: Maria Keays <mkeays@ebi.ac.uk>
+Maintainer: Suhaib Mohammed <suhaib@ebi.ac.uk>
 Description: A package exporting functions and classes used in the
 	representation and analysis of EMBL-EBI Expression Atlas data.
 Imports: XML, yaml, plyr, Biobase, BiocGenerics, SummarizedExperiment, GenomicRanges, IRanges, limma, S4Vectors, methods
