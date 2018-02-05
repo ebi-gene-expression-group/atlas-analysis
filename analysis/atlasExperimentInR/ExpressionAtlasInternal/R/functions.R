@@ -146,13 +146,19 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
 	
 
 	# Complete path to SDRF file.
+    if ( pipeline == "GEOD" ) {
+    	sdrfPath <- file.path( aeSiteConfig$GEO_SUBMISSIONS_TARGET, pipeline, experimentAccession, sdrfBasename )
+
+        # If it doesnt exist in GEO_SUBMISSIONS TARGET then retrieve from AE2_LOAD_DIR.
+    	if( !file.exists( sdrfPath ) ) {	
+        	sdrfPath <- file.path( aeSiteConfig$AE2_LOAD_DIR, "EXPERIMENT", pipeline, experimentAccession, sdrfBasename )
+    	}
+    } 
+
     if ( pipeline == "ENAD" ) {
     	sdrfPath <- file.path( aeSiteConfig$ENA_SUBMISSIONS_TARGET, pipeline, experimentAccession, sdrfBasename )
 
-    } else if ( pipeline == "GEOD" ) {
-    	sdrfPath <- file.path( aeSiteConfig$GEO_SUBMISSIONS_TARGET, pipeline, experimentAccession, sdrfBasename )
-
-    } else {
+    else {
 		sdrfPath <- file.path( aeSiteConfig$AE2_LOAD_DIR, "EXPERIMENT", pipeline, experimentAccession, sdrfBasename )
 	}
 
