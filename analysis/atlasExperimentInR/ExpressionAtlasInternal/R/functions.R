@@ -153,12 +153,11 @@ summarizeAtlasExperiment <- function( experimentAccession, atlasExperimentDirect
     	if( !file.exists( sdrfPath ) ) {	
         	sdrfPath <- file.path( aeSiteConfig$AE2_LOAD_DIR, "EXPERIMENT", pipeline, experimentAccession, sdrfBasename )
     	}
-    } 
-
-    if ( pipeline == "ENAD" ) {
+    	
+	} else if (pipeline == "ENAD") {
     	sdrfPath <- file.path( aeSiteConfig$ENA_SUBMISSIONS_TARGET, pipeline, experimentAccession, sdrfBasename )
 
-    else {
+    } else {
 		sdrfPath <- file.path( aeSiteConfig$AE2_LOAD_DIR, "EXPERIMENT", pipeline, experimentAccession, sdrfBasename )
 	}
 
