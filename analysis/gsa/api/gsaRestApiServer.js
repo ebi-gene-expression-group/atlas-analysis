@@ -191,7 +191,7 @@ app.get('/:FORMAT/getOverlappingComparisons/:ORGANISM/:GENE_IDS', function (req,
 		    var arrExp = exp.split(":");
 		    var expAcc = arrExp[0].split("_")[0];
 		    var contrastId = arrExp[3];
-		    var expURL = "http://www.ebi.ac.uk/gxa/experiments/"+expAcc+;
+		    var expURL = "http://www.ebi.ac.uk/gxa/experiments/"+expAcc;
 		    var outLineArr = [];
 		    outLineArr.push(expAcc); // expAcc
 		    outLineArr.push(contrastId); // contrastId
