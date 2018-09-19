@@ -12,6 +12,10 @@ fi
 expPath=$1
 e=`basename ${expPath}`
 output="$expPath/$e-atlasExperimentSummary.Rdata"
+expressionAtlasInternalVersion=1.6
+
+# check for the ExpressionAtlasInternal version installed.
+"$(dirname "${BASH_SOURCE[0]}")"/installExpressionAtlasInternal.R --version "$expressionAtlasInternalVersion"
 
 "$(dirname "${BASH_SOURCE[0]}")"/createAtlasExperimentSummary.R \
 	--source "$expPath"\
