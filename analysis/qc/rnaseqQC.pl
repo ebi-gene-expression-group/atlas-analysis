@@ -72,9 +72,11 @@ if( grep $_ eq $expAcc, @{ $nonStandardExps->get_no_qc_info } ) {
 
 my $atlasSiteConfig = create_atlas_site_config;
 
+my $irapSingleLib = $ENV{ "IRAP_SINGLE_LIB" };
+
 # Path to script for checking RNA-seq QC results.
 my $islResultsScript = File::Spec->catfile(
-	$atlasProdDir,
+	$irapSingleLib,
 	$atlasSiteConfig->get_isl_results_script
 );
 
