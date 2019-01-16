@@ -3,7 +3,6 @@
 # Source script from the same (prod or test) Atlas environment as this script
 scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 projectRoot=${scriptDir}/../..
-source $IRAP_SINGLE_LIB/isl_environment.sh
 
 if [ $# -lt 1 ]; then
    echo "Usage: $0 expAcc"
