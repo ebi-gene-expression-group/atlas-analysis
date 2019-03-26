@@ -170,7 +170,7 @@ foreach my $row ( @resultsRows ) {
 	unless( $configRuns->{ $runAcc } ) { next; }
 
 	# Add failed run accessions to the hash.
-	if( $qcStatus eq "completed" || $qcStatus eq "on_ftp" ) {
+	if( $qcStatus eq "completed" || $qcStatus eq "on_ftp" || $qcStatus eq "completed_no_transcript" ) {
 
         $passedQC->{ $runAcc } = 1;
 
