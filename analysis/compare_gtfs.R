@@ -47,11 +47,16 @@ gtf_file2 <- readGFF(args$isl_gtf, tags = c("gene_id"))
 
 ## compare gene ids from gtfs files downloaded and gtf from ISL
 ## percentage overlap between gene ids
-perc_overlap<-(length(intersect(gtf_file1$gene_id, gtf_file2$gene_id))/length(unique(gtf_file1$gene_id)))*100
+perc_overlap_ref_ensembl<-(length(intersect(gtf_file1$gene_id, gtf_file2$gene_id))/length(unique(gtf_file1$gene_id)))*100
+perc_overlap_ref_isl<-(length(intersect(gtf_file1$gene_id, gtf_file2$gene_id))/length(unique(gtf_file2$gene_id)))*100
 
 ## report the ones that has lower than threshold (default:80%)
-if ( perc_overlap < args$percentage_threshold ) {
+if ( perc_overlap_ref_ensembl < args$percentage_threshold || perc_overlap_ref_isl < args$percentage_threshold ) {
   ## Execution stops with exit status 1
-  stop(paste ( "GTFs overlap not OK -", perc_overlap,"%","between", args$ensembl_gtf, "and", args$isl_gtf, "\n" ) )
+  cat( "Mapping % Ensembl ref", perc_overlap_ref_ensembl,"%","between", args$ensembl_gtf, "and", args$isl_gtf, "\n" )
+  cat( "Mapping % ISL ref", perc_overlap_ref_isl,"%","between", args$isl_gtf, "and", args$ensembl_gtf, "\n" )
+
+  ## quit with exit status 1
+  quit('no', 1, FALSE)
 } 
   
