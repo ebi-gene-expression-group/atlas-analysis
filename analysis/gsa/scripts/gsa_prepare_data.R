@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!$ATLAS_PROD/sw/atlasinstall_prod/atlasprod/analysis/gsa/scripts
 #; -*- mode: R;-*-
 # =========================================================
 #
@@ -11,7 +11,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -114,7 +114,7 @@ for ( i in seq(1,nfiles)) {
     cont <- gsub(".p-value","",df.col)
     ## TODO: replace tsv.file by the name/accession of the experiment
     ## TODO: how to deal with the NAs?? -> pvalue=1
-    
+
     key=paste(exp,":::",cont,sep="")
     #pinfo("Contrast: ", cont)
     pinfo("key: ", key)
@@ -146,7 +146,7 @@ for ( i in seq(1,nfiles)) {
       sigGenes[[key]][[as.character(pval)]] <- sg
       nSigGenes[[key]][as.character(pval)] <- nsigGenes
     }
-    names(sigGenes[[key]]) <- as.character(pvals)    
+    names(sigGenes[[key]]) <- as.character(pvals)
   }
   pinfo(round(i/nfiles*100,2),"% done")
 }
@@ -164,7 +164,7 @@ for ( i in seq(1,nfiles)) {
 # install.packages(bit)
 library(bit)
 
-gene.list2bit <- function(genes,ref.genes) {  
+gene.list2bit <- function(genes,ref.genes) {
   tf <- ref.genes %in% genes
   return(as.bit(tf))
 }

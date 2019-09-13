@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!$ATLAS_PROD/sw/atlasinstall_prod/atlasprod/analysis/gsa/scripts
 #; -*- mode: R;-*-
 # =========================================================
 #
@@ -12,7 +12,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -116,4 +116,3 @@ if (is.null(final.table) ) {
 write.table(final.table,file=paste(opt$out.file,".tsv",sep=""),sep="\t",quote=F,row.names=F)
 
 q(status=0)
-
