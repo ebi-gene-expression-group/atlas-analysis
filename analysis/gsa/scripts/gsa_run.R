@@ -1,4 +1,4 @@
-#!$ATLAS_PROD/sw/atlasinstall_prod/atlasprod/analysis/gsa/scripts
+#!/usr/bin/env Rscript
 #; -*- mode: R;-*-
 # =========================================================
 #
