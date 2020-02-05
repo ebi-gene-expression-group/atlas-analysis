@@ -114,16 +114,7 @@ $logger->info( "Retrieving QC results via $islResultsScript ..." );
 # Get the RNA-seq QC results
 my $rnaseqQCresults;
 
-( my $pipeline = $expAcc ) =~ s/E-(\w{4})-\d+/$1/;
-
-if ( $pipeline eq "ENAD" ) {
- 	    my $ena_id = get_ena_study_id( $expAcc );
-		$rnaseqQCresults = `$islResultsScript $ena_id 2>&1`;
-    }
-
-else {
-  	$rnaseqQCresults = `$islResultsScript $expAcc 2>&1`;
-}
+$rnaseqQCresults = `$islResultsScript $expAcc 2>&1`;
 
 # Check whether RNA-seq QC results script ran successfully.
 if( $? ) {
