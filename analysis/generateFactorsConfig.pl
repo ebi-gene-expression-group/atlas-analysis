@@ -158,10 +158,23 @@ Log::Log4perl->easy_init(
     }
 );
 
+my $magetab;
+
 my $logger = Log::Log4perl::get_logger;
 
-# Parse MAGE-TAB and get assays.
-my $magetab = create_non_strict_magetab4atlas( $args->{ "experiment_accession" }, $args->{ "import_path" } );
+if ( $args->{ "import_path" } eq "local" ){
+
+    check_env_var('LOCAL_MAGETAB_PATH');
+
+    $logger->debug( "Parsing MAGE-TAB..." );
+
+    $magetab = create_local_magetab4atlas( $args->{ "experiment_accession" });
+} 
+else {
+
+    # Parse MAGE-TAB and get assays.
+    $magetab = create_non_strict_magetab4atlas( $args->{ "experiment_accession" }, $args->{ "import_path" } );
+}
 
 # Get the assays into a hash.
 my %atlasAssays = map { $_->get_name => $_ } @{ $magetab->get_assays };
@@ -271,6 +284,49 @@ sub parse_args {
     return \%args;
 }
 
+sub check_env_var {
+  my $var = shift;
+  my $suggestion = shift;
+
+  unless(defined $ENV{$var}) {
+    $logger->error( "Please define $var env var" );
+    $logger->info( "Usually for $var: $suggestion" ) if(defined $suggestion);
+    exit 1;
+  }
+}
+
+sub create_local_magetab4atlas {
+
+    my ( $expAcc ) = @_;
+    my $idfFile; 
+
+    my $localMagetabDir = $ENV{ "LOCAL_MAGETAB_PATH" };
+
+    ( my $pipeline = $expAcc ) =~ s/E-(\w{4})-\d+/$1/;
+
+    $idfFile = File::Spec->catfile(
+        $localMagetabDir,
+        $pipeline,
+        $expAcc,
+        $expAcc . ".idf.txt"
+    );
+
+    unless( -e $idfFile ) {
+
+        $logger->logdie( "IDF does not exist: $idfFile" );
+    }
+
+    $logger->info( "Reading MAGE-TAB from $idfFile ..." );
+
+    my $magetab4atlas = Atlas::Magetab4Atlas->new(
+        "idf_filename" => $idfFile,
+        "strict" => 0
+    );
+
+    $logger->info( "Finished reading MAGE-TAB." );
+
+    return $magetab4atlas;
+}
 
 sub filter_out_nonconfig_assays {
 

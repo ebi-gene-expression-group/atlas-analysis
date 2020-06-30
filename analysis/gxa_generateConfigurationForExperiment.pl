@@ -136,32 +136,70 @@ my $logger = Log::Log4perl::get_logger;
 
 $logger->debug( "Debugging mode ON." );
 
-my $atlasProdDir = $ENV{ "ATLAS_PROD" };
-
-# Get name of file with reference factor values and factor types to ignore.
-my $referencesIgnoreFile = File::Spec->catfile( $atlasProdDir, $atlasSiteConfig->get_references_ignore_file );
-
-# Create hashes for reference factor values to use in contrasts, and factor
-# types to ignore when creating assay groups.
-$logger->info("Reading config for reference factor values and factor types to ignore from $referencesIgnoreFile");
-my ($referenceFactorValues, $ignoreFactorTypes) = create_factor_configs($referencesIgnoreFile);
-
-# If a manual reference factor value was specified, add it to the references hash.
-if($args->{ "reference_value" }) {
-	$logger->info("Using temporary reference value \"", $args->{ "reference_value" }, "\"");
-	$referenceFactorValues->{ $args->{ "reference_value" } } = 1;
-}
-
-# If a manual factor type to ignore was specified, add it to the ignore hash.
-if($args->{ "ignore_factor" }) {
-	$logger->info("Temporarily ignoring factor type \"", $args->{ "ignore_factor" }, "\"");
-	$ignoreFactorTypes->{ $args->{ "ignore_factor" } } = 1;
-}
-
-$logger->debug( "Parsing MAGE-TAB..." );
-
 # Read in the MAGE-TAB.
-my $magetab4atlas = create_non_strict_magetab4atlas( $args->{ "experiment_accession" }, $args->{ "import_path" } );
+my $magetab4atlas;
+my $atlasProdDir;
+my $ignoreFactorTypes;
+my $referenceFactorValues;
+my $ignoreFactorTypes;
+if ( $args->{ "import_path" } eq "local" ){
+
+	check_env_var('LOCAL_MAGETAB_PATH');
+	check_env_var('REFERENCE_FACTOR_FILEPATH');
+
+   # Get name of file with reference factor values and factor types to ignore.
+    my $referencesIgnoreFile = $ENV{ "REFERENCE_FACTOR_FILEPATH" };
+ 
+	# Create hashes for reference factor values to use in contrasts, and factor
+	# types to ignore when creating assay groups.
+	$logger->info("Reading config for reference factor values and factor types to ignore from $referencesIgnoreFile");
+	($referenceFactorValues, $ignoreFactorTypes) = create_factor_configs($referencesIgnoreFile);
+
+	# If a manual reference factor value was specified, add it to the references hash.
+	if($args->{ "reference_value" }) {
+		$logger->info("Using temporary reference value \"", $args->{ "reference_value" }, "\"");
+		$referenceFactorValues->{ $args->{ "reference_value" } } = 1;
+	}
+
+	# If a manual factor type to ignore was specified, add it to the ignore hash.
+	if($args->{ "ignore_factor" }) {
+		$logger->info("Temporarily ignoring factor type \"", $args->{ "ignore_factor" }, "\"");
+		$ignoreFactorTypes->{ $args->{ "ignore_factor" } } = 1;
+	}
+
+	$logger->debug( "Parsing MAGE-TAB..." );
+
+	$magetab4atlas = create_local_magetab4atlas( $args->{ "experiment_accession" });
+}
+else {	
+
+	my $atlasProdDir = $ENV{ "ATLAS_PROD" };
+
+	# Get name of file with reference factor values and factor types to ignore.
+	my $referencesIgnoreFile = File::Spec->catfile( $atlasProdDir, $atlasSiteConfig->get_references_ignore_file );
+
+	# Create hashes for reference factor values to use in contrasts, and factor
+	# types to ignore when creating assay groups.
+	$logger->info("Reading config for reference factor values and factor types to ignore from $referencesIgnoreFile");
+	my ($referenceFactorValues, $ignoreFactorTypes) = create_factor_configs($referencesIgnoreFile);
+
+	# If a manual reference factor value was specified, add it to the references hash.
+	if($args->{ "reference_value" }) {
+		$logger->info("Using temporary reference value \"", $args->{ "reference_value" }, "\"");
+		$referenceFactorValues->{ $args->{ "reference_value" } } = 1;
+	}
+
+	# If a manual factor type to ignore was specified, add it to the ignore hash.
+	if($args->{ "ignore_factor" }) {
+		$logger->info("Temporarily ignoring factor type \"", $args->{ "ignore_factor" }, "\"");
+		$ignoreFactorTypes->{ $args->{ "ignore_factor" } } = 1;
+	}
+
+	$logger->debug( "Parsing MAGE-TAB..." );
+
+	$magetab4atlas = create_non_strict_magetab4atlas( $args->{ "experiment_accession" }, $args->{ "import_path" } );
+}
+
 
 # Make sure the Magetab4Atlas object contains the appropriate assays.
 $magetab4atlas = check_magetab4atlas_for_config($args, $ignoreFactorTypes, $magetab4atlas);
@@ -224,6 +262,7 @@ sub parse_args {
 		geo
 		annotare
 		ena
+		local
 	);
 
 	GetOptions(
@@ -337,6 +376,49 @@ sub parse_args {
 	return \%args;
 }
 
+sub check_env_var {
+  my $var = shift;
+  my $suggestion = shift;
+
+  unless(defined $ENV{$var}) {
+    $logger->error( "Please define $var env var" );
+    $logger->info( "Usually for $var: $suggestion" ) if(defined $suggestion);
+    exit 1;
+  }
+}
+
+sub create_local_magetab4atlas {
+
+    my ( $expAcc ) = @_;
+    my $idfFile; 
+
+    my $localMagetabDir = $ENV{ "LOCAL_MAGETAB_PATH" };
+
+    ( my $pipeline = $expAcc ) =~ s/E-(\w{4})-\d+/$1/;
+
+    $idfFile = File::Spec->catfile(
+        $localMagetabDir,
+        $pipeline,
+        $expAcc,
+        $expAcc . ".idf.txt"
+    );
+
+    unless( -e $idfFile ) {
+
+        $logger->logdie( "IDF does not exist: $idfFile" );
+    }
+
+    $logger->info( "Reading MAGE-TAB from $idfFile ..." );
+
+    my $magetab4atlas = Atlas::Magetab4Atlas->new(
+        "idf_filename" => $idfFile,
+        "strict" => 0
+    );
+
+    $logger->info( "Finished reading MAGE-TAB." );
+
+    return $magetab4atlas;
+}
 
 sub get_log_file_name {
 	
