@@ -181,7 +181,7 @@ else {
 	# Create hashes for reference factor values to use in contrasts, and factor
 	# types to ignore when creating assay groups.
 	$logger->info("Reading config for reference factor values and factor types to ignore from $referencesIgnoreFile");
-	my ($referenceFactorValues, $ignoreFactorTypes) = create_factor_configs($referencesIgnoreFile);
+	($referenceFactorValues, $ignoreFactorTypes) = create_factor_configs($referencesIgnoreFile);
 
 	# If a manual reference factor value was specified, add it to the references hash.
 	if($args->{ "reference_value" }) {
