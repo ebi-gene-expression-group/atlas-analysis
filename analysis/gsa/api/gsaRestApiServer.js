@@ -104,7 +104,7 @@ function paramsValid(req, res) {
 	req.checkParams("ORGANISM","Invalid organism name").isWhitelisted(defaultWhiteList);
     if (req.params.GENE_IDS) {
 	req.checkParams("GENE_IDS","Invalid gene identifiers").isWhitelisted(defaultWhiteList);
-	req.checkParams('GENE_IDS', 'The number of gene identifiers must be no more than 100').numGenesNoMoreThan(100);
+	req.checkParams('GENE_IDS', 'The number of gene identifiers must be no more than 1,000').numGenesNoMoreThan(1000);
     }
 
     errors=req.validationErrors();
