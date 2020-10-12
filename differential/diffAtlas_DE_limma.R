@@ -6,6 +6,7 @@
 suppressMessages( library( limma ) )
 suppressMessages( library( Biobase ) )
 suppressMessages( library( genefilter ) )
+suppressMessages( library( reshape2 ) )
 
 suppressMessages( library( ExpressionAtlasInternal ) )
 
