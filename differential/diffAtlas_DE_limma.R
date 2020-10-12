@@ -424,6 +424,70 @@ select_twocolour_columns <- function( allData, contrastAssayGroups ) {
 	return( wantedCols )
 }
 
+# Just make a simple metadata table, including any batch effects  
+
+exp_metadata_from_assay_groups <- function(ags, contrasts){
+  
+  metaRows <-lapply(ags, function(x){
+    df <- make_assays_to_bioreps_df(x@biological_replicates)
+    
+    # Add assay group info to all assays
+    
+    for (slot_name in slotNames(x)[slotNames(x) != 'biological_replicates']){
+      df[[slot_name]] <- slot(x, slot_name)
+    }
+    df
+  })
+  
+  # Allow for assay groups with different variables
+  
+  all_colnames <- unique(unlist(lapply(metaRows, function(x) names(x))))
+  assaydata <- data.frame(do.call(rbind, lapply(metaRows, function(x){ x[! names(x) %in% all_colnames] <- NA; x[all_colnames]})))
+  
+  # Subset assay data to only the groups we'll be making contrasts from
+  
+  all_contrast_assaygroups <- unique(unlist(lapply(contrasts, function(x) c(x@reference_assay_group_id, x@test_assay_group_id))))
+  assaydata <- assaydata[assaydata$assay_group_id %in% all_contrast_assaygroups,]
+  
+  # Get covariates from contrasts (would it really be so hard to store it next to the assays?)
+  
+  if (any(unlist(lapply(contrasts, function(x) length(batch_effects(x)) > 0)))){
+    meta_from_contrasts <- unique(do.call(rbind, lapply(contrasts, function(cont){
+      if (length(batch_effects(cont)) > 0){
+        do.call(rbind, lapply(cont@batch_effects, function(x){
+          do.call(rbind, lapply(names(x@batches), function(y) data.frame(id = x@batches[[y]], variable = x@effect_name, value = y  )))
+        }   ))
+      }
+    })))
+    if (!(is.null(meta_from_contrasts))){
+      assaydata <- merge(assaydata, dcast(meta_from_contrasts, id ~ variable), by.x = 'AssayName', by.y = 'id')
+    }
+  }
+  
+  assaydata
+}
+
+# Make a simple contrasts table
+
+make_exp_contrast_table <- function(conts){
+  data.frame(do.call(
+    rbind, 
+    lapply(conts, function(x){ 
+      unlist(
+        structure(
+          lapply(slotNames(x), function(y){ 
+            slot_val <- slot(x,y)
+            if (y == 'batch_effects' && length(slot_val) > 0){
+              paste(unlist(lapply(slot_val, function(z){ z@effect_name })), collapse=' + ')
+            }else{
+              slot_val
+            }
+          }), 
+          names = slotNames(x))
+      )
+    })
+  ))
+}
 
 # run_one_colour_analysis
 # 	- For a one-colour experiment, given an experiment accession, the list of
@@ -468,238 +532,126 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 									 )
 		
 		cat( "Successfully read normalized data.\n" )
+
 	
 		# Get the contrasts, assay groups, and batch effects.
 		expContrasts <- atlas_contrasts( analytics )
 		expAssayGroups <- assay_groups( analytics )
 		
 		cat( paste( "Found", length( expContrasts ), "contrasts and", length( expAssayGroups ), "assay groups for this array design.\n" ) )
+    assay_group_fields <- unique(unlist(lapply(expAssayGroups, function(x) slotNames(x)[slotNames(x) != 'biological_replicates'] ))) 
+		assay_fields <- unique(unlist(lapply(expAssayGroups, function(x) lapply(x@biological_replicates, function(y) slotNames(y)) )))
+		
+	  # Make simplified tables to make things easier to work with
+		
+	  experiment <- exp_metadata_from_assay_groups(expAssayGroups, expContrasts)
+	  normalizedData <- normalizedData[, experiment$AssayName]
+	  contrasts_table <- make_exp_contrast_table(expContrasts)
+	  
+	  # Make the formula we need for each contrast based on any batch effects present
+	  
+	  contrasts_table$formula <- apply(contrasts_table, 1, function(x){
+	    formula <- '~ 0 + assay_group_id'
+	    if ('batch_effects' %in% names(x) && !is.na(x['batch_effects'])){
+	      formula <- paste(formula, x['batch_effects'], sep = ' + ')
+	    }
+	    formula
+	  })
+	  
+    # We'll model all the contrasts (e.g. with/without batch effects) for each formula together 
+	  
+	  sapply(split(contrasts_table, contrasts_table$formula), function(fc){
+	    
+	    # Subset to the assays relevant for this formula / group of contrasts
+	    
+	    normalizedDataForFormula <- normalizedData[ , colnames(normalizedData) %in% experiment$AssayName[experiment$assay_group_id %in% c(fc$reference_assay_group_id, fc$test_assay_group_id)] ]
+	    
+	    # Merge techreps
+	    
+	    if (any(duplicated(experiment$BioRepName))){
+	      normalizedDataForFormula <- do.call(cbind, lapply(split(data.frame(t(normalizedDataForFormula), check.names = FALSE), experiment$BioRepName), colMeans))
+	      experiment <- experiment[! duplicated(experiment$BioRepName), -1]
+	    }
+	    
+	    cat(paste0('Processing contrasts for the "', fc$formula[1], '" formula'))
+	    
+	    designMatrix <- model.matrix(as.formula(fc$formula[1]), data=experiment)
+	    
+	    if( !is.fullrank( designMatrix ) ) {
+	      
+	      cat( "WARN  - Design matrix is not full rank, reverting to simple design matrix." )
+	      
+	      formulaString <- "~ groups"
+	      
+	      designMatrix <- model.matrix( as.formula( formulaString ), data = experiment )
+	    }
+	    
+	    # Do the first fit
+	    
+	    colnames(designMatrix) <- sub('assay_group_id', 'assay_group_id.', colnames(designMatrix))
+	    fit <- lmFit(normalizedDataForFormula, designMatrix)
+	    
+	    contrast_names <- paste(paste('assay_group_id', make.names(fc$test_assay_group_id), sep="."), paste('assay_group_id', make.names(fc$reference_assay_group_id), sep="."), sep="-")
+	    contrast.matrix <- makeContrasts(contrasts=contrast_names, levels=designMatrix)
+	 
+	    # Fit all the contrasts
+	       
+	    fit2 <- contrasts.fit(fit, contrast.matrix)
+	    fit2 <- eBayes(fit2)
+	    
+	    # This is Atlas-specific stuff:
+	    
+	    # Adjust the p-values and perform independent filtering, add to the fit object.
+	    
+	    cat( "Performing independent filtering and adjusting p-values...\n" )
+	    
+	    fit2$adjPvals <- do.call(cbind, lapply(1:nrow(contrasts_table), function(x){
+	      
+	      cat( paste( "Processing contrast", contrasts_table$contrast_name[x], "\n"))
 
-		# Go through the contrasts...
-		sapply( expContrasts, function( expContrast ) {
-			
-			# Get the contrast info.
-			contrastID <- contrast_id( expContrast )
-			contrastName <- contrast_name( expContrast )
-			refAssayGroupID <- reference_assay_group_id( expContrast )
-			testAssayGroupID <- test_assay_group_id( expContrast )
-			contrastBatchEffects <- batch_effects( expContrast )
+	      normalizedDataForContrast <- normalizedDataForFormula[,colnames(normalizedDataForFormula) %in% experiment$BioRepName[experiment$assay_group_id %in% contrasts_table[x, c('reference_assay_group_id', 'test_assay_group_id')]]]
+	      
+	      # Adjust the p-values and perform independent filtering
+	      filter_and_adjust_pvalues( rowVars( normalizedDataForContrast ), fit2$p.value[ , x ] )
+	    }))
 
-			cat( paste( 
-					   "Processing contrast",
-					   contrastID,
-					   "(",
-					   contrastName,
-					   ")...\n"
-			) )
+	    cat( "Filtering and adjustment successful.\n" )
+	    
+	    
+	    for (contrast_number in 1:nrow(contrasts_table)){
+	      
+	      cat( paste("Creating results data frames for", contrasts_table$contrast_id[contrast_number], "...\n" ))
+	      
+	      contrastResults <- data.frame(
+	        designElements = rownames(fit2$p.value), 
+	        adjPval = fit2$adjPvals[,contrast_number], 
+	        t = fit2$t[,contrast_number], 
+	        logFC = fit2$coefficients[ , contrast_number ]
+	      )
+	      
+	      plotData <- data.frame(
+	        designElements = rownames(fit2$p.value), 
+	        adjPval = fit2$adjPvals[,contrast_number], 
+	        logFC = fit2$coefficients[ , contrast_number ], 
+	        avgExpr = fit2$Amean
+	      )
+	      cat( "Results data frames created successfully.\n" )
+	      
+	      # Write the files.
+	      resFile <- file.path( Sys.getenv( "HOME" ), "tmp", paste( expAcc, contrasts_table$contrast_id[contrast_number], "analytics", "tsv", sep = "." ) )
+	      cat( paste( "Writing differential expression results to", resFile, "...\n" ) )
+	      write.table( contrastResults, file=resFile, row.names=FALSE, quote=FALSE, sep="\t" )
+	      cat( paste( "Results written successfully for", contrasts_table$contrast_id[contrast_number],".\n" ) )
+	      
+	      plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", paste( expAcc, contrasts_table$contrast_id[contrast_number], "plotdata", "tsv", sep = "." ) )
+	      cat( paste( "Writing data for MvA plot to", plotDataFile, "...\n" ) )
+	      write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
+	      cat( paste("Plot data written successfully for", contrasts_table$contrast_id[contrast_number], "\n" ))
+	    }
 
-			# Get the two assay groups for this contrast as a list.
-			contrastAssayGroups <- select_assay_groups_for_contrast( 
-																 expAssayGroups, 
-																 refAssayGroupID, 
-																 testAssayGroupID 
-																 )
-			
-			cat( "Creating biological replicate annotations...\n" )
-
-			# Create the data frame containing annotations for each
-			# biological replicate, grouping technical replicates.
-			bioRepAnnotations <- make_biorep_annotations( contrastAssayGroups, contrastBatchEffects )
-
-			cat( "Annotations created successfully.\n" )
-
-			cat( "Subsetting normalized data for this contrast...\n" )
-
-			# Next, subset the normalized data frame so that it
-			# contains only the columns of data for this contrast.
-			normalizedDataForContrast <- normalizedData[ , bioRepAnnotations$AssayName ]
-			
-			cat( "Subsetting successful.\n" )
-
-			cat( "Checking for technical replicates...\n" )
-
-			# Get the technical replicate group IDs -- these are the
-			# ones in the BioRepName column that are duplicated.
-			techRepGroupIDs <- unique( bioRepAnnotations$BioRepName[ which( duplicated( bioRepAnnotations$BioRepName ) ) ] )
-
-			# If there are any technical replicates...
-			if( length( techRepGroupIDs ) > 0 ) {
-				
-				cat( "Technical replicates found. Calculating mean of each set of technical replicates...\n" )
-
-				# Replace the columns for technical replicates with their averages in the normalized data.
-				normalizedDataForContrast <- add_tech_rep_averages( normalizedDataForContrast, bioRepAnnotations, techRepGroupIDs )
-
-				cat( "Technical replicate averaging successful.\n" )
-			}
-			
-			cat( "Setting up biological replicate annotations for ExpressionSet object...\n" )
-
-			# Remove the AssayName column from the annotations data frame now we no longer need it.
-			bioRepAnnotations$AssayName <- NULL
-
-			# Remove duplicated technical replicate rows, if any.
-			duplicatedRowIndices <- which( duplicated( bioRepAnnotations$BioRepName ) )
-			if( length( duplicatedRowIndices ) > 0 ) {
-				bioRepAnnotations <- bioRepAnnotations[ -duplicatedRowIndices, ]
-			}
-
-			# Add the biological replicate names as the row names.
-			rownames( bioRepAnnotations ) <- bioRepAnnotations$BioRepName
-
-			# Make the column names R-safe.
-			colnames( bioRepAnnotations ) <- make.names( colnames( bioRepAnnotations ) )
-			
-			cat( "Annotations modified successfully.\n" )
-
-			cat( "Re-ordering this contrast's normalized data...\n" )
-
-			# Put the columns of the normalized data into the same
-			# order as the rows in the bio rep annotations.
-			normalizedDataForContrast <- normalizedDataForContrast[ , rownames( bioRepAnnotations ) ]
-
-			cat( "Data re-ordered successfully.\n" )
-			
-			cat( "Creating ExpressionSet object...\n" )
-
-			# Create the ExpressionSet object.
-			esetForContrast <- make_eset_for_contrast( normalizedDataForContrast, bioRepAnnotations )
-
-			cat( "ExpressionSet created successfully.\n" )
-
-			cat( "Checking for batch effects...\n" )
-
-			# Make the formula to create the design matrix, adding
-			# batch effects if necessary.
-			# If we have batch effects...
-			if( length( contrastBatchEffects ) > 0 ) {
-
-				cat( paste( length( contrastBatchEffects ), "batch effects found.\n" ) )
-				
-				# Check that some batch effects exist in the
-				# ExpressionSet's info, if not something went wrong.
-				if( ncol( pData( esetForContrast ) ) < 3 ) {
-					stop( "Expecting batch effect information in ExpressionSet but none was found." )
-				}
-				
-				cat( "Making R-safe batch effect names...\n" )
-
-				# Get the batch effect names -- these should be the same as
-				# the column headings in the ExpressionSet's info.
-				batchEffectNames <- make.names( sapply( contrastBatchEffects, function( batchEffect ) { effect_name( batchEffect ) } ) )
-				
-				cat( "Successfully created R-safe batch effect names.\n" )
-
-				# Check that the batch effect names match the column
-				# headings in the ExpressionSet.
-				if( !all( ( batchEffectNames %in% colnames( pData( esetForContrast ) ) ) ) ) {
-					nameString <- paste( batchEffectNames, collapse = ", " )
-					stop( paste( "Did not find all batch effect names in ExpressionSet object. Names are:", nameString ) )
-				}
-				
-				cat( "Creating formula for design matrix...\n" )
-
-				# Create the formula string.
-				formulaString <- paste( "~", paste( batchEffectNames, collapse = " + " ), "+ groups" )
-
-				cat( paste( "Formula is:", formulaString, "\n" ) )
-			
-			} else {
-				
-				cat( "No batch effects found.\n" )
-
-				# If we don't have any batch effects, create the formula string without them.
-				formulaString <- "~ groups"
-
-				cat( paste( "Formula is:", formulaString, "\n" ) )
-			}
-
-			cat( "Creating design matrix...\n" )
-
-			# Now create the design matrix.
-			designMatrix <- model.matrix( as.formula( formulaString ) , data = esetForContrast )
-
-			# Check that the design matrix is of full rank. If not, revert to a simpler one.
-			if( !is.fullrank( designMatrix ) ) {
-				
-				cat( "WARN  - Design matrix is not full rank, reverting to simple design matrix." )
-
-				formulaString <- "~ groups"
-
-				designMatrix <- model.matrix( as.formula( formulaString ), data = esetForContrast )
-			}
-
-			cat( "Design matrix created successfully.\n" )
-
-			cat( "Fitting linear model...\n" )
-
-			# Fit the linear model.
-			fit <- lmFit( esetForContrast, design = designMatrix )
-			
-			cat( "Fit successful.\n" )
-
-			cat( "Calculating differential expression statistics...\n" )
-
-			# Run empirical Bayes method to get differential expression statistics.
-			fit <- eBayes( fit )
-
-			cat( "Calculation successful.\n" )
-			
-			# Check that we have a column called "groupstest" in the
-			# results. If not then things didn't work out as expected.
-			stopifnot( "groupstest" %in% colnames( fit$p.value ) )
-			
-			cat( "Performing independent filtering and adjusting p-values...\n" )
-
-			# Adjust the p-values and perform independent filtering, add to the fit object.
-			fit$adjPvals <- filter_and_adjust_pvalues( rowVars( normalizedDataForContrast ), fit$p.value[ , "groupstest" ] )
-
-			cat( "Filtering and adjustment successful.\n" )
-
-			cat( "Creating results data frames...\n" )
-
-			# results for heatmap matrix display:
-			contrastResults <- data.frame(
-				designElements = featureNames( esetForContrast ), 
-				adjPval = fit$adjPvals, 
-				t = fit$t[ , "groupstest" ], 
-				logFC = fit$coefficients[ , "groupstest" ]
-			)
-
-			# results to be used for MvA plot creation (as above but with average intensities and without t-stats):
-			plotData <- data.frame(
-				designElements = featureNames(esetForContrast), 
-				adjPval = fit$adjPvals, 
-				logFC = fit$coefficients[ , "groupstest" ], 
-				avgExpr = fit$Amean
-			)
-			
-			cat( "Results data frames created successfully.\n" )
-
-			# Create filenames to write to.
-			# Stats results:
-			resFile <- paste( expAcc, contrastID, "analytics", "tsv", sep = "." )
-			resFile <- file.path( Sys.getenv( "HOME" ), "tmp", resFile )
-			# Data for MvA plot:
-			plotDataFile <- paste( expAcc, contrastID, "plotdata", "tsv", sep = "." )
-			plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", plotDataFile )
-			
-			cat( paste( "Writing differential expression results to", resFile, "...\n" ) )
-			
-			# Write the files.
-			write.table( contrastResults, file=resFile, row.names=FALSE, quote=FALSE, sep="\t" )
-
-			cat( paste( "Results written successfully.\n" ) )
-
-			cat( paste( "Writing data for MvA plot to", plotDataFile, "...\n" ) )
-
-			write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
-
-			cat( "Plot data written successfully\n" )
-			
-			cat( paste( "Successully completed differential expression analysis for", contrastID, "\n" ) )
-
-		} )
+	    cat( paste( "Successully completed differential expression analysis for all contrasts\n" ) )
+	    
+	  })
 
 	} ) )
 }
