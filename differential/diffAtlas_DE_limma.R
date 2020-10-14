@@ -487,7 +487,7 @@ make_exp_contrast_table <- function(conts){
           names = slotNames(x))
       )
     })
-  ))
+  ), stringsAsFactors = FALSE)
 }
 
 # run_one_colour_analysis
