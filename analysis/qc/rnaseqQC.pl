@@ -65,7 +65,7 @@ my $nonStandardExps = Config::YAML->new(
 
 if( grep $_ eq $expAcc, @{ $nonStandardExps->get_no_qc_info } ) {
 
-    $logger->warn( "$expAcc is on the list of experiments with no QC information. Skipping QC checks." );
+    $logger->info( "$expAcc is on the list of experiments with no QC information. Skipping QC checks." );
 
     exit;
 }
@@ -180,7 +180,7 @@ foreach my $row ( @resultsRows ) {
     }
     else {
 
-        $logger->warn( "QC_FAIL: $runAcc failed QC with status: \"$qcStatus\"" );
+        $logger->info( "QC_FAIL: $runAcc failed QC with status: \"$qcStatus\"" );
 
 		$failedRuns->{ $runAcc } = 1;
 	}
@@ -197,7 +197,7 @@ foreach my $runAcc ( keys %{ $configRuns } ) {
 
     unless( $qcRuns->{ $runAcc } ) {
 
-        $logger->error( "QC_FAIL: $runAcc was not found in QC results." );
+        $logger->info( "QC_FAIL: $runAcc was not found in QC results." );
 
         $runsMissing++;
     }
@@ -228,7 +228,7 @@ if( keys %{ $lowMappedReads } ) {
 
     foreach my $runAcc ( sort keys %{ $lowMappedReads } ) {
 
-        $logger->warn( "LOW_MQ: Run ", $runAcc, " has less than 70% reads mapped (", $lowMappedReads->{ $runAcc }, "%)" );
+        $logger->info( "LOW_MQ: Run ", $runAcc, " has less than 70% reads mapped (", $lowMappedReads->{ $runAcc }, "%)" );
     }
 }
 else {
