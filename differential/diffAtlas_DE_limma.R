@@ -310,8 +310,7 @@ add_tech_rep_averages <- function( expressionData, bioRepAnnotations, techRepGro
 	expressionData <- cbind( expressionData, techRepAveragesDF )
 
 	return( expressionData )
-}
-	
+}	
 
 # filter_and_adjust_pvalues
 # 	- Given row variances of the expression data, and the raw (unadjusted)
