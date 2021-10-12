@@ -94,7 +94,6 @@ select_assay_groups_for_contrast <- function( expAssayGroups, refAssayGroupID, t
 	)
 }
 
-
 # make_biorep_annotations
 # 	- Given the contrast's assay groups, the list of batch effects (if any),
 # 	and optional twoColour flag, create a data frame representing the
