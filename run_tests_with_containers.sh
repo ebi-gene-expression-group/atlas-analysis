@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
+docker build -t test/atlas-analysis tests
+
 docker run \
   -v $(pwd):/usr/local/ \
   --entrypoint=/usr/local/tests/run-tests.bats \
-  quay.io/ebigxa/atlas-analysis-base:latest
+  test/atlas-analysis
