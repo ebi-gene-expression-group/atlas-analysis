@@ -4,9 +4,6 @@
 
 setup() {
 
-    # Move this dep to atlas-analysis-base container once confirmed
-    mamba install r-reshape2
-
     test_dir="${BATS_TEST_DIRNAME}"
     data_dir="${test_dir}/data"
     output_dir="${TMPDIR}"
