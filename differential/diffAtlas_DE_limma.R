@@ -679,8 +679,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 			# Create filenames to write to.
 			# Stats results:
 			resFile <- paste( expAcc, contrastID, "analytics", "tsv", sep = "." )
-			cat(paste("Value of HOME is", Sys.getenv( "HOME" )))
-            resFile <- file.path( Sys.getenv( "HOME" ), "tmp", resFile )
+			resFile <- file.path( Sys.getenv( "HOME" ), "tmp", resFile )
 			# Data for MvA plot:
 			plotDataFile <- paste( expAcc, contrastID, "plotdata", "tsv", sep = "." )
 			plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", plotDataFile )
