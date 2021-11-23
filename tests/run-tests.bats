@@ -7,7 +7,7 @@ setup() {
     data_dir="${test_dir}/data"
     output_dir="${test_dir}/outputs"
 
-    array_diff_script="differential/diffAtlas_DE_limma.R"
+    array_diff_script="$(pwd)/differential/diffAtlas_DE_limma.R"
     array_diff_exp="E-GEOD-11166"
     array_diff_exp_dir="data/differential/microarray/experiments/E-GEOD-11166/"
     array_diff_exp_result="${output_dir}/tmp/E-GEOD-11166.g1_g2.analytics.tsv"
