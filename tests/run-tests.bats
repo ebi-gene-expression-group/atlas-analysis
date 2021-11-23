@@ -6,9 +6,8 @@ setup() {
     test_dir='tests'
     data_dir="${test_dir}/data"
     output_dir="${test_dir}/outputs"
-    script_dir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-    array_diff_script="${script_dir}/../differential/diffAtlas_DE_limma.R"
+    array_diff_script="${BATS_TEST_DIRNAME}/../differential/diffAtlas_DE_limma.R"
     array_diff_exp="E-GEOD-11166"
     array_diff_exp_dir="data/differential/microarray/experiments/E-GEOD-11166/"
     array_diff_exp_result="${output_dir}/tmp/E-GEOD-11166.g1_g2.analytics.tsv"
