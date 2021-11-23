@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration experimentType="microarray_1colour_mrna_differential" r_data="1">
+	<analytics>
+		<array_design>
+			A-AFFY-6
+		</array_design>
+		<assay_groups>
+			<assay_group id="g1">
+				<assay>UV-SeV 3661</assay>
+				<assay>UV-SeV 3659</assay>
+				<assay>UV-SeV 3478</assay>
+				<assay>UV-SeV 3480</assay>
+				<assay>UV-SeV 3663</assay>
+				<assay>UV-SeV 3482</assay>
+			</assay_group>
+			<assay_group id="g2">
+				<assay>SeV 3660</assay>
+				<assay>SeV 3483</assay>
+				<assay>SeV 3658</assay>
+				<assay>SeV 3479</assay>
+			</assay_group>
+		</assay_groups>
+		<contrasts>
+			<contrast id="g1_g2">
+				<name>'Sendai virus infected' vs 'UV-inactivated Sendai virus infected'</name>
+				<reference_assay_group>g1</reference_assay_group>
+				<test_assay_group>g2</test_assay_group>
+			</contrast>
+		</contrasts>
+	</analytics>
+</configuration>
