@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration experimentType="microarray_1colour_mrna_differential" r_data="1">
+    <analytics>
+        <array_design>A-AFFY-44</array_design>
+        <assay_groups>
+            <assay_group id="g1" label="deceased donor; 0 month">
+                <assay>GSM281417</assay>
+                <assay>GSM281406</assay>
+                <assay>GSM281421</assay>
+                <assay>GSM281422</assay>
+                <assay>GSM281424</assay>
+                <assay>GSM281356</assay>
+                <assay>GSM281400</assay>
+                <assay>GSM281407</assay>
+                <assay>GSM281420</assay>
+                <assay>GSM281405</assay>
+                <assay>GSM281402</assay>
+                <assay>GSM281403</assay>
+                <assay>GSM281408</assay>
+            </assay_group>
+            <assay_group id="g2" label="deceased donor; 12 month">
+                <assay>GSM281638</assay>
+                <assay>GSM281438</assay>
+                <assay>GSM281632</assay>
+                <assay>GSM281634</assay>
+            </assay_group>
+            <assay_group id="g3" label="deceased donor; 3 month">
+                <assay>GSM281635</assay>
+                <assay>GSM281636</assay>
+                <assay>GSM281646</assay>
+            </assay_group>
+            <assay_group id="g4" label="deceased donor; 6 month">
+                <assay>GSM281657</assay>
+                <assay>GSM281633</assay>
+                <assay>GSM281655</assay>
+            </assay_group>
+            <assay_group id="g5" label="living donor; 0 month">
+                <assay>GSM281259</assay>
+                <assay>GSM281411</assay>
+                <assay>GSM281352</assay>
+                <assay>GSM281276</assay>
+                <assay>GSM281413</assay>
+                <assay>GSM281357</assay>
+                <assay>GSM281410</assay>
+                <assay>GSM281277</assay>
+                <assay>GSM281416</assay>
+                <assay>GSM281346</assay>
+                <assay>GSM281351</assay>
+                <assay>GSM281084</assay>
+                <assay>GSM281414</assay>
+                <assay>GSM281347</assay>
+            </assay_group>
+            <assay_group id="g6" label="living donor; 12 month">
+                <assay>GSM281642</assay>
+                <assay>GSM281664</assay>
+                <assay>GSM281432</assay>
+                <assay>GSM281442</assay>
+                <assay>GSM281429</assay>
+                <assay>GSM281441</assay>
+                <assay>GSM281428</assay>
+                <assay>GSM281637</assay>
+                <assay>GSM281439</assay>
+                <assay>GSM281436</assay>
+                <assay>GSM281425</assay>
+                <assay>GSM281427</assay>
+                <assay>GSM281435</assay>
+                <assay>GSM281440</assay>
+                <assay>GSM281652</assay>
+            </assay_group>
+            <assay_group id="g7" label="living donor; 24 month">
+                <assay>GSM281415</assay>
+                <assay>GSM281401</assay>
+                <assay>GSM281359</assay>
+                <assay>GSM281419</assay>
+                <assay>GSM281409</assay>
+                <assay>GSM281430</assay>
+                <assay>GSM281412</assay>
+                <assay>GSM281398</assay>
+                <assay>GSM281433</assay>
+                <assay>GSM281423</assay>
+                <assay>GSM281418</assay>
+                <assay>GSM281354</assay>
+            </assay_group>
+            <assay_group id="g8" label="living donor; 3 month">
+                <assay>GSM281670</assay>
+                <assay>GSM281650</assay>
+                <assay>GSM281668</assay>
+                <assay>GSM281437</assay>
+                <assay>GSM281431</assay>
+                <assay>GSM281673</assay>
+                <assay>GSM281669</assay>
+                <assay>GSM281654</assay>
+                <assay>GSM281426</assay>
+                <assay>GSM281667</assay>
+                <assay>GSM281085</assay>
+                <assay>GSM281656</assay>
+                <assay>GSM281671</assay>
+                <assay>GSM281672</assay>
+            </assay_group>
+            <assay_group id="g9" label="living donor; 6 month">
+                <assay>GSM281653</assay>
+                <assay>GSM281645</assay>
+                <assay>GSM281640</assay>
+                <assay>GSM281666</assay>
+                <assay>GSM281649</assay>
+                <assay>GSM281644</assay>
+                <assay>GSM281648</assay>
+                <assay>GSM281647</assay>
+                <assay>GSM281665</assay>
+                <assay>GSM281651</assay>
+                <assay>GSM281643</assay>
+                <assay>GSM281434</assay>
+            </assay_group>
+        </assay_groups>
+        <contrasts>
+            <contrast id="g1_g3" cttv_primary="0">
+                <name>'3 month' vs '0 month' in 'deceased donor'</name>
+                <reference_assay_group>g1</reference_assay_group>
+                <test_assay_group>g3</test_assay_group>
+            </contrast>
+            <contrast id="g1_g4" cttv_primary="0">
+                <name>'6 month' vs '0 month' in 'deceased donor'</name>
+                <reference_assay_group>g1</reference_assay_group>
+                <test_assay_group>g4</test_assay_group>
+            </contrast>
+            <contrast id="g1_g2" cttv_primary="0">
+                <name>'12 month' vs '0 month' in 'deceased donor'</name>
+                <reference_assay_group>g1</reference_assay_group>
+                <test_assay_group>g2</test_assay_group>
+            </contrast>
+            <contrast id="g5_g8" cttv_primary="0">
+                <name>'3 month' vs '0 month' in 'living donor'</name>
+                <reference_assay_group>g5</reference_assay_group>
+                <test_assay_group>g8</test_assay_group>
+            </contrast>
+            <contrast id="g5_g9" cttv_primary="0">
+                <name>'6 month' vs '0 month' in 'living donor'</name>
+                <reference_assay_group>g5</reference_assay_group>
+                <test_assay_group>g9</test_assay_group>
+            </contrast>
+            <contrast id="g5_g6" cttv_primary="0">
+                <name>'12 month' vs '0 month' in 'living donor'</name>
+                <reference_assay_group>g5</reference_assay_group>
+                <test_assay_group>g6</test_assay_group>
+            </contrast>
+            <contrast id="g5_g7" cttv_primary="0">
+                <name>'24 month' vs '0 month' in 'living donor'</name>
+                <reference_assay_group>g5</reference_assay_group>
+                <test_assay_group>g7</test_assay_group>
+            </contrast>
+        </contrasts>
+    </analytics>
+</configuration>
