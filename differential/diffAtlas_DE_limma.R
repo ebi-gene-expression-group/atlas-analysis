@@ -434,7 +434,10 @@ exp_metadata_from_assay_groups <- function(ags, contrasts){
     # Add assay group info to all assays
     
     for (slot_name in slotNames(x)[slotNames(x) != 'biological_replicates']){
-      df[[slot_name]] <- slot(x, slot_name)
+      slot_vals <- slot(x, slot_name)
+      if (length(slot_vals) > 0){
+        df[[slot_name]] <- slot(x, slot_name)
+      }
     }
     df
   })
