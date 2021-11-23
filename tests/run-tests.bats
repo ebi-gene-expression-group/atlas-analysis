@@ -17,7 +17,6 @@ setup() {
     fi
     
     export HOME=$output_dir
-    export PATH=$(pwd):$(pwd)/differential
     cd $test_dir
 }
 
