@@ -1,4 +1,4 @@
-name: test_schema
+name: test_analysis
 on: [push, pull_request]
 
 jobs:
