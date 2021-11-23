@@ -1,0 +1,10 @@
+name: test_schema
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run tests from containers
+        run: bash run_tests_with_containers.sh
