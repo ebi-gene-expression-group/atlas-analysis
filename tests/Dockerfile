@@ -1,3 +1,3 @@
 FROM quay.io/ebigxa/atlas-analysis-base:latest
 
-RUN micromamba install r-reshape2
+RUN micromamba install -y -n base r-reshape2
