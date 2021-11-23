@@ -5,7 +5,7 @@
 setup() {
     test_dir="${BATS_TEST_DIRNAME}"
     data_dir="${test_dir}/data"
-    output_dir="/tmp"
+    output_dir="${TMPDIR}"
 
     array_diff_script="${test_dir}/../differential/diffAtlas_DE_limma.R"
     array_diff_exp="E-GEOD-11166"
