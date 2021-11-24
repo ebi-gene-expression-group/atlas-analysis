@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration experimentType="microarray_1colour_mrna_differential" r_data="1">
+    <analytics>
+        <array_design>A-AFFY-41</array_design>
+        <assay_groups>
+            <assay_group id="g1" label="Parkinson's disease">
+                <assay>GSM509556</assay>
+                <assay>GSM509555</assay>
+                <assay>GSM509554</assay>
+                <assay>GSM509553</assay>
+                <assay>GSM509558</assay>
+            </assay_group>
+            <assay_group id="g2" label="control">
+                <assay>GSM509548</assay>
+                <assay>GSM509551</assay>
+                <assay>GSM509550</assay>
+                <assay>GSM509547</assay>
+                <assay>GSM509549</assay>
+                <assay>GSM509552</assay>
+            </assay_group>
+        </assay_groups>
+        <contrasts>
+            <contrast id="g2_g1" cttv_primary="1">
+                <name>'Parkinson's disease' vs 'control'</name>
+                <reference_assay_group>g2</reference_assay_group>
+                <test_assay_group>g1</test_assay_group>
+                <batch_effects>
+                    <batch_effect name="sex">
+                        <batch value="female">
+                            <assay>GSM509552</assay>
+                            <assay>GSM509554</assay>
+                            <assay>GSM509553</assay>
+                            <assay>GSM509555</assay>
+                        </batch>
+                        <batch value="male">
+                            <assay>GSM509547</assay>
+                            <assay>GSM509556</assay>
+                            <assay>GSM509549</assay>
+                            <assay>GSM509558</assay>
+                            <assay>GSM509551</assay>
+                            <assay>GSM509550</assay>
+                            <assay>GSM509548</assay>
+                        </batch>
+                    </batch_effect>
+                </batch_effects>
+            </contrast>
+        </contrasts>
+    </analytics>
+</configuration>
