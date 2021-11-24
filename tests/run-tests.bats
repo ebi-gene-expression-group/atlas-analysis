@@ -25,7 +25,7 @@ setup() {
     export HOME=$output_dir
 }
 
-@test "Run a differential gene expression analysis (1 color microarray, $array_diff_exp1)" {
+@test "Run a differential gene expression analysis (1 color microarray, multiple contrasts (E-GEOD-11166))" {
     if  [ "$resume" = 'true' ] && [ -f "$array_diff_exp_result1" ]; then
         skip "$array_diff_exp_result exists"
     fi
@@ -36,7 +36,7 @@ setup() {
     [ -f "$array_diff_exp_result1" ]
 }
 
-@test "Run a differential gene expression analysis (1 color microarray, $array_diff_exp2)" {
+@test "Run a differential gene expression analysis (1 color microarray, one contrast (E-GEOD-10211))" {
     if  [ "$resume" = 'true' ] && [ -f "$array_diff_exp_result2" ]; then
         skip "$array_diff_exp_result exists"
     fi
