@@ -627,7 +627,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
       
       normalizedDataForFormula <- normalizedData[ , colnames(normalizedData) %in% experiment$BioRepName[experiment$assay_group_id %in% c(fc$reference_assay_group_id, fc$test_assay_group_id)] ]
     
-      cat(paste0('Processing contrasts for the "', fc$formula[1], '" formula'))
+      cat(paste0('Processing contrasts for the "', fc$formula[1], '" formula\n'))
       designMatrix <- model.matrix(as.formula(fc$formula[1]), data=experiment)
       
       if( !is.fullrank( designMatrix ) ) {

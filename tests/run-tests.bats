@@ -18,6 +18,10 @@ setup() {
     array_diff_exp_dir2="${data_dir}/differential/microarray/experiments/$array_diff_exp2/"
     array_diff_exp_result2="${output_dir}/tmp/${array_diff_exp2}.g1_g2.analytics.tsv"
 
+    array_diff_exp3="E-GEOD-20333"
+    array_diff_exp_dir3="${data_dir}/differential/microarray/experiments/$array_diff_exp3/"
+    array_diff_exp_result3="${output_dir}/tmp/${array_diff_exp3}.g2_g1.analytics.tsv"
+
     if [ ! -d "${output_dir}/tmp" ]; then
         mkdir -p ${output_dir}/tmp
     fi
@@ -27,7 +31,7 @@ setup() {
 
 @test "Run a differential gene expression analysis (1 color microarray, multiple contrasts (E-GEOD-11166))" {
     if  [ "$resume" = 'true' ] && [ -f "$array_diff_exp_result1" ]; then
-        skip "$array_diff_exp_result exists"
+        skip "$array_diff_exp_result1 exists"
     fi
 
     run rm -rf $array_diff_exp_result && $array_diff_script $array_diff_exp1 $array_diff_exp_dir1
@@ -38,11 +42,22 @@ setup() {
 
 @test "Run a differential gene expression analysis (1 color microarray, one contrast (E-GEOD-10211))" {
     if  [ "$resume" = 'true' ] && [ -f "$array_diff_exp_result2" ]; then
-        skip "$array_diff_exp_result exists"
+        skip "$array_diff_exp_result2 exists"
     fi
 
     run rm -rf $array_diff_exp_result && $array_diff_script $array_diff_exp2 $array_diff_exp_dir2
 
     [ "$status" -eq 0 ]
     [ -f "$array_diff_exp_result2" ]
+}
+
+@test "Run a differential gene expression analysis (1 color microarray, one contrast, one batch effect (E-GEOD-20333))" {
+    if  [ "$resume" = 'true' ] && [ -f "$array_diff_exp_result3" ]; then
+        skip "$array_diff_exp_result3 exists"
+    fi
+
+    run rm -rf $array_diff_exp_result && $array_diff_script $array_diff_exp3 $array_diff_exp_dir3
+
+    [ "$status" -eq 0 ]
+    [ -f "$array_diff_exp_result3" ]
 }
