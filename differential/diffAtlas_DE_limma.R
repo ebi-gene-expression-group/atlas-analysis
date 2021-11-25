@@ -468,8 +468,6 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
     
     apply(contrastsTable, 1, function(cont){
       
-      saveRDS(cont, file="cont.rds")
-      
       # Die if the test and reference assay names without dye names are not identical.
       
       if (any( !sort(experiment$AssayNameNoCy[experiment$assay_group_id == cont['reference_assay_group_id']]) == sort( experiment$AssayNameNoCy[experiment$assay_group_id == cont['test_assay_group_id'] ]))){
