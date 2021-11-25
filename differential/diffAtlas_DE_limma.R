@@ -17,62 +17,62 @@ suppressMessages( library( ExpressionAtlasInternal ) )
 #     atlasProcessingDirectory <- path to Atlas processing directory.
 
 diffAtlas_DE_limma <- function( expAcc, atlasProcessingDirectory ) {
-
-    e <- try({
-
-        # Make the config filename.
-        xmlConfigFilename <- paste( expAcc, "-configuration.xml", sep = "" )
-        xmlConfigFilename <- file.path( atlasProcessingDirectory, xmlConfigFilename )
-
-        # First we need to parse the config file.
-        cat( paste( "Reading XML config from", xmlConfigFilename, "..." ) )
-        experimentConfig <- parseAtlasConfig( xmlConfigFilename )
-        cat( "Successfully read XML config.\n" )
-
-        # Get the experiment type.
-        experimentType <- experimentConfig$experimentType
-
-        cat( paste( "Experiment type is", experimentType, "\n" ) )
-
-        # Check that this is not an RNA-seq experiment.
-        if( !grepl( "array", experimentType ) ) {
-            stop( paste(
-                        "Experiment type",
-                        experimentType,
-                        "does not look like a microarray experiment. Cannot continue" 
-            ) )
-        }
-
-        # Get the list of analytics objects from the config.
-        allAnalytics <- experimentConfig$allAnalytics
-            
-        # Steps are different for 1-colour and 2-colour data.
-        if( grepl( "1colour", experimentType ) ) {
-
-            cat( "Running one-colour analysis...\n" )
-
-            run_one_colour_analysis( expAcc, allAnalytics, atlasProcessingDirectory )
-
-        } else if( grepl( "2colour", experimentType ) ) {
-
-            cat( "Running two-colour analysis...\n" )
-
-            run_two_colour_analysis( expAcc, allAnalytics, atlasProcessingDirectory )
-
-        } else {
-            cat( paste(
-                       "Experiment type",
-                       experimentType,
-                       "not recognised. Cannot continue."
-            ) )
-        }
-
-    } )
+  
+  e <- try({
     
-    # Die if we got an error.
-    if( class( e ) == "try-error" ) {
-        stop( e )
+    # Make the config filename.
+    xmlConfigFilename <- paste( expAcc, "-configuration.xml", sep = "" )
+    xmlConfigFilename <- file.path( atlasProcessingDirectory, xmlConfigFilename )
+    
+    # First we need to parse the config file.
+    cat( paste( "Reading XML config from", xmlConfigFilename, "..." ) )
+    experimentConfig <- parseAtlasConfig( xmlConfigFilename )
+    cat( "Successfully read XML config.\n" )
+    
+    # Get the experiment type.
+    experimentType <- experimentConfig$experimentType
+    
+    cat( paste( "Experiment type is", experimentType, "\n" ) )
+    
+    # Check that this is not an RNA-seq experiment.
+    if( !grepl( "array", experimentType ) ) {
+      stop( paste(
+        "Experiment type",
+        experimentType,
+        "does not look like a microarray experiment. Cannot continue" 
+      ) )
     }
+    
+    # Get the list of analytics objects from the config.
+    allAnalytics <- experimentConfig$allAnalytics
+    
+    # Steps are different for 1-colour and 2-colour data.
+    if( grepl( "1colour", experimentType ) ) {
+      
+      cat( "Running one-colour analysis...\n" )
+      
+      run_one_colour_analysis( expAcc, allAnalytics, atlasProcessingDirectory )
+      
+    } else if( grepl( "2colour", experimentType ) ) {
+      
+      cat( "Running two-colour analysis...\n" )
+      
+      run_two_colour_analysis( expAcc, allAnalytics, atlasProcessingDirectory )
+      
+    } else {
+      cat( paste(
+        "Experiment type",
+        experimentType,
+        "not recognised. Cannot continue."
+      ) )
+    }
+    
+  } )
+  
+  # Die if we got an error.
+  if( class( e ) == "try-error" ) {
+    stop( e )
+  }
 }
 
 # make_assays_to_bioreps_df
@@ -81,40 +81,40 @@ diffAtlas_DE_limma <- function( expAcc, atlasProcessingDirectory ) {
 #     names. These will either be the same as the assay name (no technical
 #     replicates), or the technical replicate group ID (technical replicates).
 make_assays_to_bioreps_df <- function( bioReps, twoColour ) {
-
-    if( missing( twoColour ) ) { twoColour <- 0 }
-
-    assaysToBioRepsList <- lapply( bioReps, function( bioRep ) {
-
-        assayNames <- biorep_assay_names( bioRep )
-        techRepId <- technical_replicate_id( bioRep )
-
-        if( length( techRepId ) > 0 ) {
-            
-            if( twoColour ) {
-                
-                dyeNames <- sub( ".*(Cy\\d)$", "\\1", assayNames )
-                
-                if( length( unique( dyeNames ) ) > 1 ) {
-                    stop( "Technical replicates with different dye names are not allowed." )
-                }
-
-                dyeName <- unique( dyeNames )
-
-                techRepId <- paste( techRepId, dyeName, sep = "." )
-            }
-
-            data.frame( AssayName = assayNames, BioRepName = techRepId, stringsAsFactors = FALSE )
-
-        } else {
-            
-            data.frame( AssayName = assayNames, BioRepName = assayNames, stringsAsFactors = FALSE )
+  
+  if( missing( twoColour ) ) { twoColour <- 0 }
+  
+  assaysToBioRepsList <- lapply( bioReps, function( bioRep ) {
+    
+    assayNames <- biorep_assay_names( bioRep )
+    techRepId <- technical_replicate_id( bioRep )
+    
+    if( length( techRepId ) > 0 ) {
+      
+      if( twoColour ) {
+        
+        dyeNames <- sub( ".*(Cy\\d)$", "\\1", assayNames )
+        
+        if( length( unique( dyeNames ) ) > 1 ) {
+          stop( "Technical replicates with different dye names are not allowed." )
         }
-    })
-
-    assaysToBioRepsDf <- do.call( "rbind", assaysToBioRepsList )
-
-    return( assaysToBioRepsDf )
+        
+        dyeName <- unique( dyeNames )
+        
+        techRepId <- paste( techRepId, dyeName, sep = "." )
+      }
+      
+      data.frame( AssayName = assayNames, BioRepName = techRepId, stringsAsFactors = FALSE )
+      
+    } else {
+      
+      data.frame( AssayName = assayNames, BioRepName = assayNames, stringsAsFactors = FALSE )
+    }
+  })
+  
+  assaysToBioRepsDf <- do.call( "rbind", assaysToBioRepsList )
+  
+  return( assaysToBioRepsDf )
 }
 
 # filter_and_adjust_pvalues
@@ -122,40 +122,40 @@ make_assays_to_bioreps_df <- function( bioReps, twoColour ) {
 #     p-values, run independent filtering via genefilter package. Return vector
 #     of BH-adjusted p-values.
 filter_and_adjust_pvalues <- function( normDataRowVars, rawPvalues ) {
-
-    # Independent filtering.
-    # Make a data frame containing the row variances of the normalized data
-    # matrix, and the unadjusted p-values.
-    filterData <- data.frame( rowvar = normDataRowVars, test = rawPvalues )
-    
-    # theta is a vector of numbers from 0 to 0.8 in increments of 0.02.
-    # These values represent the proportion of the lower end of the data to
-    # filter out. We will use them to find out how many true null
-    # hypotheses we will be rejecting, if we filter out the proportion
-    # corresponding to each of them.
-    theta = seq( from=0, to=1.0, by=0.02 )
-    
-    # Work out adjusted p-values after filtering out each proportion of
-    # data specified in theta.
-    filteredAdjustedPvalues <- filtered_p( 
-        filter = filterData$rowvar,    # use the row variances as the filter statistic.
-        test = filterData$test,    # the unadjusted p-values.
-        theta = theta,    # the range of filtering proportions.
-        method = "BH"    # use Benjamini-Hochberg for p-value adjustment.
-    )
-
-    # filteredAdjustedPvalues is a matrix of adjusted p-values, with a
-    # column for each proportion from theta.  For each column, count how
-    # many rejections of the null hypothesis we will make, using the FDR
-    # threshold of 0.05.
-    numRej <- colSums( filteredAdjustedPvalues < 0.05, na.rm=TRUE )
-    
-    # Find the index of the column that had the most rejections of the null
-    # hypothesis.
-    maxRejectionsIndex <- which.max( numRej )
-
-    # Return the column of adjusted p-values at this index to the fit.
-    return( filteredAdjustedPvalues[ , maxRejectionsIndex ] )
+  
+  # Independent filtering.
+  # Make a data frame containing the row variances of the normalized data
+  # matrix, and the unadjusted p-values.
+  filterData <- data.frame( rowvar = normDataRowVars, test = rawPvalues )
+  
+  # theta is a vector of numbers from 0 to 0.8 in increments of 0.02.
+  # These values represent the proportion of the lower end of the data to
+  # filter out. We will use them to find out how many true null
+  # hypotheses we will be rejecting, if we filter out the proportion
+  # corresponding to each of them.
+  theta = seq( from=0, to=1.0, by=0.02 )
+  
+  # Work out adjusted p-values after filtering out each proportion of
+  # data specified in theta.
+  filteredAdjustedPvalues <- filtered_p( 
+    filter = filterData$rowvar,    # use the row variances as the filter statistic.
+    test = filterData$test,    # the unadjusted p-values.
+    theta = theta,    # the range of filtering proportions.
+    method = "BH"    # use Benjamini-Hochberg for p-value adjustment.
+  )
+  
+  # filteredAdjustedPvalues is a matrix of adjusted p-values, with a
+  # column for each proportion from theta.  For each column, count how
+  # many rejections of the null hypothesis we will make, using the FDR
+  # threshold of 0.05.
+  numRej <- colSums( filteredAdjustedPvalues < 0.05, na.rm=TRUE )
+  
+  # Find the index of the column that had the most rejections of the null
+  # hypothesis.
+  maxRejectionsIndex <- which.max( numRej )
+  
+  # Return the column of adjusted p-values at this index to the fit.
+  return( filteredAdjustedPvalues[ , maxRejectionsIndex ] )
 }
 
 # Just make a simple metadata table, including any batch effects  
@@ -273,7 +273,7 @@ read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, exp
     sep = "" 
   )
   
- dataFilename <- file.path( atlasProcessingDirectory,dataFilename )
+  dataFilename <- file.path( atlasProcessingDirectory,dataFilename )
   
   if( !file.exists( dataFilename ) ) {
     stop( paste( "Cannot find:", dataFilename ) )
@@ -324,7 +324,7 @@ write_de_results <- function(expAcc, contrastsTable, fit2){
   for (contrast_number in 1:nrow(contrastsTable)){
     
     cat( paste("Creating results data frames for", contrastsTable$contrast_id[contrast_number], "...\n" ))
-
+    
     contrastResults <- data.frame(
       designElements = rownames(fit2$p.value), 
       adjPval = fit2$adjPvals[,contrast_number], 
@@ -387,7 +387,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
       # Subset to the assays relevant for this formula / group of contrasts
       
       normalizedDataForFormula <- normalizedData[ , colnames(normalizedData) %in% experiment$BioRepName[experiment$assay_group_id %in% c(fc$reference_assay_group_id, fc$test_assay_group_id)] ]
-    
+      
       cat(paste0('Processing contrasts for the "', fc$formula[1], '" formula\n'))
       designMatrix <- model.matrix(as.formula(fc$formula[1]), data=experiment)
       
@@ -534,12 +534,9 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
       write_de_results(expAcc, contrastsTable, fit)
       
     })
-    
-    
-    
   } ))
 }
-    
+
 ###################
 # RUN MAIN FUNCTION
 ###################
@@ -549,5 +546,5 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
 # run them separately if desired.
 args <- commandArgs( TRUE )
 if( length( args ) > 0) {
-    do.call( diffAtlas_DE_limma, as.list( args ) )
+  do.call( diffAtlas_DE_limma, as.list( args ) )
 }
