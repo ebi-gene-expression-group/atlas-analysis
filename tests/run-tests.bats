@@ -21,6 +21,11 @@ setup() {
     array_diff_exp3="E-GEOD-20333"
     array_diff_exp_dir3="${data_dir}/differential/microarray/experiments/$array_diff_exp3/"
     array_diff_exp_result3="${output_dir}/tmp/${array_diff_exp3}.g2_g1.analytics.tsv"
+    echo "$array_diff_exp_result3"
+
+    array_diff_exp4="E-GEOD-44048"
+    array_diff_exp_dir4="${data_dir}/differential/microarray/experiments/$array_diff_exp4/"
+    array_diff_exp_result4="${output_dir}/tmp/${array_diff_exp4}.g1_g2.analytics.tsv"
 
     if [ ! -d "${output_dir}/tmp" ]; then
         mkdir -p ${output_dir}/tmp
@@ -60,4 +65,15 @@ setup() {
 
     [ "$status" -eq 0 ]
     [ -f "$array_diff_exp_result3" ]
+}
+
+@test "Run a differential gene expression analysis (2 color microarray, one contrast (E-GEOD-44048))" {
+    if  [ "$resume" = 'true' ] && [ -f "$array_diff_exp_result4" ]; then
+        skip "$array_diff_exp_result4 exists"
+    fi
+
+    run rm -rf $array_diff_exp_result && $array_diff_script $array_diff_exp4 $array_diff_exp_dir4
+
+    [ "$status" -eq 0 ]
+    [ -f "$array_diff_exp_result4" ]
 }
