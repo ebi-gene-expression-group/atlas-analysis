@@ -180,23 +180,27 @@ make_exp_contrast_table <- function(analytics){
 
 # Read a normalised expression table, log fold change table or mean intensities table
 
-read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, experiment, type){
+read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, experiment, type = NULL, dataFilename = NULL){
   
   # Get the platform (array design).
-  arrayDesign <- platform( analytics )
+  arrayDesignPart <- ''
+  if (type != 'raw-counts'){
+    arrayDesignPart <- paste0('-', platform( analytics ))
+  }
   
-  # Create the normalized data file name.
-  dataFilename <- paste( 
-    expAcc, 
-    "_", 
-    arrayDesign, 
-    "-",
-    type, 
-    '.tsv.undecorated', 
-    sep = "" 
-  )
+  if (is.null(dataFilename)){
+    # Create the data file name from the 
+    dataFilename <- paste( 
+      expAcc, 
+      arrayDesignPart,
+      "-",
+      type, 
+      '.tsv.undecorated', 
+      sep = "" 
+    )
   
-  dataFilename <- file.path( atlasProcessingDirectory,dataFilename )
+    dataFilename <- file.path( atlasProcessingDirectory, dataFilename )
+  }
   
   if( !file.exists( dataFilename ) ) {
     stop( paste( "Cannot find:", dataFilename ) )
@@ -215,7 +219,7 @@ read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, exp
   cat( paste("Successfully read", type, "data.\n") )
   cat( "Matching data to experiment.\n" )
   
-  if (type == 'normalized-expressions'){
+  if (type %in% c('normalized-expressions', 'raw-counts')){
     assayNames <- experiment$AssayName
     bioRepNames <- experiment$BioRepName
   }else{
@@ -242,7 +246,7 @@ read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, exp
 
 # Write d/e results to files
 
-write_de_results <- function(expAcc, contrastsTable, fit2){
+write_limma_de_results <- function(expAcc, contrastsTable, fit2){
   
   for (contrast_number in 1:nrow(contrastsTable)){
     
@@ -274,4 +278,44 @@ write_de_results <- function(expAcc, contrastsTable, fit2){
     write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
     cat( paste("Plot data written successfully for", contrastsTable$contrast_id[contrast_number], "\n" ))
   }
+}
+
+write_deseq2_de_results <- function(expAcc, contrastsTable, results){
+  
+  for (contrast_number in 1:nrow(contrastsTable)){
+    
+    res <- results[[contrast_number]]
+    
+    cat( paste("Creating results data frames for", contrastsTable$contrast_id[contrast_number], "...\n" ))
+    
+    # Here need to select wanted columns for outut files.
+    # Stats results:
+    contrastResults <- data.frame(
+      id = rownames( res ),
+      log2FoldChange = res$log2FoldChange,
+      padj = res$padj
+    )
+  
+    # MvA plot data:
+    plotData <- data.frame(
+      geneID = rownames( res ),
+      avgExpr = res$baseMean,
+      logFC = res$log2FoldChange,
+      adjPval = res$padj
+    )
+    
+    cat( "Results data frames created successfully.\n" )
+    
+    # Write the files.
+    resFile <- file.path( Sys.getenv( "HOME" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "analytics", "tsv", sep = "." ) )
+    cat( paste( "Writing differential expression results to", resFile, "...\n" ) )
+    write.table( contrastResults, file=resFile, row.names=FALSE, quote=FALSE, sep="\t" )
+    cat( paste( "Results written successfully for", contrastsTable$contrast_id[contrast_number],".\n" ) )
+    
+    plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "plotdata", "tsv", sep = "." ) )
+    cat( paste( "Writing data for MvA plot to", plotDataFile, "...\n" ) )
+    write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
+    cat( paste("Plot data written successfully for", contrastsTable$contrast_id[contrast_number], "\n" ))
+  }  
+  
 }

@@ -99,7 +99,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
     experiment <- exp_metadata_from_assay_groups(analytics)
     contrastsTable <- make_exp_contrast_table(analytics)
     
-    normalizedData <- read_exp_data_table(expAcc, atlasProcessingDirectory, analytics, experiment, 'normalized-expressions')
+    normalizedData <- read_exp_data_table(expAcc, atlasProcessingDirectory, analytics, experiment, type = 'normalized-expressions')
     
     # Now we can remove duplicates (techreps) from exp
     experiment <- experiment[! duplicated(experiment$BioRepName), -1]
@@ -187,8 +187,8 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
     
     # Read log fold changes and average intensities
     
-    logFoldChanges <- read_exp_data_table(expAcc, atlasProcessingDirectory, analytics, experiment, 'log-fold-changes')
-    averageIntensities <- read_exp_data_table(expAcc, atlasProcessingDirectory, analytics, experiment, 'average-intensities')
+    logFoldChanges <- read_exp_data_table(expAcc, atlasProcessingDirectory, analytics, experiment, type = 'log-fold-changes')
+    averageIntensities <- read_exp_data_table(expAcc, atlasProcessingDirectory, analytics, experiment, type = 'average-intensities')
     
     # We'll model all the contrasts (e.g. with/without batch effects) for each formula together 
     

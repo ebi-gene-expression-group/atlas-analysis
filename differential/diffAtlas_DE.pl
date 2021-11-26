@@ -399,11 +399,6 @@ sub run_rnaseq_differential_expression {
 
 	my ( $deseqScript, $expAcc, $experimentConfig, $atlasProcessingDir ) = @_;
 
-    my $countsMatrixFile = File::Spec->catfile(
-        $atlasProcessingDir,
-        $expAcc . "-raw-counts.tsv.undecorated"
-    );
-
 	$logger->info( "Running differential expression analysis in R..." );
 	
     my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
@@ -413,7 +408,7 @@ sub run_rnaseq_differential_expression {
 	}
 	
 	# Run R script.
-	my $Routput = `$deseqScript $expAcc $atlasProcessingDir $countsMatrixFile 2>&1`;
+	my $Routput = `$deseqScript $expAcc $atlasProcessingDir 2>&1`;
 
 	# Check R output for errors.
 	if( $? ) {
