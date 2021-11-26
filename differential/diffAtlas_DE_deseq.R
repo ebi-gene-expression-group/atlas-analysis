@@ -86,7 +86,7 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
       deseqDataSet <- DESeqDataSetFromMatrix(
         countData = countsForFormula,
         colData = experiment,
-        design = as.formula( fc$formula )
+        design = as.formula( fc$formula[1] )
       )
       deseqDataSet <- DESeq( deseqDataSet )
       
