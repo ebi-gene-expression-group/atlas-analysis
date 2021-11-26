@@ -185,7 +185,7 @@ read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, exp
   # Get the platform (array design).
   arrayDesignPart <- ''
   if (type != 'raw-counts'){
-    arrayDesignPart <- paste0('-', platform( analytics ))
+    arrayDesignPart <- paste0('_', platform( analytics ))
   }
   
   if (is.null(dataFilename)){

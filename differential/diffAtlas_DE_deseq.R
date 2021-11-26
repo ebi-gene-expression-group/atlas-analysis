@@ -107,7 +107,7 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
         res
       })
       
-      write_de_results(expAcc, contrastsTable, formulaResults)
+      write_deseq2_de_results(expAcc, contrastsTable, formulaResults)
       
       cat( "Independent filtering and results table creation successful.\n" )
     })

@@ -152,7 +152,7 @@ run_one_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
       
       cat( "Filtering and adjustment successful.\n" )
       
-      write_de_results(expAcc, contrastsTable, fit2)
+      write_limma_de_results(expAcc, contrastsTable, fit2)
       
       cat( paste( "Successully completed differential expression analysis for all contrasts\n" ) )
       
@@ -257,7 +257,7 @@ run_two_colour_analysis <- function( expAcc, allAnalytics, atlasProcessingDirect
       
       cat( "Filtering and adjustment successful.\n" )
       
-      write_de_results(expAcc, contrastsTable, fit)
+      write_limma_de_results(expAcc, contrastsTable, fit)
       
     })
   } ))
