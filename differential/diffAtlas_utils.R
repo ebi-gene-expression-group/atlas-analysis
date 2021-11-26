@@ -120,7 +120,7 @@ exp_metadata_from_assay_groups <- function(analytics, twocolor = FALSE){
         if (twocolor){
           stop( "Cannot handle batch effects for 2-colour microarray data." )
         }
-        do.call(rbind, lapply(cont@batch_effects, function(x){
+        do.call(rbind, lapply(batch_effects(cont), function(x){
           do.call(rbind, lapply(names(x@batches), function(y) data.frame(id = x@batches[[y]], variable = x@effect_name, value = y  )))
         }   ))
       }
@@ -161,7 +161,7 @@ make_exp_contrast_table <- function(analytics){
           lapply(slotNames(x), function(y){ 
             slot_val <- slot(x,y)
             if (y == 'batch_effects' && length(slot_val) > 0){
-              paste(unlist(lapply(slot_val, function(z){ z@effect_name })), collapse=' + ')
+              paste(make.names(unlist(lapply(slot_val, function(z){ z@effect_name }))), collapse=' + ')
             }else{
               slot_val
             }
