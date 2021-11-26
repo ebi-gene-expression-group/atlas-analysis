@@ -36,6 +36,10 @@ setup() {
     rnaseq_diff_exp_dir2="${data_dir}/differential/rnaseq/experiments/$rnaseq_diff_exp2/"
     rnaseq_diff_exp_result2="${output_dir}/tmp/${rnaseq_diff_exp2}.g2_g1.analytics.tsv"
     
+    rnaseq_diff_exp3="E-GEOD-52687"
+    rnaseq_diff_exp_dir3="${data_dir}/differential/rnaseq/experiments/$rnaseq_diff_exp3/"
+    rnaseq_diff_exp_result3="${output_dir}/tmp/${rnaseq_diff_exp3}.g3_g2.analytics.tsv"
+    
     if [ ! -d "${output_dir}/tmp" ]; then
         mkdir -p ${output_dir}/tmp
     fi
@@ -107,4 +111,15 @@ setup() {
 
     [ "$status" -eq 0 ]
     [ -f "$rnaseq_diff_exp_result2" ]
+}
+
+@test "Run a differential gene expression analysis (RNA-seq, multiple contrasts (E-GEOD-52687))" {
+    if  [ "$resume" = 'true' ] && [ -f "$rnaseq_diff_exp_result3" ]; then
+        skip "$rnaseq_diff_exp_result3 exists"
+    fi
+
+    run rm -rf $rnasseq_diff_exp_result3 && $rnaseq_diff_script $rnaseq_diff_exp3 $rnaseq_diff_exp_dir3
+
+    [ "$status" -eq 0 ]
+    [ -f "$rnaseq_diff_exp_result3" ]
 }
