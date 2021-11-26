@@ -130,6 +130,8 @@ exp_metadata_from_assay_groups <- function(analytics, twocolor = FALSE){
     }
   }
   
+  rownames(assaydata) <- assaydata$AssayName
+
   # For two-color add separate cleaned AssayName and BioRepName columns
   
   if (twocolor){
