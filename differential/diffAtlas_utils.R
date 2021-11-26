@@ -140,6 +140,10 @@ exp_metadata_from_assay_groups <- function(analytics, twocolor = FALSE){
     assaydata$dye <- sub('.*(Cy\\d+)', '\\1', assaydata$AssayName)
   }
   
+  # Make sure colnames are R-safe
+
+  colnames(assaydata) <- make.names(colnames(assaydata))
+
   assaydata
 }
 
