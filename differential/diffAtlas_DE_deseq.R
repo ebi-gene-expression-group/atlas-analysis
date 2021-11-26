@@ -64,8 +64,6 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
       ) )
     }
     
-    cat( paste( "Reading raw counts for", expAcc, "...\n" ) )
-    
     # Read experiment, contrasts and expression. Subset expression to match
     # the derived experiment.
     
@@ -73,6 +71,7 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
     contrastsTable <- make_exp_contrast_table(analytics)
     
     # Read in the raw counts.
+    cat( paste( "Reading raw counts for", expAcc, "...\n" ) )
     countsMatrix <- read_exp_data_table(expAcc, atlasProcessingDirectory, analytics, experiment, type = 'raw-counts')
     
     cat( "Successfully read raw counts.\n" )
