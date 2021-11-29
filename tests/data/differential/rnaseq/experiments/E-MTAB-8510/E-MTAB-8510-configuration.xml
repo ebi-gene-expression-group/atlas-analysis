@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration experimentType="rnaseq_mrna_differential" r_data="1">
+    <analytics>
+        <assay_groups>
+            <assay_group id="g1" label="FGF-2; 50 nanogram per milliliter">
+                <assay>ERR3657376</assay>
+                <assay>ERR3657375</assay>
+                <assay>ERR3657377</assay>
+            </assay_group>
+            <assay_group id="g2" label="none">
+                <assay>ERR3657374</assay>
+                <assay>ERR3657373</assay>
+                <assay>ERR3657372</assay>
+            </assay_group>
+        </assay_groups>
+        <contrasts>
+            <contrast id="g2_g1" cttv_primary="0">
+                <name>'FGF-2; 50 nanogram per milliliter' vs 'none'</name>
+                <reference_assay_group>g2</reference_assay_group>
+                <test_assay_group>g1</test_assay_group>
+                <batch_effects>
+                    <batch_effect name="sex">
+                        <batch value="male">
+                            <assay>ERR3657372</assay>
+                            <assay>ERR3657373</assay>
+                            <assay>ERR3657376</assay>
+                            <assay>ERR3657375</assay>
+                        </batch>
+                        <batch value="female">
+                            <assay>ERR3657377</assay>
+                            <assay>ERR3657374</assay>
+                        </batch>
+                    </batch_effect>
+                </batch_effects>
+            </contrast>
+        </contrasts>
+    </analytics>
+</configuration>

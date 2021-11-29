@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration experimentType="rnaseq_mrna_differential" r_data="1">
+    <analytics>
+        <assay_groups>
+            <assay_group id="g1" label="RON and MSP">
+                <assay>SRR1036963</assay>
+                <assay>SRR1036967</assay>
+                <assay>SRR1036966</assay>
+            </assay_group>
+            <assay_group id="g2" label="RON and MSP and shMBD4">
+                <assay>SRR1036964</assay>
+                <assay>SRR1036969</assay>
+                <assay>SRR1036968</assay>
+            </assay_group>
+            <assay_group id="g3" label="control">
+                <assay>SRR1036962</assay>
+                <assay>SRR1036965</assay>
+                <assay>SRR1036961</assay>
+            </assay_group>
+        </assay_groups>
+        <contrasts>
+            <contrast id="g3_g1">
+                <name>'RON and MSP' vs 'control'</name>
+                <reference_assay_group>g3</reference_assay_group>
+                <test_assay_group>g1</test_assay_group>
+            </contrast>
+            <contrast id="g3_g2">
+                <name>'RON and MSP and shMBD4' vs 'control'</name>
+                <reference_assay_group>g3</reference_assay_group>
+                <test_assay_group>g2</test_assay_group>
+            </contrast>
+        </contrasts>
+    </analytics>
+</configuration>

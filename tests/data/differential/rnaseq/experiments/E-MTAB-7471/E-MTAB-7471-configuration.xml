@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration experimentType="rnaseq_mrna_differential" r_data="1">
+    <analytics>
+        <assay_groups>
+            <assay_group id="g1" label="none">
+                <assay>ERR2929687</assay>
+                <assay>ERR2929686</assay>
+                <assay>ERR2929688</assay>
+            </assay_group>
+            <assay_group id="g2" label="sodium crotonate; 10 millimolar">
+                <assay>ERR2929685</assay>
+                <assay>ERR2929683</assay>
+                <assay>ERR2929684</assay>
+            </assay_group>
+        </assay_groups>
+        <contrasts>
+            <contrast id="g1_g2" cttv_primary="0">
+                <name>'sodium crotonate; 10 millimolar' vs 'none'</name>
+                <reference_assay_group>g1</reference_assay_group>
+                <test_assay_group>g2</test_assay_group>
+            </contrast>
+        </contrasts>
+    </analytics>
+</configuration>
