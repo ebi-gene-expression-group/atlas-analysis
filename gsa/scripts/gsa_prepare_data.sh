@@ -3,6 +3,7 @@
 [ -z ${ATLAS_EXPS+x} ] && echo "Env var ATLAS_EXPS for the path to atlas experiments needs to be defined." && exit 1
 [ -z ${ATLAS_GSA_FTP_DIR+x} ] && echo "Env var ATLAS_GSA_FTP_DIR for the path to the atlas ftp gsa folder needs to be defined." && exit 1
 
+echo "ATLAS_GSA_WORKDIR: $ATLAS_GSA_WORKDIR"
 WORKDIR="${ATLAS_GSA_WORKDIR:-${TMPDIR}/gsa}"
 
 # This script creates database files (one per organism in Atlas) to be used in the on-the-fly gene set enrichment against differentially expressed genes in each comparisons in a given Atlas organism
