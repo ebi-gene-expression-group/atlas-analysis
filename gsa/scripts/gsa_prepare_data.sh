@@ -32,8 +32,7 @@ cat ${WORKDIR}/exps.aux | while read -r l; do
     e=`echo $l | awk '{print $2}'`
     ls $ATLAS_EXPS/$e/${e}*-analytics.tsv > /dev/null
     if [ $? -eq 0 ]; then 
-       ls $ATLAS_EXPS/$e/$e-configuration.xml > /dev/null
-       if [ $? -eq 0 ]; then 
+       if [ -f $ATLAS_EXPS/$e/$e-configuration.xml ]; then 
        	  for f in $(ls $ATLAS_EXPS/$e/${e}*-analytics.tsv); do
     	      echo "$f" >> ${WORKDIR}/${o}.tsvlist.aux
     	  done
