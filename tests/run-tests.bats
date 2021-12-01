@@ -56,7 +56,7 @@ setup() {
     
     export HOME=$output_dir
     export ATLAS_EXPS="${data_dir}/differential/rnaseq/experiments"
-    export ATLAS_PROD_USER="$USER"
+    export ATLAS_PROD_USER="$(whoami)"
 }
 
 @test "Run a differential gene expression analysis (1 color microarray, multiple contrasts (E-GEOD-11166))" {
