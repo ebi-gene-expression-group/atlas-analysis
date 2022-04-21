@@ -88,7 +88,7 @@ exp_metadata_from_assay_groups <- function(analytics, twocolor = FALSE){
   ags <- assay_groups( analytics )
   contrasts <- atlas_contrasts( analytics )
   
-  metaRows <-lapply(ags, function(x){
+  metaRows <- lapply(ags, function(x){
     df <- make_assays_to_bioreps_df(x@biological_replicates)
     
     # Add assay group info to all assays
