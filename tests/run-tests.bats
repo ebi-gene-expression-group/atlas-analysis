@@ -32,7 +32,6 @@ setup() {
     rnaseq_diff_exp1="E-MTAB-7471"
     rnaseq_diff_exp_dir1="${data_dir}/differential/rnaseq/experiments/$rnaseq_diff_exp1/"
     rnaseq_diff_exp_result1="${output_dir}/tmp/${rnaseq_diff_exp1}.g1_g2.analytics.tsv"
-    rnaseq_diff_matrix1="${data_dir}/differential/rnaseq/experiments/${rnaseq_diff_exp1}/${rnaseq_diff_exp1}-raw-counts.tsv.undecorated "
 
     rnaseq_diff_exp2="E-MTAB-8510"
     rnaseq_diff_exp_dir2="${data_dir}/differential/rnaseq/experiments/$rnaseq_diff_exp2/"
@@ -108,7 +107,7 @@ setup() {
         skip "$rnaseq_diff_exp_result1 exists"
     fi
 
-    run rm -rf $rnasseq_diff_exp_result1 && $rnaseq_diff_script $rnaseq_diff_exp1 $rnaseq_diff_exp_dir1 $rnaseq_diff_matrix1
+    run rm -rf $rnaseq_diff_exp_result1 && $rnaseq_diff_script $rnaseq_diff_exp1 $rnaseq_diff_exp_dir1
 
     [ "$status" -eq 0 ]
     [ -f "$rnaseq_diff_exp_result1" ]
@@ -119,7 +118,7 @@ setup() {
         skip "$rnaseq_diff_exp_result2 exists"
     fi
 
-    run rm -rf $rnasseq_diff_exp_result2 && $rnaseq_diff_script $rnaseq_diff_exp2 $rnaseq_diff_exp_dir2 $rnaseq_diff_matrix2
+    run rm -rf $rnaseq_diff_exp_result2 && $rnaseq_diff_script $rnaseq_diff_exp2 $rnaseq_diff_exp_dir2
 
     [ "$status" -eq 0 ]
     [ -f "$rnaseq_diff_exp_result2" ]
@@ -130,7 +129,7 @@ setup() {
         skip "$rnaseq_diff_exp_result3 exists"
     fi
 
-    run rm -rf $rnasseq_diff_exp_result3 && $rnaseq_diff_script $rnaseq_diff_exp3 $rnaseq_diff_exp_dir3 $rnaseq_diff_matrix3
+    run rm -rf $rnaseq_diff_exp_result3 && $rnaseq_diff_script $rnaseq_diff_exp3 $rnaseq_diff_exp_dir3
 
     [ "$status" -eq 0 ]
     [ -f "$rnaseq_diff_exp_result3" ]
