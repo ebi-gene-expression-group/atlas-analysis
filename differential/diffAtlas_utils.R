@@ -186,7 +186,7 @@ make_exp_contrast_table <- function(analytics){
 
 # Read a normalised expression table, log fold change table or mean intensities table
 
-read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, experiment, type = NULL, dataFilename = NULL){
+read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, experiment, type, dataFilename = NULL){
   
   # Get the platform (array design).
   arrayDesignPart <- ''
