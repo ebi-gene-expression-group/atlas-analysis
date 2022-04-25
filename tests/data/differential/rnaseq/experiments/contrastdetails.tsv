@@ -1,0 +1,50 @@
+E-MTAB-7471	g1_g2	reference	characteristic	strain	S288C	http://purl.obolibrary.org/obo/NCBITaxon_559292
+E-MTAB-7471	g1_g2	reference	characteristic	organism	Saccharomyces cerevisiae	http://purl.obolibrary.org/obo/NCBITaxon_4932
+E-MTAB-7471	g1_g2	reference	characteristic	genotype	wild type genotype	
+E-MTAB-7471	g1_g2	reference	factor	compound	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-MTAB-7471	g1_g2	test	characteristic	strain	S288C	http://purl.obolibrary.org/obo/NCBITaxon_559292
+E-MTAB-7471	g1_g2	test	characteristic	organism	Saccharomyces cerevisiae	http://purl.obolibrary.org/obo/NCBITaxon_4932
+E-MTAB-7471	g1_g2	test	characteristic	genotype	wild type genotype	
+E-MTAB-7471	g1_g2	test	factor	compound	sodium crotonate 10 millimolar	
+E-MTAB-8510	g2_g1	reference	characteristic	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-MTAB-8510	g2_g1	reference	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-MTAB-8510	g2_g1	reference	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-MTAB-8510	g2_g1	reference	characteristic	cell type	mesenchymal stem cell of the bone marrow	http://purl.obolibrary.org/obo/CL_0002540
+E-MTAB-8510	g2_g1	reference	characteristic	organism part	bone marrow	http://purl.obolibrary.org/obo/UBERON_0002371
+E-MTAB-8510	g2_g1	reference	characteristic	age	33 year	
+E-MTAB-8510	g2_g1	reference	characteristic	developmental stage	adult	http://www.ebi.ac.uk/efo/EFO_0001272
+E-MTAB-8510	g2_g1	reference	factor	compound	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-MTAB-8510	g2_g1	reference	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-MTAB-8510	g2_g1	reference	characteristic	age	25 year	
+E-MTAB-8510	g2_g1	reference	characteristic	age	41 year	
+E-MTAB-8510	g2_g1	test	characteristic	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-MTAB-8510	g2_g1	test	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-MTAB-8510	g2_g1	test	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-MTAB-8510	g2_g1	test	characteristic	cell type	mesenchymal stem cell of the bone marrow	http://purl.obolibrary.org/obo/CL_0002540
+E-MTAB-8510	g2_g1	test	characteristic	organism part	bone marrow	http://purl.obolibrary.org/obo/UBERON_0002371
+E-MTAB-8510	g2_g1	test	characteristic	age	25 year	
+E-MTAB-8510	g2_g1	test	characteristic	developmental stage	adult	http://www.ebi.ac.uk/efo/EFO_0001272
+E-MTAB-8510	g2_g1	test	factor	compound	FGF-2 50 nanogram per milliliter	
+E-MTAB-8510	g2_g1	test	characteristic	age	41 year	
+E-MTAB-8510	g2_g1	test	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-MTAB-8510	g2_g1	test	characteristic	age	33 year	
+E-GEOD-52687	g3_g1	reference	characteristic	disease	breast cancer	http://www.ebi.ac.uk/efo/EFO_0000305
+E-GEOD-52687	g3_g1	reference	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-52687	g3_g1	reference	characteristic	passage	4 to 8	
+E-GEOD-52687	g3_g1	reference	characteristic	cell line	MCF-7	http://www.ebi.ac.uk/efo/EFO_0001203
+E-GEOD-52687	g3_g1	reference	factor	treatment	control	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-52687	g3_g1	test	characteristic	disease	breast cancer	http://www.ebi.ac.uk/efo/EFO_0000305
+E-GEOD-52687	g3_g1	test	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-52687	g3_g1	test	characteristic	passage	4 to 8	
+E-GEOD-52687	g3_g1	test	characteristic	cell line	MCF-7	http://www.ebi.ac.uk/efo/EFO_0001203
+E-GEOD-52687	g3_g1	test	factor	treatment	RON and MSP	
+E-GEOD-52687	g3_g2	reference	characteristic	disease	breast cancer	http://www.ebi.ac.uk/efo/EFO_0000305
+E-GEOD-52687	g3_g2	reference	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-52687	g3_g2	reference	characteristic	passage	4 to 8	
+E-GEOD-52687	g3_g2	reference	characteristic	cell line	MCF-7	http://www.ebi.ac.uk/efo/EFO_0001203
+E-GEOD-52687	g3_g2	reference	factor	treatment	control	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-52687	g3_g2	test	characteristic	disease	breast cancer	http://www.ebi.ac.uk/efo/EFO_0000305
+E-GEOD-52687	g3_g2	test	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-52687	g3_g2	test	characteristic	passage	4 to 8	
+E-GEOD-52687	g3_g2	test	characteristic	cell line	MCF-7	http://www.ebi.ac.uk/efo/EFO_0001203
+E-GEOD-52687	g3_g2	test	factor	treatment	RON and MSP and shMBD4	

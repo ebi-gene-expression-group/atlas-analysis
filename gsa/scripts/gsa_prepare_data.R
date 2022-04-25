@@ -22,8 +22,6 @@ initial.options <- commandArgs(trailingOnly = FALSE)
 script.dir <- dirname(sub("--file=", "", initial.options[grep("--file", initial.options)]))
 source(paste(script.dir,"/../R/atlasGSA.R",sep=""))
 
-#library(atlasGSA)
-
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("parallel"))
 
