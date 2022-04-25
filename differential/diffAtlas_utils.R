@@ -195,7 +195,7 @@ read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, exp
   }
   
   if (is.null(dataFilename)){
-    # Create the data file name from the 
+    # Create the data file name from the accession and arrayDesign (for microarrays)
     dataFilename <- paste( 
       expAcc, 
       arrayDesignPart,
