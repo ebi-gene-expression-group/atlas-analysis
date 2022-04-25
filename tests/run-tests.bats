@@ -6,11 +6,12 @@ setup() {
 
     test_dir="${BATS_TEST_DIRNAME}"
     data_dir="${test_dir}/data"
-    output_dir="$TMPDIR"
+    output_dir="/tmp"
 
     array_diff_script="${test_dir}/../differential/diffAtlas_DE_limma.R"
     rnaseq_diff_script="${test_dir}/../differential/diffAtlas_DE_deseq.R"
-    
+    gsa_prepare_script="${test_dir}/../gsa/scripts/gsa_prepare_data.sh"   
+ 
     array_diff_exp1="E-GEOD-11166"
     array_diff_exp_dir1="${data_dir}/differential/microarray/experiments/$array_diff_exp1/"
     array_diff_exp_result1="${output_dir}/tmp/${array_diff_exp1}.g1_g2.analytics.tsv"
@@ -35,16 +36,26 @@ setup() {
     rnaseq_diff_exp2="E-MTAB-8510"
     rnaseq_diff_exp_dir2="${data_dir}/differential/rnaseq/experiments/$rnaseq_diff_exp2/"
     rnaseq_diff_exp_result2="${output_dir}/tmp/${rnaseq_diff_exp2}.g2_g1.analytics.tsv"
+    rnaseq_diff_matrix2="${data_dir}/differential/rnaseq/experiments/${rnaseq_diff_exp2}/${rnaseq_diff_exp2}-raw-counts.tsv.undecorated "
     
     rnaseq_diff_exp3="E-GEOD-52687"
     rnaseq_diff_exp_dir3="${data_dir}/differential/rnaseq/experiments/$rnaseq_diff_exp3/"
     rnaseq_diff_exp_result3="${output_dir}/tmp/${rnaseq_diff_exp3}.g3_g2.analytics.tsv"
-    
+    rnaseq_diff_matrix3="${data_dir}/differential/rnaseq/experiments/${rnaseq_diff_exp3}/${rnaseq_diff_exp3}-raw-counts.tsv.undecorated "
+
+    export ATLAS_GSA_WORKDIR="${output_dir}/gsa"
+    export ATLAS_GSA_FTP_DIR="${ATLAS_GSA_WORKDIR}_ftp"
+    gsa_prep_contrast_titles="$ATLAS_GSA_FTP_DIR/contrastTitles.tsv"
+    gsa_ss_index="${ATLAS_GSA_FTP_DIR}/saccharomyces_cerevisiae.po"
+    gsa_hs_index="${ATLAS_GSA_FTP_DIR}/homo_sapiens.po"
+	
     if [ ! -d "${output_dir}/tmp" ]; then
         mkdir -p ${output_dir}/tmp
     fi
     
     export HOME=$output_dir
+    export ATLAS_EXPS="${data_dir}/differential/rnaseq/experiments"
+    export ATLAS_PROD_USER="$(whoami)"
 }
 
 @test "Run a differential gene expression analysis (1 color microarray, multiple contrasts (E-GEOD-11166))" {
@@ -96,7 +107,7 @@ setup() {
         skip "$rnaseq_diff_exp_result1 exists"
     fi
 
-    run rm -rf $rnasseq_diff_exp_result1 && $rnaseq_diff_script $rnaseq_diff_exp1 $rnaseq_diff_exp_dir1
+    run rm -rf $rnaseq_diff_exp_result1 && $rnaseq_diff_script $rnaseq_diff_exp1 $rnaseq_diff_exp_dir1
 
     [ "$status" -eq 0 ]
     [ -f "$rnaseq_diff_exp_result1" ]
@@ -107,7 +118,7 @@ setup() {
         skip "$rnaseq_diff_exp_result2 exists"
     fi
 
-    run rm -rf $rnasseq_diff_exp_result2 && $rnaseq_diff_script $rnaseq_diff_exp2 $rnaseq_diff_exp_dir2
+    run rm -rf $rnaseq_diff_exp_result2 && $rnaseq_diff_script $rnaseq_diff_exp2 $rnaseq_diff_exp_dir2
 
     [ "$status" -eq 0 ]
     [ -f "$rnaseq_diff_exp_result2" ]
@@ -118,8 +129,22 @@ setup() {
         skip "$rnaseq_diff_exp_result3 exists"
     fi
 
-    run rm -rf $rnasseq_diff_exp_result3 && $rnaseq_diff_script $rnaseq_diff_exp3 $rnaseq_diff_exp_dir3
+    run rm -rf $rnaseq_diff_exp_result3 && $rnaseq_diff_script $rnaseq_diff_exp3 $rnaseq_diff_exp_dir3
 
     [ "$status" -eq 0 ]
     [ -f "$rnaseq_diff_exp_result3" ]
 }
+
+@test "Run gene set analysis preparation" {
+    if  [ "$resume" = 'true' ] && [ -f "$gsa_prep_contrast_titles" ] && [ -f "$gsa_ss_index" ] && [ -f "$gsa_hs_index" ]; then
+        skip "$gsa_prep_contrast_titles and $gsa_ss_index and $gsa_hs_index exist"
+    fi
+
+    run rm -rf ${ATLAS_GSA_WORKDIR}_ftp && $gsa_prepare_script
+
+    [ "$status" -eq 0 ]
+    [ -f "$gsa_prep_contrast_titles" ]	
+    [ -f "$gsa_ss_index" ]	
+    [ -f "$gsa_hs_index" ]	
+}
+
