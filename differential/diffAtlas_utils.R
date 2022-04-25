@@ -144,7 +144,7 @@ exp_metadata_from_assay_groups <- function(analytics, twocolor = FALSE){
 
   colnames(assaydata) <- make.names(colnames(assaydata))
 
-  assaydata
+  return( assaydata )
 }
 
 # Make a simple contrasts table
@@ -181,7 +181,7 @@ make_exp_contrast_table <- function(analytics){
     formula
   })
   
-  conts
+  return( conts )
 }
 
 # Read a normalised expression table, log fold change table or mean intensities table
@@ -247,7 +247,7 @@ read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, exp
     parsedData <- do.call(cbind, lapply(split(data.frame(t(parsedData), check.names = FALSE), bioRepNames), colMeans))
   }
   
-  parsedData
+  return( parsedData )
 }
 
 # Write d/e results to files
