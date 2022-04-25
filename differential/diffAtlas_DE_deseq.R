@@ -88,6 +88,8 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
         colData = experiment,
         design = as.formula( fc$formula[1] )
       )
+      cat( "Running differential expression analysis...\n" )
+      
       deseqDataSet <- DESeq( deseqDataSet )
       
       cat( "Differential expression analysis successful.\n" )
