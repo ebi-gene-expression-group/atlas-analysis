@@ -21,7 +21,7 @@ if (length(args) == 5) {
   # end)
   outputPath <- args[2]
   wdir <- as.character(args[3])
-  source(paste0(wdir,'/bin/kcluster_parallel.R'))
+  source(paste0(wdir,'kcluster_parallel.R'))
   cores <- as.numeric( args[4] )
   retries <- as.numeric( args[5] )
 } else {
