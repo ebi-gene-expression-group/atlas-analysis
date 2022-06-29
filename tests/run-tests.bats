@@ -18,24 +18,24 @@ setup() {
     
     array_diff_exp2="E-GEOD-10211"
     array_diff_exp_dir2="${data_dir}/differential/microarray/experiments/$array_diff_exp2/"
-    array_diff_exp_result2="${output_dir}/tmp/${array_diff_exp2}.g1_g2.analytics.tsv"
+    array_diff_exp_result2="${output_dir}/${array_diff_exp2}.g1_g2.analytics.tsv"
 
     array_diff_exp3="E-GEOD-20333"
     array_diff_exp_dir3="${data_dir}/differential/microarray/experiments/$array_diff_exp3/"
-    array_diff_exp_result3="${output_dir}/tmp/${array_diff_exp3}.g2_g1.analytics.tsv"
+    array_diff_exp_result3="${output_dir}/${array_diff_exp3}.g2_g1.analytics.tsv"
     echo "$array_diff_exp_result3"
 
     array_diff_exp4="E-GEOD-44048"
     array_diff_exp_dir4="${data_dir}/differential/microarray/experiments/$array_diff_exp4/"
-    array_diff_exp_result4="${output_dir}/tmp/${array_diff_exp4}.g1_g2.analytics.tsv"
+    array_diff_exp_result4="${output_dir}/${array_diff_exp4}.g1_g2.analytics.tsv"
 
     rnaseq_diff_exp1="E-MTAB-7471"
     rnaseq_diff_exp_dir1="${data_dir}/differential/rnaseq/experiments/$rnaseq_diff_exp1/"
-    rnaseq_diff_exp_result1="${output_dir}/tmp/${rnaseq_diff_exp1}.g1_g2.analytics.tsv"
+    rnaseq_diff_exp_result1="${output_dir}/${rnaseq_diff_exp1}.g1_g2.analytics.tsv"
 
     rnaseq_diff_exp2="E-MTAB-8510"
     rnaseq_diff_exp_dir2="${data_dir}/differential/rnaseq/experiments/$rnaseq_diff_exp2/"
-    rnaseq_diff_exp_result2="${output_dir}/tmp/${rnaseq_diff_exp2}.g2_g1.analytics.tsv"
+    rnaseq_diff_exp_result2="${output_dir}/${rnaseq_diff_exp2}.g2_g1.analytics.tsv"
     rnaseq_diff_matrix2="${data_dir}/differential/rnaseq/experiments/${rnaseq_diff_exp2}/${rnaseq_diff_exp2}-raw-counts.tsv.undecorated "
     
     rnaseq_diff_exp3="E-GEOD-52687"
