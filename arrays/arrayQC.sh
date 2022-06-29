@@ -14,7 +14,6 @@ scriptDir=$5
 
 expAcc="$(basename $expTargetDir)"
 
-
 rm -rf $expTargetDir/qc
 
 #pushd $expTargetDir || exit 1 > /dev/null

@@ -7,6 +7,7 @@
 # 	- contrastNAme <- text description of the contrast
 # 	- plotFile <- filename to write the plot to
 # 	- techType <- "microarray" or "rnaseq"
+
 diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 
 	# Read data
@@ -89,6 +90,7 @@ diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 
 
 # Run with arguments if there are any, otherwise don't do anything.
+
 args <- commandArgs(TRUE)
 if(length(args) > 0) {
 	do.call(diffAtlas_mvaPlot, as.list(args))
