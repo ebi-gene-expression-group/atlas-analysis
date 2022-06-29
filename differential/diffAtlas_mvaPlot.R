@@ -93,5 +93,3 @@ args <- commandArgs(TRUE)
 if(length(args) > 0) {
 	do.call(diffAtlas_mvaPlot, as.list(args))
 }
-		
-
