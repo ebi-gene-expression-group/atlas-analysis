@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-#
+
 # diffAtlas_DE.pl
 # 	- Get results of differential expression for either microarray or RNA-seq data.
 # 	- For microarray data, this entails finding contrast definitions in contrasts XML file, running
@@ -17,7 +17,6 @@ diffAtlas_DE.pl - do differential expression analysis for Expression Atlas.
 =head1 SYNOPSIS
 
 diffAtlas_DE.pl --experiment E-MTAB-1066 --directory path/to/processing/directory
-
 
 =head1 DESCRIPTION
 
@@ -51,7 +50,6 @@ Expression Atlas team <arrayexpress-atlas@ebi.ac.uk
 
 =cut
 
-
 use strict;
 use warnings;
 use 5.10.0;
@@ -83,7 +81,6 @@ my $logger_config = q(
 # Initialise logger.
 Log::Log4perl::init(\$logger_config);
 my $logger = Log::Log4perl::get_logger;
-
 
 # assumes R scripts directory is in PATH
 my $mvaScript = "diffAtlas_mvaPlot.R";
@@ -218,7 +215,7 @@ sub run_microarray_differential_expression {
 
 	$logger->info( "Running differential expression analysis in R..." );
 	
-    my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+    my $tempDir = File::Spec->catdir( $ENV{ "TMPDIR" }, "tmp" );
 
 	unless( -d $tempDir ) {
 		$logger->logdie( "No $tempDir found. Please create it and try again." );
@@ -338,7 +335,7 @@ sub read_limma_results {
 
 	my $analyticsDEResults = {};
 
-	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+	my $tempDir = File::Spec->catdir( $ENV{ "TMPDIR" }, "tmp" );
 	
 	unless( -d $tempDir ) {
 		$logger->logdie( "No $tempDir found. Please create it and try again." );
@@ -399,9 +396,10 @@ sub run_rnaseq_differential_expression {
 
 	my ( $deseqScript, $expAcc, $experimentConfig, $atlasProcessingDir ) = @_;
 
+
 	$logger->info( "Running differential expression analysis in R..." );
 	
-    my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+    my $tempDir = File::Spec->catdir( $ENV{ "TMPDIR" }, "tmp" );
 
 	unless( -d $tempDir ) {
 		$logger->logdie( "No $tempDir found. Please create it and try again." );
@@ -464,7 +462,7 @@ sub read_deseq_results {
 	
 	my $analyticsDEResults = {};
 
-	my $tempDir = File::Spec->catdir( $ENV{ "HOME" }, "tmp" );
+	my $tempDir = File::Spec->catdir( $ENV{ "TMPDIR" }, "tmp" );
 	
 	unless( -d $tempDir ) {
 		$logger->logdie( "No $tempDir found. Please create it and try again." );
@@ -632,4 +630,3 @@ sub write_results {
 	}
 }
 			
-

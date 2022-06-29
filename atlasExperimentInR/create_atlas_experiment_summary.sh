@@ -1,6 +1,8 @@
 #!/bin/bash
+
 # A wrapper script for the experiment summary
 # "strict mode"
+
 set -euo pipefail
 
 if [ $# -lt 1 ]; then

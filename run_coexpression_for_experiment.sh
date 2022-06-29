@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # A wrapper script for coexpressions
 # Use TPM file, if does not exist try the FPKM file (we do not expect results to differ)
 
