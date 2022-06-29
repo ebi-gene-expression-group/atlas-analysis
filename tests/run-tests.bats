@@ -40,7 +40,7 @@ setup() {
     
     rnaseq_diff_exp3="E-GEOD-52687"
     rnaseq_diff_exp_dir3="${data_dir}/differential/rnaseq/experiments/$rnaseq_diff_exp3/"
-    rnaseq_diff_exp_result3="${output_dir}/tmp/${rnaseq_diff_exp3}.g3_g2.analytics.tsv"
+    rnaseq_diff_exp_result3="${output_dir}/${rnaseq_diff_exp3}.g3_g2.analytics.tsv"
     rnaseq_diff_matrix3="${data_dir}/differential/rnaseq/experiments/${rnaseq_diff_exp3}/${rnaseq_diff_exp3}-raw-counts.tsv.undecorated "
 
     export ATLAS_GSA_WORKDIR="${output_dir}/gsa"
