@@ -14,7 +14,7 @@ setup() {
  
     array_diff_exp1="E-GEOD-11166"
     array_diff_exp_dir1="${data_dir}/differential/microarray/experiments/$array_diff_exp1/"
-    array_diff_exp_result1="${output_dir}/tmp/${array_diff_exp1}.g1_g2.analytics.tsv"
+    array_diff_exp_result1="${output_dir}/${array_diff_exp1}.g1_g2.analytics.tsv"
     
     array_diff_exp2="E-GEOD-10211"
     array_diff_exp_dir2="${data_dir}/differential/microarray/experiments/$array_diff_exp2/"
