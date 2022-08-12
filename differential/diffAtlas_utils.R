@@ -294,7 +294,7 @@ write_deseq2_de_results <- function(expAcc, contrastsTable, results){
     
     cat( paste("Creating results data frames for", contrastsTable$contrast_id[contrast_number], "...\n" ))
     
-    # Here need to select wanted columns for outut files.
+    # Here need to select wanted columns for output files.
     # Stats results:
     contrastResults <- data.frame(
       id = rownames( res ),
