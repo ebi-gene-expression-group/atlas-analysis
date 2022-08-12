@@ -88,7 +88,7 @@ exp_metadata_from_assay_groups <- function(analytics, twocolor = FALSE){
   ags <- assay_groups( analytics )
   contrasts <- atlas_contrasts( analytics )
   
-  metaRows <- lapply(ags, function(x){
+  metaRows <-lapply(ags, function(x){
     df <- make_assays_to_bioreps_df(x@biological_replicates)
     
     # Add assay group info to all assays
@@ -144,7 +144,7 @@ exp_metadata_from_assay_groups <- function(analytics, twocolor = FALSE){
 
   colnames(assaydata) <- make.names(colnames(assaydata))
 
-  return( assaydata )
+  assaydata
 }
 
 # Make a simple contrasts table
@@ -181,12 +181,12 @@ make_exp_contrast_table <- function(analytics){
     formula
   })
   
-  return( conts )
+  conts
 }
 
 # Read a normalised expression table, log fold change table or mean intensities table
 
-read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, experiment, type, dataFilename = NULL){
+read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, experiment, type = NULL, dataFilename = NULL){
   
   # Get the platform (array design).
   arrayDesignPart <- ''
@@ -195,7 +195,7 @@ read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, exp
   }
   
   if (is.null(dataFilename)){
-    # Create the data file name from the accession and arrayDesign (for microarrays)
+    # Create the data file name from the 
     dataFilename <- paste( 
       expAcc, 
       arrayDesignPart,
@@ -247,7 +247,7 @@ read_exp_data_table <- function(expAcc, atlasProcessingDirectory, analytics, exp
     parsedData <- do.call(cbind, lapply(split(data.frame(t(parsedData), check.names = FALSE), bioRepNames), colMeans))
   }
   
-  return( parsedData )
+  parsedData
 }
 
 # Write d/e results to files
@@ -274,12 +274,12 @@ write_limma_de_results <- function(expAcc, contrastsTable, fit2){
     cat( "Results data frames created successfully.\n" )
     
     # Write the files.
-    resFile <- file.path( Sys.getenv( "HOME" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "analytics", "tsv", sep = "." ) )
+    resFile <- file.path( Sys.getenv( "TMPDIR" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "analytics", "tsv", sep = "." ) )
     cat( paste( "Writing differential expression results to", resFile, "...\n" ) )
     write.table( contrastResults, file=resFile, row.names=FALSE, quote=FALSE, sep="\t" )
     cat( paste( "Results written successfully for", contrastsTable$contrast_id[contrast_number],".\n" ) )
     
-    plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "plotdata", "tsv", sep = "." ) )
+    plotDataFile <- file.path( Sys.getenv( "TMPDIR" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "plotdata", "tsv", sep = "." ) )
     cat( paste( "Writing data for MvA plot to", plotDataFile, "...\n" ) )
     write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
     cat( paste("Plot data written successfully for", contrastsTable$contrast_id[contrast_number], "\n" ))
@@ -313,12 +313,12 @@ write_deseq2_de_results <- function(expAcc, contrastsTable, results){
     cat( "Results data frames created successfully.\n" )
     
     # Write the files.
-    resFile <- file.path( Sys.getenv( "HOME" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "analytics", "tsv", sep = "." ) )
+    resFile <- file.path( Sys.getenv( "TMPDIR" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "analytics", "tsv", sep = "." ) )
     cat( paste( "Writing differential expression results to", resFile, "...\n" ) )
     write.table( contrastResults, file=resFile, row.names=FALSE, quote=FALSE, sep="\t" )
     cat( paste( "Results written successfully for", contrastsTable$contrast_id[contrast_number],".\n" ) )
     
-    plotDataFile <- file.path( Sys.getenv( "HOME" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "plotdata", "tsv", sep = "." ) )
+    plotDataFile <- file.path( Sys.getenv( "TMPDIR" ), "tmp", paste( expAcc, contrastsTable$contrast_id[contrast_number], "plotdata", "tsv", sep = "." ) )
     cat( paste( "Writing data for MvA plot to", plotDataFile, "...\n" ) )
     write.table( plotData, file=plotDataFile, row.names=FALSE, quote=FALSE, sep="\t" )
     cat( paste("Plot data written successfully for", contrastsTable$contrast_id[contrast_number], "\n" ))

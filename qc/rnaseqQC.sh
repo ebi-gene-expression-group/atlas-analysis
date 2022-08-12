@@ -2,7 +2,7 @@
 
 # Source script from the same (prod or test) Atlas environment as this script
 scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-projectRoot=${scriptDir}/../..
+#scriptDir=$2
 
 if [ $# -lt 1 ]; then
    echo "Usage: $0 expAcc"
@@ -11,17 +11,19 @@ if [ $# -lt 1 ]; then
 fi
 
 expAcc=$1
-expTargetDir=$2
+expTargetDir=./ #$2
 pushd ${expTargetDir}
 rm -rf qc
 
-$projectRoot/analysis/qc/rnaseqQC.pl $expAcc $expTargetDir > ${expAcc}.qc.log
+$scriptDir/rnaseqQC.pl $expAcc $expTargetDir > ${expAcc}.qc.log
 exitCode=$?
+
+
 if [ "$exitCode" -eq 1 ]; then
     rm -rf ${expAcc}.qc.log
 	# The QC procedure succeeded but the experiment failed QC.
 	popd
-	mv ${expTargetDir} ${ATLAS_PROD}/failedQC/rna-seq
+	#mv ${expTargetDir} ${ATLAS_PROD}/failedQC/rna-seq
 	echo "[QC] Quality control for ${expAcc} has failed - see http://www.ebi.ac.uk/~rpetry/atlas3/failedQC/rna-seq/${expAcc} for more info"
 	exit 2
 elif [ "$exitCode" -ne 0 ]; then
