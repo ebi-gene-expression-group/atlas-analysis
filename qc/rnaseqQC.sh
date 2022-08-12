@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # Source script from the same (prod or test) Atlas environment as this script
-#scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-scriptDir=$2
+scriptDir=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+#scriptDir=$2
 
 if [ $# -lt 1 ]; then
    echo "Usage: $0 expAcc"
