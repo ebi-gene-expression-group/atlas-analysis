@@ -14,7 +14,7 @@ transExprTpmFileName <- args[1]
 transExprRawFileName <- args[2]
 
 
-## file checks
+# file checks
 check_file_exists <- function(filename) {
     if (!file.exists(filename)) {
         stop(paste("Cannot find:", filename))
@@ -43,3 +43,6 @@ if (any(is.na(TPMexpr))) {
         fwrite(TPMexpr, file = transExprTpmFileName, row.names = FALSE, quote = FALSE, sep = "\t")
     }
 }
+
+# if any Inf exists in TPMs
+
