@@ -27,6 +27,9 @@ check_file_exists(transExprRawFileName)
 fread(input = transExprTpmFileName) -> TPMexpr
 fread(input = transExprRawFileName) -> Rawexpr
 
+# if any Inf exists in TPMs convert to NA
+for (j in 1:ncol(TPMexpr)) set(TPMexpr, which(is.infinite(TPMexpr[[j]])), j, NA)
+                 
 # if any NA exists in TPMs
 if (any(is.na(TPMexpr))) {
 
@@ -38,11 +41,19 @@ if (any(is.na(TPMexpr))) {
 
         # replace NAs with 0
         TPMexpr[is.na(TPMexpr)] <- 0
+        
+        # if any non-numeric column
+        if ( all(sapply(TPMexpr[,2:ncol(TPMexpr)], function(x){  is.numeric(x) })) == FALSE ){
+            print( "WARNING - at least one column has non-numeric values" ) 
+        }
+        
+        # if all zeros
+        if ( all( sapply(TPMexpr[,2:ncol(TPMexpr)], function(x){ (all(x==0)  ) } )) ){
+            print( "WARNING - all elements in the matrix are 0" ) 
+        }
 
         # export TPM transcript file
         fwrite(TPMexpr, file = transExprTpmFileName, row.names = FALSE, quote = FALSE, sep = "\t")
     }
 }
-
-# if any Inf exists in TPMs
 
