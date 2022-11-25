@@ -43,8 +43,9 @@ if (any(is.na(TPMexpr))) {
         TPMexpr[is.na(TPMexpr)] <- 0
         
         # if any non-numeric column
-        if ( all(sapply(TPMexpr[,2:ncol(TPMexpr)], function(x){  is.numeric(x) })) == FALSE ){
-            print( "WARNING - at least one column has non-numeric values" ) 
+        if ( all(sapply(TPMexpr[,2:ncol(TPMexpr)], function(x){ is.numeric(x) })) == FALSE ){
+            print( "ERROR - at least one column has non-numeric values" )
+            quit( save = "no", status = 1, runLast = FALSE )
         }
         
         # if all zeros
