@@ -249,10 +249,9 @@ sub makeArraysToAssaysToFiles {
 			next;
 		}
 
-		# Get technology from Array design file using peach API. 
-		#
-		my $adfInfoUrl = $atlasSiteConfig->get_arrayexpress_adf_info_url;
-		my $arrayDataTech=`curl -s $adfInfoUrl$arrayDesign`;
+		# Get technology from Array design file using BioStudies API. 
+		# NB: This is a bit of a hack, but it's the only way to get the technology
+		my $arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/$exptAccession`;
 
 		# Raw data filename.
 		my $arrayDataFile = File::Spec->catfile( $loadDir, $assay4atlas->get_array_data_file );
