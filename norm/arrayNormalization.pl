@@ -250,6 +250,7 @@ sub makeArraysToAssaysToFiles {
 		}
 
 		# Get technology from Array design file using peach API. 
+		#
 		my $adfInfoUrl = $atlasSiteConfig->get_arrayexpress_adf_info_url;
 		my $arrayDataTech=`curl -s $adfInfoUrl$arrayDesign`;
 
