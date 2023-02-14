@@ -249,8 +249,7 @@ sub makeArraysToAssaysToFiles {
 			next;
 		}
 
-		# Get technology from Array design file using BioStudies API. 
-		# NB: This is a bit of a hack, but it's the only way to get the technology
+		# Get technology from Array design file using biostudies API. 
 		my $arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/$exptAccession`;
 
 		# Raw data filename.
