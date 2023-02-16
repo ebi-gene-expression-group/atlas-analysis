@@ -250,6 +250,7 @@ sub makeArraysToAssaysToFiles {
 		}
 
 		# Get technology from Array design file using biostudies API. 
+		my $arrayDataTech = "";
 		if($exptAccession eq "E-CURD-50" || $exptAccession eq "E-CURD-51"){
    			print("BioStudies E-MTAB-800 was split into E-CURD-50 and E-CURD-51 \n");
 			my $arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/E-MTAB-800`;
@@ -270,12 +271,13 @@ sub makeArraysToAssaysToFiles {
 			else {
 				$logger->logdie( "Error $arrayDataTech not found for $arrayDesign " )
 			}
-			} elsif( $experimentType =~ /2colour/ ) {
-				$normalizationMode = "agil2";
-
+		} elsif( $experimentType =~ /2colour/ ) {
+			$normalizationMode = "agil2";
+			
 			# Remove label name from assay name which was added by Atlas::Magetab4Atlas.
 			$assayName =~ s/\.Cy\d$//;
 		}
+		print $normalizationMode;
 
 		# Add data to hash.
 		$H_arraysToAssaysToFiles->{ $arrayDesign }->{ $assayName } = $arrayDataFile;
