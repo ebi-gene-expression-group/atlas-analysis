@@ -283,9 +283,9 @@ sub make_arrays_to_factors_to_files {
 		my $arrayDataTech = "";
 		if($exptAccession eq "E-CURD-50" || $exptAccession eq "E-CURD-51"){
    			print("BioStudies E-MTAB-800 was split into E-CURD-50 and E-CURD-51 \n");
-			my $arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/E-MTAB-800`;
+			$arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/E-MTAB-800`;
 		}else{
-   			my $arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/$exptAccession`;
+   			$arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/$exptAccession`;
 		}
 
 		# For 1-colour array data, need to tell the R script whether this is
