@@ -280,6 +280,7 @@ sub make_arrays_to_factors_to_files {
 		my $arrayDataFile = File::Spec->catfile( $loadDir, $assay4atlas->get_array_data_file );
 
         	# Get technology from Array design file using BioStudies API 
+		my $arrayDataTech = "";
 		if($exptAccession eq "E-CURD-50" || $exptAccession eq "E-CURD-51"){
    			print("BioStudies E-MTAB-800 was split into E-CURD-50 and E-CURD-51 \n");
 			my $arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/E-MTAB-800`;
@@ -303,6 +304,7 @@ sub make_arrays_to_factors_to_files {
 		} elsif($experimentType eq "two-colour array") {
 			$experimentType = "agil2";
 		}
+		print $experimentType;
 
 		# Push all factor values onto an array.
 		my @factorValues = ();
