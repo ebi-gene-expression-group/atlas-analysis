@@ -279,8 +279,13 @@ sub make_arrays_to_factors_to_files {
 		# Get the raw data filename
 		my $arrayDataFile = File::Spec->catfile( $loadDir, $assay4atlas->get_array_data_file );
 
-        # Get technology from Array design file using BioStudies API 
-        my $arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/$exptAccession`;
+        	# Get technology from Array design file using BioStudies API 
+		if($exptAccession eq "E-CURD-50" || $exptAccession eq "E-CURD-51"){
+   			print("BioStudies E-MTAB-800 was split into E-CURD-50 and E-CURD-51 \n");
+			my $arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/E-MTAB-800`;
+		}else{
+   			my $arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/$exptAccession`;
+		}
 
 		# For 1-colour array data, need to tell the R script whether this is
 		# Affymetrix or Agilent (or other -- for now we only handle Affy and Agil
