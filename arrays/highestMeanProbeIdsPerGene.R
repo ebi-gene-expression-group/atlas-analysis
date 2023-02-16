@@ -18,7 +18,7 @@ if( !grepl( "-normalized-expressions.tsv.decorated.tmp$", expNormFileName ) ) {
 
 findHighestMeanProbePerGene<-function( expNormFileName ) {
    
-  fread(input=expNormFileName)->exprWAnnot
+  fread(input=expNormFileName, header=TRUE, check.names=FALSE)->exprWAnnot
   
   exprWAnnot$mean<-rowMeans(exprWAnnot[,4:ncol(exprWAnnot)])
   
