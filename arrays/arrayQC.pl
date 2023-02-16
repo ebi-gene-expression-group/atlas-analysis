@@ -284,6 +284,9 @@ sub make_arrays_to_factors_to_files {
 		if($exptAccession eq "E-CURD-50" || $exptAccession eq "E-CURD-51"){
    			print("BioStudies E-MTAB-800 was split into E-CURD-50 and E-CURD-51 \n");
 			$arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/E-MTAB-800`;
+		}elsif($exptAccession eq "E-CURD-61" || $exptAccession eq "E-CURD-63"){
+			print("Not included in bioStudies \n");
+			$arrayDataTech="Affymetrix";
 		}else{
    			$arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/$exptAccession`;
 		}
