@@ -86,6 +86,8 @@ unless( can_run( $islResultsScript ) ) {
 	);
 }
 
+$logger->info( "isl results script is $islResultsScript" );
+
 my $atlasXMLfile = "$expAcc-configuration.xml";
 
 unless( -r $atlasXMLfile ) {
