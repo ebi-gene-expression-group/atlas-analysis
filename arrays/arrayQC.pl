@@ -307,7 +307,7 @@ sub make_arrays_to_factors_to_files {
 		} elsif($experimentType eq "two-colour array") {
 			$experimentType = "agil2";
 		}
-		print $experimentType;
+		print $experimentType "\t$arrayDesign\n";
 
 		# Push all factor values onto an array.
 		my @factorValues = ();
