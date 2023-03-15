@@ -153,7 +153,7 @@ foreach my $row ( @resultsRows ) {
 	my @splitRow = split /\t/, $row;
 
 	my $runAcc = $splitRow[ 1 ];
-	my $qcStatus = $splitRow[ 5 ];
+	my $qcStatus = $splitRow[ 6 ];
 
     	# Save the run accession.
     	$qcRuns->{ $runAcc } = 1;
@@ -168,7 +168,7 @@ foreach my $row ( @resultsRows ) {
 
         # Also see if we got less than 70% reads mapped. If so, add them to
         # the hash to save them.
-        my $percentMappedReads = $splitRow[ 6 ];
+        my $percentMappedReads = $splitRow[ 7 ];
 
         if( $percentMappedReads < 70 ) {
 
