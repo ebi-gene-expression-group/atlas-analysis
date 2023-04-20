@@ -89,7 +89,7 @@ if(length(args) != 2) {
 }
 
 #read in UBERON ontologys
-obo_file = 'deconvolution-analysis/files/basic.obo' #download here: http://purl.obolibrary.org/obo/uberon/basic.obo
+obo_file = 'atlas-analysis/deconvolution/basic.obo' #download here: http://purl.obolibrary.org/obo/uberon/basic.obo
 propagate_relationships = c('is_a', 'part_of', 'relationship: part_of', 'synonym')
 # create UBRERON ontology object
 ont <- ontologyIndex::get_OBO(obo_file, propagate_relationships =propagate_relationships, 
