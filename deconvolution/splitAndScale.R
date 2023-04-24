@@ -51,10 +51,19 @@ fpkms = fpkms %>%
   select(unique(colnames(.)))
 
 sdrf = read.csv(sdrf_filename, sep = "\t", row.names = NULL)
-# remove rows with duplicated run ids in "Comment.ENA_RUN."
-sdrf = sdrf[!duplicated(sdrf[ , "Comment.ENA_RUN."]),]
-rownames(sdrf) = sdrf$Comment.ENA_RUN.
-sdrf$Comment.ENA_RUN. = NULL
+
+# Rename row names to values in "Comment.ENA_RUN." or "Comment..ENA_RUN." column
+if ("Comment.ENA_RUN." %in% colnames(sdrf)) {
+  sdrf = sdrf[!duplicated(sdrf[ , "Comment.ENA_RUN."]),]
+  rownames(sdrf) <- sdrf$Comment.ENA_RUN.
+} else if ("Comment..ENA_RUN." %in% colnames(sdrf)) {
+  sdrf = sdrf[!duplicated(sdrf[ , "Comment..ENA_RUN."]),]
+  rownames(sdrf) <- sdrf$Comment..ENA_RUN.
+} else {
+  stop("Neither 'Comment.ENA_RUN.' nor 'Comment..ENA_RUN.' column found in file.")
+}
+
+
 
 # split fpkms into runs per organism part
 tissue_splits = split_counts_per_tissue(fpkms, sdrf)
