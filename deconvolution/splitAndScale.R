@@ -88,7 +88,7 @@ for (i in seq_along(tissue_splits)){
     message(paste0("Scaling T with method: ", method))
 
     #Only get rows where there is at least one cell with a count
-    tissue_split <- tissue_split[rowSums(T) != 0,]
+    tissue_split <- tissue_split[rowSums(tissue_split) != 0,]
     print(head(tissue_split))
     #Same for cols
     tissue_split <- tissue_split[,colSums(tissue_split) != 0]
