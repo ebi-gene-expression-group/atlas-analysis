@@ -27,7 +27,7 @@ sc_reference <- readRDS(filename_sc_reference)
 
 
 #Toss out the genes tossed out in T normalization from C as well
-common <- intersect(rownames(sc_reference)), rownames(fpkms))
+common <- intersect(rownames(sc_reference), rownames(fpkms))
 sc_reference <- sc_reference[common,]
 fpkms  <- fpkms[common,]
 sc_reference <- as.matrix(sc_reference) #Explicit typecasting needed
