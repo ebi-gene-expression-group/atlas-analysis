@@ -13,9 +13,13 @@ split_counts_per_tissue <- function(bulk_counts, design_file){
     bulk_counts_splits = list()
     # get all tissues from sdrf file that are present in experiment
     organism_parts = as.character(unique(design_file$Characteristics.organism.part.))
-    #do a check on the sdrf file
-    if (length(organism_parts)== 0){
-        stop("sdrf file does not include collum Characteristics[organism.part]. Make sure organism part names are
+  
+    if (length(organism_parts)== 0){   
+        organism_parts = as.character(unique(design_file$Characteristics..organism.part.))
+    }
+    #do a check on the sdrf file   
+    if (length(organism_parts)== 0){   
+        stop("sdrf file does not include collum Characteristics[organism.part] or Characteristics [organism.part]. Make sure organism part names are
             stored in this collumn")
     }
 
