@@ -72,6 +72,7 @@ if ("Comment.ENA_RUN." %in% colnames(sdrf)) {
 
 # split fpkms into runs per organism part
 tissue_splits = split_counts_per_tissue(fpkms, sdrf)
+print(tissue_splits)
 
 # set methods to scale sdrf counts
 method <- 'TMM'
