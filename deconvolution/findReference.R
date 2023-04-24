@@ -83,13 +83,14 @@ find_reference = function(uberon_id_for_deconv, sig_dir, ont){
 args <- commandArgs(trailingOnly = TRUE)
 tissue = args[1]
 deconvolution_reference_dir = args[2]
+workflow_base_dir = args[3]
 
-if(length(args) != 2) {
+if(length(args) != 3) {
    stop("Not correct number of arguments. Please supply two arguments")
 }
 
 #read in UBERON ontologys
-obo_file = 'atlas-analysis/deconvolution/basic.obo' #download here: http://purl.obolibrary.org/obo/uberon/basic.obo
+obo_file = paste0(workflow_base_dir, '/atlas-analysis/deconvolution/basic.obo') #download here: http://purl.obolibrary.org/obo/uberon/basic.obo
 propagate_relationships = c('is_a', 'part_of', 'relationship: part_of', 'synonym')
 # create UBRERON ontology object
 ont <- ontologyIndex::get_OBO(obo_file, propagate_relationships =propagate_relationships, 
