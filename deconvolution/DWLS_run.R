@@ -17,7 +17,7 @@ if(length(args) != 6) {
 }
 
 filename_fpkms <- args[1]
-filename_C0 <- args[2]
+filename_sc_reference <- args[2]
 filename_phenData <- args[3]
 plan('multisession', workers = as.numeric(args[4])) #Paralellism
 filename_O <- args[5]
