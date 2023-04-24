@@ -72,7 +72,6 @@ if ("Comment.ENA_RUN." %in% colnames(sdrf)) {
 
 # split fpkms into runs per organism part
 tissue_splits = split_counts_per_tissue(fpkms, sdrf)
-print(tissue_splits)
 
 # set methods to scale sdrf counts
 method <- 'TMM'
@@ -85,15 +84,15 @@ for (i in seq_along(tissue_splits)){
     #Preprocess matrices to avoid errorshaving multiple snakefiles in one directory
     tissue = names(tissue_splits)[i]
     tissue_split = tissue_splits[[tissue]]
-
+    print(head(tissue_split))
     message(paste0("Scaling T with method: ", method))
 
     #Only get rows where there is at least one cell with a count
     tissue_split <- tissue_split[rowSums(T) != 0,]
-
+    print(head(tissue_split))
     #Same for cols
     tissue_split <- tissue_split[,colSums(tissue_split) != 0]
-
+    print(head(tissue_split))
     #Only keep rows with different counts after transformations
     tissue_split <- tissue_split[!apply(tissue_split, 1, function(x) var(x) == 0),]
 
