@@ -15,7 +15,8 @@ split_counts_per_tissue <- function(bulk_counts, design_file){
     organism_parts = as.character(unique(design_file$Characteristics.organism.part.))
   
     if (length(organism_parts)== 0){   
-        organism_parts = as.character(unique(design_file$Characteristics..organism.part.))
+        organism_parts <- as.character(unique(design_file$Characteristics..organism.part.))
+        design_file$Characteristics.organism.part. <- design_file$Characteristics..organism.part.
     }
     #do a check on the sdrf file   
     if (length(organism_parts)== 0){   
