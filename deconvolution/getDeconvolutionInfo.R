@@ -10,7 +10,7 @@ accession <- args[2]
 deconv_reference <- args[3]
 
 # Define file name and data to be appended
-file_name <- paste0(accession, "deconvolution_info.tsv")
+file_name <- paste0(accession, "-deconvolution_info.tsv")
 new_data <- data.frame(
   task_completed = "YES",
   accession = accession,
