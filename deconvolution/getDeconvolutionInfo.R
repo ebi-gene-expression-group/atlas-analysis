@@ -15,8 +15,8 @@ new_data <- data.frame(
   task_completed = "YES",
   accession = accession,
   tissue = tissue,
-  deconv_reference = basename(deconv_reference),
-  time = format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  deconv_reference = basename(deconv_reference)
+  #time = format(Sys.time(), "%Y-%m-%d %H:%M:%S")
 )
 
 # Check if file exists
