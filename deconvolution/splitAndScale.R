@@ -2,29 +2,30 @@
 
 ## Split FPKMs into runs by organism part and
 ## Matrix scaling script for T  matrices (@zgr2788)
-##
 
-suppressMessages(library(Matrix))
-suppressMessages(library(future))
-suppressMessages(library(dplyr))
+suppressMessages(library("Matrix"))
+suppressMessages(library("future"))
+suppressMessages(library("dplyr"))
 
 
 split_counts_per_tissue <- function(bulk_counts, design_file){
     bulk_counts_splits = list()
     # get all tissues from sdrf file that are present in experiment
     organism_parts <- as.character(unique(design_file$Characteristics.organism.part.))
-  
-    if (length(organism_parts) == 0){   
+    
+    # do a check if organism_parts is not empty 
+    if (length(organism_parts) == 0){  
+        # try a different column from the sdrf file
         organism_parts <- as.character(unique(design_file$Characteristics..organism.part.))
         design_file$Characteristics.organism.part. <- design_file$Characteristics..organism.part.
-    }
-    #do a check on the sdrf file   
-    if (length(organism_parts) == 0){   
-        stop(paste("sdrf file does not include collum Characteristics[organism.part] or",
-                   "Characteristics [organism.part]. Make sure organism part names are",
-                   "stored in this collumn"))
-    }
-
+        # check if organism_parts is still empty and raise an error if it is 
+        if (length(organism_parts) == 0){
+            stop(paste("sdrf file does not include collum Characteristics[organism.part] or",
+                       "Characteristics [organism.part]. Make sure organism part names are",
+                       "stored in this collumn"))
+        } else {
+            print('sdrf file contains columm with organims parts')
+     }   
     tissue_dict = c()
     for (organism_part in organism_parts){
         # get runs that belong to tissue
@@ -96,7 +97,8 @@ for (i in seq_along(tissue_splits)){
     "TMM" = {
         suppressMessages(library(edgeR))
 
-        tissue_split <- edgeR::DGEList(counts = tissue_split, group = colnames(tissue_split))
+        tissue_split <- edgeR::DGEList(counts = tissue_split, 
+                                       group = colnames(tissue_split))
         tissue_split <- edgeR::calcNormFactors(tissue_split, method = "TMM")
         tissue_split <- edgeR::cpm(tissue_split)
     }
@@ -111,5 +113,7 @@ for (i in seq_along(tissue_splits)){
     tissue_split <- tissue_split[!apply(tissue_split, 1, function(x) var(x) == 0),]
 
     # Save transformed tables
-    saveRDS(tissue_split, paste0('Tissue_splits/', exp_name, '/', exp_name, '-', gsub(' ', '_', tissue), '-fpkms_scaled.rds'))
+    saveRDS(tissue_split, 
+            paste0('Tissue_splits/', exp_name, '/', exp_name, '-', 
+                   gsub(' ', '_', tissue), '-fpkms_scaled.rds'))
 }
