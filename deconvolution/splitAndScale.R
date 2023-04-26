@@ -85,10 +85,8 @@ for (i in seq_along(tissue_splits)){
 
     # Only get rows where there is at least one cell with a count
     tissue_split <- tissue_split[rowSums(tissue_split) != 0,]
-    print(head(tissue_split))
     # Same for cols
     tissue_split <- tissue_split[,colSums(tissue_split) != 0]
-    print(head(tissue_split))
     # Only keep rows with different counts after transformations
     tissue_split <- tissue_split[!apply(tissue_split, 1, function(x) var(x) == 0),]
 
