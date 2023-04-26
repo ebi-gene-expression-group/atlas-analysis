@@ -81,7 +81,7 @@ for (i in seq_along(tissue_splits)){
     tissue <- names(tissue_splits)[i]
     tissue_split <- tissue_splits[[tissue]]
   
-    message(paste0("Scaling T with method: ", method))
+    message(paste0("Scaling ", tisssue, " fpkms with method: ", method))
 
     # Only get rows where there is at least one cell with a count
     tissue_split <- tissue_split[rowSums(tissue_split) != 0,]
