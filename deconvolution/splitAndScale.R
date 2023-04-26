@@ -25,7 +25,8 @@ split_counts_per_tissue <- function(bulk_counts, design_file){
                        "stored in this collumn"))
         } else {
             print('sdrf file contains columm with organims parts')
-     }   
+        }   
+    }
     tissue_dict = c()
     for (organism_part in organism_parts){
         # get runs that belong to tissue
