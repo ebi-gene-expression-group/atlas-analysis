@@ -12,6 +12,7 @@ workflow_basedir=$6
 export DECONV_STATUS="deconvolution successful"
 
 # Run FARDEEP
+echo "start running FARDEEP"
 fardeep_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/FARDEEP_run.R \
   Tissue_splits/${accession}/${accession}-${tissue}-fpkms_scaled.rds $sc_reference_C1 \
   Output/${accession}-${tissue}_res_FARDEEP.rds 2>&1) || { 
@@ -23,6 +24,7 @@ fardeep_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/FARDEE
 mkdir -p scratch/${accession}/${accession}-${tissue}_scratch &
 
 # Run DWL (that takes some time...)
+echo "start running DWLS, that takes some time.."
 dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R \
   Tissue_splits/${accession}/${accession}-${tissue}-fpkms_scaled.rds \
   $sc_reference_C0 $sc_reference_phenData 32 \
@@ -34,6 +36,7 @@ dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R
 }
 
 # Run EpiDISH
+echo "started running EpiDISH"
 epidish_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/EpiDISH_run.R \
   Tissue_splits/${accession}/${accession}-${tissue}-fpkms_scaled.rds \
   $sc_reference_C1 \
