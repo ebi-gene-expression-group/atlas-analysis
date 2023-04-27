@@ -23,7 +23,8 @@ fardeep_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/FARDEE
     export DECONV_STATUS="FARDEEP failed"
 }
 
-# Run DWL in the background (that takes some time...)
+mkdir -p scratch/${accession}/${accession}-${tissue}_scratch
+# Run DWLS in the background (that takes some time...)
 echo "start running DWLS, that takes some time.."
 dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R \
   Tissue_splits/${accession}/${accession}-${tissue}-fpkms_scaled.rds \
