@@ -49,10 +49,10 @@ tissue = sub("[']", "[']", tissue)
 #Get files as list 
 #only select DWLS, EpiDISH and FARDEEP proportions for consensus
 #filenames <- list.files("Output/", pattern="DWLS|EpiDISH|FARDEEP") %>% lapply(., function(x) { x <- paste0("Output/", x) }) %>% lapply(., function(x) { grep(sampleName, x, value = TRUE) }) %>% .[lengths(.)!=0] %>% as.character(.)
-filenames <- paste0('Output/',list.files("Output/", pattern=paste0(sampleName,'-', tissue)))
+filenames <- paste0('Output/', sampleName , '/',list.files("Output/", pattern=paste0(sampleName,'-', tissue)))
 print(filenames)
 files <- lapply(filenames, readRDS)
-names(files) <- lapply(filenames, function(x) gsub("Output/.*res_(.*).rds", "\\1", x))
+names(files) <- lapply(basename(filenames), function(x) gsub(".*res_(.*).rds", "\\1", x))
 
 #Reorder files in case this was without proportions
 #files <- lapply(files, function(x) x[order(match(rownames(x), rownames(files[[1]]))),])
