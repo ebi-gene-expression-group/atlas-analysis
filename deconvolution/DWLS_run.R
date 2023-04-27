@@ -7,8 +7,6 @@
 suppressMessages(library(future.apply))
 suppressMessages(library(DWLS))
 
-print('Started running DWLS. That takes some time, be patient ...')
-
 #Get args and load files
 args <- commandArgs(trailingOnly = TRUE)
 
