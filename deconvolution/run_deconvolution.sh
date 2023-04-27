@@ -30,9 +30,9 @@ dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R
   $sc_reference_C0 $sc_reference_phenData 32 \
   Output/${accession}-${tissue}_res_DWLS.rds \
   scratch/${accession}/${accession}-${tissue}_scratch 2>&1) || { 
-    echo "DWL execution failed with error:" >&2 
+    echo "DWLS execution failed with error:" >&2 
     echo "$dwl_output" >&2 
-    export DECONV_STATUS="DWL failed"
+    export DECONV_STATUS="DWLS failed"
 }
 
 # Run EpiDISH
