@@ -32,7 +32,7 @@ version_info <- data.frame(
                 'part with organism part specific scRNA-seq as reference.',
                 'For reference creation see',
                 '<a href=https://github.com/ebi-gene-expression-group/atlas-deconvolution-references>atlas-deconvolution-references</a>.',
-                'Cell type predictions displayed are averages of results from EpiDISH (version: ', as.character(epidish_version),'),'
+                'Cell type predictions displayed are averages of results from EpiDISH (version: ', as.character(epidish_version),'),',
                 'FARDEEP (version: ',  as.character(fardeep_version), ') and DWLS (version: ',  as.character(dwls_version), ')')
 )
 # append the version_info data frame as a new line to the analysis_methods data frame
