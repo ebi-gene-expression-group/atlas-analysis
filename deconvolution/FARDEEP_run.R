@@ -3,11 +3,10 @@
 ##
 ## @zgr2788
 
-print('Started running FARDEEP ...')
 #Load FARDEEP
 if (!require("FARDEEP", quietly = TRUE))
     install.packages("FARDEEP", repos='http://cran.us.r-project.org')
-suppressMessages(library(FARDEEP))
+suppressMessages(library("FARDEEP"))
 
 #Get args and load files
 args <- commandArgs(trailingOnly = TRUE)
@@ -40,5 +39,3 @@ result <- apply(result,2,function(x) x/sum(x)) #explicit STO constraint
 
 #Save and exit
 saveRDS(result, file=filename_O)
-
-print('FARDEEP run succesfully completed.')
