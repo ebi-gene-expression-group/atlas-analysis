@@ -4,12 +4,7 @@
 ##
 ## @zgr2788
 
-print('Started running EpiDISH ...')
-#Load EpiDISH
-#install.packages('energy',repos='http://cran.us.r-project.org')
-#suppressMessages(library(energy))
-suppressMessages(library(EpiDISH))
-
+suppressMessages(library('EpiDISH'))
 
 #Get args and load files
 args <- commandArgs(trailingOnly = TRUE)
@@ -40,4 +35,3 @@ results <- apply(results, 2,function(x) x/sum(x)) #explicit STO constraint
 
 #Save and exit
 saveRDS(results, file=filename_O)
-print('EpiDISH run succesfully completed.')
