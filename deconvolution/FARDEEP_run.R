@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-## FARDEEP deconv script
+## script to run deconvolution with FARDEEP
 ##
 ## @zgr2788
 
