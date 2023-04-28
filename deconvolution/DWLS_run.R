@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-## DWLS deconv script
+## script to run deconvolution with DWLS
 ##
 ## @zgr2788 
 
