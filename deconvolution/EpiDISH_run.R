@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
 
-## EpiDISH deconv script
+## script to run deconvolution with EpiDISH
 ##
 ## @zgr2788
 
 suppressMessages(library('EpiDISH'))
 
-#Get args and load files
+# Get args and load files
 args <- commandArgs(trailingOnly = TRUE)
 
 if(length(args) != 3) {
@@ -21,17 +21,16 @@ fpkms <- readRDS(filename_fpkms)
 sc_reference <- readRDS(filename_sc_reference)
 
 
-#Toss out the genes tossed out in T normalization from C as well
+# Toss out the genes tossed out in T normalization from C as well
 common <- intersect(rownames(sc_reference), rownames(fpkms))
 sc_reference <- sc_reference[common,]
 fpkms  <- fpkms[common,]
 sc_reference <- as.matrix(sc_reference) #Explicit typecasting needed
 
-#Get res and reorder the matrices for correspondence
+# Get res and reorder the matrices for correspondence
 results <- t(EpiDISH::epidish(beta.m = fpkms, ref.m = sc_reference, method = "RPC")$estF)
 results <- apply(results,2,function(x) ifelse(x < 0, 0, x)) #explicit non-negativity constraint
 results <- apply(results, 2,function(x) x/sum(x)) #explicit STO constraint
-#if (filename_P != 'Modules/Psuedobulk/dummy_props.rds') res <- res[order(match(rownames(res), rownames(P))),]
 
-#Save and exit
+# Save and exit
 saveRDS(results, file=filename_O)
