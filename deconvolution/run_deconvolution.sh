@@ -22,6 +22,7 @@ fardeep_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/FARDEE
     echo "FARDEEP execution failed with error:" >&2 
     echo "$fardeep_output" >&2 
     export DECONV_STATUS="FARDEEP failed"
+    exit 0
 }
 
 mkdir -p scratch/${accession}/${accession}-${tissue}_scratch
@@ -37,6 +38,7 @@ dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R
     echo "DWLS execution failed with error:" >&2 
     echo "$dwl_output" >&2 
     export DECONV_STATUS="DWLS failed"
+    exit 0
 }
 
 # Run EpiDISH in the background
@@ -50,6 +52,7 @@ epidish_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/EpiDIS
     echo "EpiDISH execution failed with error:" >&2 
     echo "$epidish_output" >&2 
     export DECONV_STATUS="EpiDISH failed"
+    exit 0
 }
 
 # Wait for all background processes to finish
