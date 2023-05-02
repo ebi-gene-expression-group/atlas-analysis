@@ -12,6 +12,8 @@ workflow_basedir=$6
 # Set default status to success
 export DECONV_STATUS="deconvolution successful"
 
+mkdir -p scratch/${accession}/${accession}-${tissue}_scratch
+
 # Run FARDEEP in the background
 echo "start running FARDEEP"
 fardeep_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/FARDEEP_run.R \
@@ -25,7 +27,6 @@ fardeep_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/FARDEE
     exit 0
 }
 
-mkdir -p scratch/${accession}/${accession}-${tissue}_scratch
 # Run DWLS in the background (that takes some time...)
 echo "start running DWLS, that takes some time.."
 dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R \
