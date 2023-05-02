@@ -23,7 +23,7 @@ sdrf = read.csv(sdrf, sep = "\t", row.names = NULL)
 # convert "Comment.ENA_RUN." to "Comment..ENA_RUN."
 colnames(sdrf) = gsub("[[:punct:]]+", '.', colnames(sdrf))
 # remove rows with duplicated run ids in "Comment.ENA_RUN."
-sdrf = sdrf[!duplicated(sdrf[ , "Comment.ENA_RUN."]),]
+sdrf = sdrf[!duplicated(sdrf[ , "Comment.ENA.RUN."]),]
 rownames(sdrf) = sdrf$Comment.ENA_RUN.
 sdrf$Comment.ENA_RUN. = NULL
 
