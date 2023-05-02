@@ -24,8 +24,8 @@ sdrf = read.csv(sdrf, sep = "\t", row.names = NULL)
 colnames(sdrf) = gsub("[[:punct:]]+", '.', colnames(sdrf))
 # remove rows with duplicated run ids in "Comment.ENA_RUN."
 sdrf = sdrf[!duplicated(sdrf[ , "Comment.ENA.RUN."]),]
-rownames(sdrf) = sdrf$Comment.ENA_RUN.
-sdrf$Comment.ENA_RUN. = NULL
+rownames(sdrf) = sdrf$Comment.ENA.RUN.
+sdrf$Comment.ENA.RUN. = NULL
 
 #in case whitespace in tissue name was replaced by '_' revert that
 tissue = gsub('_', ' ', tissue)
