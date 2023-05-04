@@ -41,7 +41,7 @@ if (!file.exists(output)) {
                         output, sep = "\t", row.names = FALSE, col.names = TRUE)
 }
 # check if all three deconvolution results are there
-filenames <- paste0('Output/',accession ,list.files(paste0("Output/", accession), pattern=paste0(accession,'-', tissue)))
+filenames <- paste0('Output/',accession , '/', list.files(paste0("Output/", accession), pattern=paste0(accession,'-', tissue)))
 # check if reference for deconvolution was found... 
 if (length(filenames) != 3){ #...if not just append rund ids
     # get the run ids from the runs were we dont have deconvolution results
