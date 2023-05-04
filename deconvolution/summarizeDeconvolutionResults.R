@@ -85,7 +85,7 @@ if (length(filenames) != 3){ #...if not just append rund ids
   pivoted_mean = pivot_longer(prop, cols = !CL_term, names_to = "ENA_RUN", values_to = "proportion")
   pivoted_sd = pivot_longer(list.sd, cols = !CL_term, names_to = "ENA_RUN", values_to = "sd")
 
-  MergedDF <- merge(pivoted_sd, pivoted_mean, by =c("ENA_RUN", 'CL_id'))
+  MergedDF <- merge(pivoted_sd, pivoted_mean, by =c("ENA_RUN", 'CL_term'))
   MergedDF$organism_part = tissue
   MergedDF$sc_reference = sc_reference
   
