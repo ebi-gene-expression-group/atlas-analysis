@@ -33,7 +33,7 @@ tissue = gsub('_', ' ', tissue)
 # initialize output file if it does not exist yet
 if (!file.exists(output)) {
   write.table(data.frame(ENA_RUN = character(),
-                        CL_id = character(),
+                        CL_term = character(),
                         sd = numeric(),
                         proportion = numeric(),
                         organism_part = character(),
@@ -47,7 +47,7 @@ if (length(filenames) != 3){ #...if not just append rund ids
     # get the run ids from the runs were we dont have deconvolution results
     runs = rownames(sdrf[sdrf$Characteristics.organism.part. == tissue, ])
     MergedDF = data.frame(ENA_RUN =runs,
-                          CL_id = character(length(runs)),
+                          CL_term = character(length(runs)),
                           sd = numeric(length(runs)),
                           proportion = numeric(length(runs)),
                           organism_part = tissue,
@@ -77,13 +77,13 @@ if (length(filenames) != 3){ #...if not just append rund ids
   sd_norm = rowMeans(list.sd)/rowMeans(list.mean)
   rownames(list.sd) = rownames(prop)
 
-  list.sd$CL_id = rownames(prop)
+  list.sd$CL_term = rownames(prop)
 
   # pivot table
   prop = as.data.frame(prop)
-  prop$CL_id = rownames(prop)
-  pivoted_mean = pivot_longer(prop, cols = !CL_id, names_to = "ENA_RUN", values_to = "proportion")
-  pivoted_sd = pivot_longer(list.sd, cols = !CL_id, names_to = "ENA_RUN", values_to = "sd")
+  prop$CL_term = rownames(prop)
+  pivoted_mean = pivot_longer(prop, cols = !CL_term, names_to = "ENA_RUN", values_to = "proportion")
+  pivoted_sd = pivot_longer(list.sd, cols = !CL_term, names_to = "ENA_RUN", values_to = "sd")
 
   MergedDF <- merge(pivoted_sd, pivoted_mean, by =c("ENA_RUN", 'CL_id'))
   MergedDF$organism_part = tissue
