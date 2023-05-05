@@ -39,4 +39,4 @@ version_info <- data.frame(
 analysis_methods <- rbind(analysis_methods, version_info)
 
 # write the updated analysis_methods data frame to the input file with a .updated.tsv extension
-write.table(analysis_methods, file = paste0(accession, '-analysis-methods.tsv') , sep = "\t", row.names = FALSE, col.names = FALSE)
+write.table(analysis_methods, file = methods_file, sep = "\t", row.names = FALSE, col.names = FALSE)
