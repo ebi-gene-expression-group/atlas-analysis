@@ -34,7 +34,9 @@ split_counts_per_tissue <- function(bulk_counts, design_file){
         tissue_runs = unique(rownames(tissue_runs))
    
         # extract column from count file for each tissue
-        bulk_counts_split = bulk_counts[,colnames(bulk_counts) %in% tissue_runs]
+        bulk_counts_split = as.data.frame(bulk_counts[,colnames(bulk_counts) %in% tissue_runs])
+        rownames(bulk_counts_split) = rownames(bulk_counts)
+        colnames(bulk_counts_split) = tissue_runs     
         bulk_counts_splits = append(bulk_counts_splits, list(bulk_counts_split))
     
     }
