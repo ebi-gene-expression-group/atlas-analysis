@@ -34,9 +34,7 @@ split_counts_per_tissue <- function(bulk_counts, design_file){
         tissue_runs = unique(rownames(tissue_runs))
    
         # extract column from count file for each tissue
-        bulk_counts_split = as.data.frame(bulk_counts[,colnames(bulk_counts) %in% tissue_runs])
-        rownames(bulk_counts_split) = rownames(bulk_counts)
-        colnames(bulk_counts_split) = tissue_runs     
+        bulk_counts_split = bulk_counts[,colnames(bulk_counts) %in% tissue_runs, drop = FALSE] 
         bulk_counts_splits = append(bulk_counts_splits, list(bulk_counts_split))
     
     }
@@ -86,11 +84,11 @@ for (i in seq_along(tissue_splits)){
     message(paste0("Scaling ", tissue, " fpkms with method: ", method))
 
     # Only get rows where there is at least one cell with a count
-    tissue_split <- tissue_split[rowSums(tissue_split) != 0,]
+    tissue_split <- tissue_split[rowSums(tissue_split) != 0, drop = FALSE]
     # Same for cols
-    tissue_split <- tissue_split[,colSums(tissue_split) != 0]
+    tissue_split <- tissue_split[,colSums(tissue_split) != 0, drop = FALSE]
     # Only keep rows with different counts after transformations
-    tissue_split <- tissue_split[!apply(tissue_split, 1, function(x) var(x) == 0),]
+    tissue_split <- tissue_split[!apply(tissue_split, 1, function(x) var(x) == 0), , drop = FALSE]
 
     # Switch modes
     switch(method,
@@ -105,13 +103,13 @@ for (i in seq_along(tissue_splits)){
     }
     )
     # Only get rows where there is at least one cell with a count
-    tissue_split <- tissue_split[rowSums(tissue_split) != 0,]
+    tissue_split <- tissue_split[rowSums(tissue_split) != 0, , drop = FALSE]
 
     # Same for cols
-    tissue_split <- tissue_split[,colSums(tissue_split) != 0]
+    tissue_split <- tissue_split[,colSums(tissue_split) != 0, drop = FALSE]
 
     # Only keep rows with different counts after transformations
-    tissue_split <- tissue_split[!apply(tissue_split, 1, function(x) var(x) == 0),]
+    tissue_split <- tissue_split[!apply(tissue_split, 1, function(x) var(x) == 0), , drop = FALSE]
 
     # Save transformed tables
     saveRDS(tissue_split, 
