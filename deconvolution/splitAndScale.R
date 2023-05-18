@@ -84,7 +84,7 @@ for (i in seq_along(tissue_splits)){
     message(paste0("Scaling ", tissue, " fpkms with method: ", method))
 
     # Only get rows where there is at least one cell with a count
-    tissue_split <- tissue_split[rowSums(tissue_split) != 0, drop = FALSE]
+    tissue_split <- tissue_split[rowSums(tissue_split) != 0, , drop = FALSE]
     # Same for cols
     tissue_split <- tissue_split[,colSums(tissue_split) != 0, drop = FALSE]
     # Only keep rows with different counts after transformations
