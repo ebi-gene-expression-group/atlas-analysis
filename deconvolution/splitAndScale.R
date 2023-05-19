@@ -82,14 +82,6 @@ for (i in seq_along(tissue_splits)){
     tissue_split <- tissue_splits[[tissue]]
   
     message(paste0("Scaling ", tissue, " fpkms with method: ", method))
-
-    # Only get rows where there is at least one cell with a count
-    tissue_split <- tissue_split[rowSums(tissue_split) != 0, , drop = FALSE]
-    # Same for cols
-    tissue_split <- tissue_split[,colSums(tissue_split) != 0, drop = FALSE]
-    # Only keep rows with different counts after transformations
-    tissue_split <- tissue_split[!apply(tissue_split, 1, function(x) var(x) == 0), , drop = FALSE]
-
     # Switch modes
     switch(method,
     
@@ -102,15 +94,7 @@ for (i in seq_along(tissue_splits)){
         tissue_split <- edgeR::cpm(tissue_split)
     }
     )
-    # Only get rows where there is at least one cell with a count
-    tissue_split <- tissue_split[rowSums(tissue_split) != 0, , drop = FALSE]
-
-    # Same for cols
-    tissue_split <- tissue_split[,colSums(tissue_split) != 0, drop = FALSE]
-
-    # Only keep rows with different counts after transformations
-    tissue_split <- tissue_split[!apply(tissue_split, 1, function(x) var(x) == 0), , drop = FALSE]
-
+    
     # Save transformed tables
     saveRDS(tissue_split, 
             paste0('Tissue_splits/', exp_name, '/', exp_name, '-', 
