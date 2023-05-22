@@ -28,7 +28,7 @@ rownames(sdrf) = sdrf$Comment.ENA.RUN.
 sdrf$Comment.ENA.RUN. = NULL
 
 #in case whitespace in tissue name was replaced by '_' revert that
-tissue = gsub('_', ' ', tissue)
+tissue_name = gsub('_', ' ', tissue)
 
 # initialize output file if it does not exist yet
 if (!file.exists(output)) {
@@ -45,7 +45,7 @@ filenames <- paste0('Output/',accession , '/', list.files(paste0("Output/", acce
 # check if reference for deconvolution was found... 
 if (length(filenames) != 3){ #...if not just append rund ids
     # get the run ids from the runs were we dont have deconvolution results
-    runs = rownames(sdrf[sdrf$Characteristics.organism.part. == tissue, ])
+    runs = rownames(sdrf[sdrf$Characteristics.organism.part. == tissue_name, ])
     MergedDF = data.frame(ENA_RUN =runs,
                           CL_term = character(length(runs)),
                           sd = numeric(length(runs)),
