@@ -24,10 +24,10 @@ sc_reference <- readRDS(filename_sc_reference)
 
 #Toss out the genes tossed out in T normalization from C as well
 common <- intersect(rownames(sc_reference), rownames(fpkms))
-sc_reference <- sc_reference[common, , drop = FALSE]
-fpkms  <- fpkms[common, , drop = FALSE]
+sc_reference <- sc_reference[common, ]
+fpkms  <- fpkms[common, ]
 #Get results and reorder the matrices for correspondence
-
+print(length(common)) # remove later
 result <- fardeep(sc_reference, fpkms, nn = TRUE, intercept = TRUE, permn = 10, QN = FALSE)
 
 p_val = result$pval
