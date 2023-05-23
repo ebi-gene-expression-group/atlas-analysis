@@ -54,7 +54,7 @@ fardeep_version <- packageVersion("FARDEEP")
 dwls_version <- packageVersion("DWLS")
 
 # get tissue ontology
-obo_file = paste0(workflow_base_dir, 'atlas-analysis/deconvolution/basic.obo') #download here: http://purl.obolibrary.org/obo/uberon/basic.obo
+obo_file = paste0(workflow_base_dir, '/atlas-analysis/deconvolution/basic.obo') #download here: http://purl.obolibrary.org/obo/uberon/basic.obo
 propagate_relationships = c('is_a', 'part_of', 'relationship: part_of', 'synonym')
 # create UBRERON ontology object
 ont <- ontologyIndex::get_OBO(obo_file, 
