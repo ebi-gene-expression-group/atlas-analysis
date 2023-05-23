@@ -1,20 +1,48 @@
 #!/usr/bin/env Rscript
-### script to append analysis methods file with information about deconvolution analysis
+### script to append analysis methods file with information (tools and references) about deconvolution analysis
 
 suppressMessages(library('EpiDISH'))
 suppressMessages(library('DWLS'))
 suppressMessages(library('FARDEEP'))
+suppressMessages(library(scOntoMatch))
+suppressMessages(library(ontologyIndex))
+suppressMessages(library('stringr'))
+
+
+# Function to extract UBERON id from filename
+extract_id_from_file = function(filename){
+    
+    base = basename(filename)
+    uberon_id = str_extract(base, "UBERON_\\d{7}")
+    uberon_id = sub("_", ":", uberon_id)
+    return(uberon_id)
+}
+
+' Function to extract accession from scxa reference
+extract_accession <- function(string) {
+  pattern <- "(?<=_)[A-Z]-[A-Z]+-[0-9]+"
+  matches <- regmatches(string, regexpr(pattern, string, perl = TRUE))
+  if (length(matches) > 0) {
+    return(matches)
+    } else {
+    return(NA)
+    }
+  }
 
 args <- commandArgs(trailingOnly = TRUE)
 
-if(length(args) != 2) {
-   stop("Not correct number of arguments. Please supply two arguments")
+if(length(args) != 4) {
+   stop("Not correct number of arguments. Please supply four arguments")
 }
 
-methods_file = args[1]
-accession = args[2]
+methods_file <- args[1]
+accession <- args[2]
+tissue <- args[3]
+deconv_reference <- args[4]
+workflow_base_dir <- args[5]
+
 # read existing analysis methods file if it exits
-# Load Seurat object
+
 if (!file.exists(methods_file)) {
   stop("Methods file not found.")
 }
@@ -24,6 +52,14 @@ analysis_methods <- read.csv(methods_file, sep = "\t", header = F)
 epidish_version <- packageVersion("EpiDISH")
 fardeep_version <- packageVersion("FARDEEP")
 dwls_version <- packageVersion("DWLS")
+
+# get tissue ontology
+obo_file = paste0(workflow_base_dir, 'atlas-analysis/deconvolution/basic.obo') #download here: http://purl.obolibrary.org/obo/uberon/basic.obo
+propagate_relationships = c('is_a', 'part_of', 'relationship: part_of', 'synonym')
+# create UBRERON ontology object
+ont <- ontologyIndex::get_OBO(obo_file, 
+                              propagate_relationships =propagate_relationships, 
+                              extract_tags = 'everything')
 
 # create a new data frame with the package version information
 version_info <- data.frame(
@@ -35,8 +71,34 @@ version_info <- data.frame(
                 'Cell type predictions displayed are averages of results from EpiDISH (version: ', as.character(epidish_version),'),',
                 'FARDEEP (version: ',  as.character(fardeep_version), ') and DWLS (version: ',  as.character(dwls_version), ')')
 )
-# append the version_info data frame as a new line to the analysis_methods data frame
-analysis_methods <- rbind(analysis_methods, version_info)
+# append the version_info data frame as a new line to the analysis_methods data frame if it is not already in there
+# Check if the row already exists in the DataFrame
+row_exists <- identical(which(apply(analysis_methods, 1, function(row) all(row == unlist(version_info)))), 1)
+
+# Append the DataFrame with the new row if it doesn't already exist
+if (!row_exists) {
+  analysis_methods <- rbind(analysis_methods, version_info)
+}
+
+scxa_url = "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession</a>."
+
+# add information about references 
+if (deconv_reference == "noref") {
+    reference_info <- paste("No suitable reference for deconvolution was found for", tissue)
+  } else {
+    deconv_tissue = getOntologyName(ont = ont, 
+                                    onto_id = extract_id_from_file(deconv_reference))
+    reference_info <- paste("Reference used for", tissue, "deconvolution:", deconv_tissue, "from", 
+                              sub('accession',  extract_accession(deconv_reference), scxa_url))
+  }
+  # create a new data frame with the reference information
+  tissue_info <- data.frame(V1 = "",
+                            V2 = reference_info)
+                              
+  
+# append the tissue_info data frame as a new line to the analysis_methods data frame
+analysis_methods <- rbind(analysis_methods, tissue_info)
+
 
 # write the updated analysis_methods data frame to the input file with a .updated.tsv extension
 write.table(analysis_methods, file = methods_file, sep = "\t", row.names = FALSE, col.names = FALSE)
