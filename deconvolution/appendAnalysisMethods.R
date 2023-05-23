@@ -18,7 +18,7 @@ extract_id_from_file = function(filename){
     return(uberon_id)
 }
 
-' Function to extract accession from scxa reference
+# Function to extract accession from scxa reference
 extract_accession <- function(string) {
   pattern <- "(?<=_)[A-Z]-[A-Z]+-[0-9]+"
   matches <- regmatches(string, regexpr(pattern, string, perl = TRUE))
