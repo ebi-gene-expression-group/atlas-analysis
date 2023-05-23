@@ -76,7 +76,8 @@ version_info <- data.frame(
 row_exists <- identical(which(apply(analysis_methods, 1, function(row) all(row == unlist(version_info)))), 1)
 
 # Append the DataFrame with the new row if it doesn't already exist
-if (!row_exists) {
+
+if (! nrow(merge(row_exists, analysis_methods))>0) {
   analysis_methods <- rbind(analysis_methods, version_info)
 }
 
