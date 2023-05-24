@@ -39,8 +39,8 @@ methods_file <- args[1]
 accession <- args[2]
 tissue <- args[3]
 deconv_reference <- args[4]
-deconv_status <- args[5]
-workflow_base_dir <- args[6]
+workflow_base_dir <- args[5]
+deconv_status <- args[6]
 
 # read existing analysis methods file if it exits
 
