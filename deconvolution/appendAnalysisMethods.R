@@ -31,7 +31,7 @@ extract_accession <- function(string) {
 
 args <- commandArgs(trailingOnly = TRUE)
 
-if(length(args) > 5) {
+if(length(args) < 5) {
    stop("Not correct number of arguments. Please supply at least five arguments")
 }
 
