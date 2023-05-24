@@ -82,16 +82,16 @@ if (! nrow(merge(version_info, analysis_methods))>0) {
   analysis_methods <- rbind(analysis_methods, version_info)
 }
 
-scxa_url = "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession</a>."
+scxa_url = "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accession</a>."
 
 # add information about references 
 if (deconv_status != "deconvolution successful") {
-    reference_info <- paste("No suitable reference for deconvolution was found for", tissue)
+    reference_info <- paste0(tissue, ": No suitable reference for deconvolution found")
   } else {
     deconv_tissue = getOntologyName(ont = ont, 
                                     onto_id = extract_id_from_file(deconv_reference))
-    reference_info <- paste("Reference used for", tissue, "deconvolution:", deconv_tissue, "from", 
-                              sub('accession',  extract_accession(deconv_reference), scxa_url))
+    reference_info <- paste0(tissue, ": deconvolved with", deconv_tissue, "from", 
+                             gsub('accession',  extract_accession(deconv_reference), scxa_url))
   }
   # create a new data frame with the reference information
   tissue_info <- data.frame(V1 = "",
