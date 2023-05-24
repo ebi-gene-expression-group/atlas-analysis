@@ -10,7 +10,7 @@ sc_reference_phenData=$5
 workflow_basedir=$6
 
 # Set default status to success
-export DECONV_STATUS="deconvolution successful"
+export DECONV_STATUS="deconvolution_successful"
 
 mkdir -p scratch/${accession}/${accession}-${tissue}_scratch
 
@@ -24,7 +24,7 @@ epidish_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/EpiDIS
 } || { 
     echo "EpiDISH execution failed with error:" >&2 
     echo "$epidish_output" >&2 
-    export DECONV_STATUS="EpiDISH failed"
+    export DECONV_STATUS="EpiDISH_failed"
     exit 0
 }
 
@@ -37,7 +37,7 @@ fardeep_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/FARDEE
 } || { 
     echo "FARDEEP execution failed with error:" >&2 
     echo "$fardeep_output" >&2 
-    export DECONV_STATUS="FARDEEP failed"
+    export DECONV_STATUS="FARDEEP_failed"
     exit 0
 }
 
@@ -52,7 +52,7 @@ dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R
 } || { 
     echo "DWLS execution failed with error:" >&2 
     echo "$dwl_output" >&2 
-    export DECONV_STATUS="DWLS failed"
+    export DECONV_STATUS="DWLS_failed"
     exit 0
 }
 
