@@ -31,8 +31,8 @@ extract_accession <- function(string) {
 
 args <- commandArgs(trailingOnly = TRUE)
 
-if(length(args) != 5) {
-   stop("Not correct number of arguments. Please supply five arguments")
+if(length(args) != 6) {
+   stop("Not correct number of arguments. Please supply six arguments")
 }
 
 methods_file <- args[1]
