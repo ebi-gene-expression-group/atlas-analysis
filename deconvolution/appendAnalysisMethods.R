@@ -31,8 +31,8 @@ extract_accession <- function(string) {
 
 args <- commandArgs(trailingOnly = TRUE)
 
-if(length(args) != 6) {
-   stop("Not correct number of arguments. Please supply six arguments")
+if(length(args) > 5) {
+   stop("Not correct number of arguments. Please supply at least five arguments")
 }
 
 methods_file <- args[1]
@@ -40,7 +40,7 @@ accession <- args[2]
 tissue <- args[3]
 deconv_reference <- args[4]
 workflow_base_dir <- args[5]
-deconv_status <- args[6]
+deconv_status <- args[6: length(args)]
 
 # read existing analysis methods file if it exits
 
