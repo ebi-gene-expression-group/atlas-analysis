@@ -28,7 +28,7 @@ sc_reference <- sc_reference[common, ]
 fpkms  <- fpkms[common, ]
 #Get results and reorder the matrices for correspondence
 print(length(common)) # remove later
-result <- fardeep(sc_reference, fpkms, nn = TRUE, intercept = TRUE, permn = 10, QN = FALSE)
+result <- fardeep(sc_reference, fpkms, nn = TRUE, intercept = TRUE, permn = 0, QN = FALSE)
 
 p_val = result$pval
 result <- t(result$abs.beta)
