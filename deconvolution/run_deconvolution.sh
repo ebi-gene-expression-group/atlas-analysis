@@ -14,6 +14,20 @@ export DECONV_STATUS="deconvolution successful"
 
 mkdir -p scratch/${accession}/${accession}-${tissue}_scratch
 
+# Run EpiDISH in the background
+echo "started running EpiDISH"
+epidish_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/EpiDISH_run.R \
+  Tissue_splits/${accession}/${accession}-${tissue}-fpkms_scaled.rds \
+  $sc_reference_C1 \
+  Output/${accession}/${accession}-${tissue}_res_EpiDISH.rds 2>&1) && { 
+    echo "EpiDISH execution succeeded" 
+} || { 
+    echo "EpiDISH execution failed with error:" >&2 
+    echo "$epidish_output" >&2 
+    export DECONV_STATUS="EpiDISH failed"
+    exit 0
+}
+
 # Run FARDEEP in the background
 echo "start running FARDEEP"
 fardeep_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/FARDEEP_run.R \
@@ -39,20 +53,6 @@ dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R
     echo "DWLS execution failed with error:" >&2 
     echo "$dwl_output" >&2 
     export DECONV_STATUS="DWLS failed"
-    exit 0
-}
-
-# Run EpiDISH in the background
-echo "started running EpiDISH"
-epidish_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/EpiDISH_run.R \
-  Tissue_splits/${accession}/${accession}-${tissue}-fpkms_scaled.rds \
-  $sc_reference_C1 \
-  Output/${accession}/${accession}-${tissue}_res_EpiDISH.rds 2>&1) && { 
-    echo "EpiDISH execution succeeded" 
-} || { 
-    echo "EpiDISH execution failed with error:" >&2 
-    echo "$epidish_output" >&2 
-    export DECONV_STATUS="EpiDISH failed"
     exit 0
 }
 
