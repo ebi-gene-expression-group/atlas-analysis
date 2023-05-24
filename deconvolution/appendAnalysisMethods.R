@@ -40,7 +40,7 @@ accession <- args[2]
 tissue <- args[3]
 deconv_reference <- args[4]
 workflow_base_dir <- args[5]
-deconv_status <- args[6: length(args)]
+deconv_status <- args[6]
 
 # read existing analysis methods file if it exits
 
@@ -85,7 +85,7 @@ if (! nrow(merge(version_info, analysis_methods))>0) {
 scxa_url = "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accession</a>."
 
 # add information about references 
-if (deconv_status != "deconvolution successful") {
+if (deconv_status != "deconvolution_successful") {
     reference_info <- paste0(tissue, ": No suitable reference for deconvolution found")
   } else {
     deconv_tissue = getOntologyName(ont = ont, 
