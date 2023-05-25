@@ -90,7 +90,7 @@ if (deconv_status != "deconvolution_successful") {
   } else {
     deconv_tissue = getOntologyName(ont = ont, 
                                     onto_id = extract_id_from_file(deconv_reference))
-    reference_info <- paste0(tissue, ": deconvolved with ", deconv_tissue, "from ", 
+    reference_info <- paste0(tissue, ": deconvolved with ", deconv_tissue, " from ", 
                              gsub('accession',  extract_accession(deconv_reference), scxa_url))
   }
   # create a new data frame with the reference information
