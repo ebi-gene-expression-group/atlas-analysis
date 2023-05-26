@@ -23,7 +23,7 @@ fardeep_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/FARDEE
     echo "FARDEEP execution failed with error:" >&2 
     echo "$fardeep_output" >&2 
     export DECONV_STATUS="FARDEEP_failed"
-    exit 0
+    exit 1
 }
 
 # Run EpiDISH in the background
@@ -37,7 +37,7 @@ epidish_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/EpiDIS
     echo "EpiDISH execution failed with error:" >&2 
     echo "$epidish_output" >&2 
     export DECONV_STATUS="EpiDISH_failed"
-    exit 0
+    exit 1
 }
 
 # Run DWLS in the background (that takes some time...)
@@ -52,7 +52,7 @@ dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R
     echo "DWLS execution failed with error:" >&2 
     echo "$dwl_output" >&2 
     export DECONV_STATUS="DWLS_failed"
-    exit 0
+    exit 1
 }
 
 # Wait for all background processes to finish
