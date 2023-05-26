@@ -41,6 +41,7 @@ tissue <- args[3]
 deconv_reference <- args[4]
 workflow_base_dir <- args[5]
 deconv_status <- args[6]
+out_file <- args[7]
 
 # read existing analysis methods file if it exits
 
@@ -103,4 +104,4 @@ analysis_methods <- rbind(analysis_methods, tissue_info)
 
 
 # write the updated analysis_methods data frame to the input file with a .updated.tsv extension
-write.table(analysis_methods, file = methods_file, sep = "\t", row.names = FALSE, col.names = FALSE)
+write.table(analysis_methods, file = out_file, sep = "\t", row.names = FALSE, col.names = FALSE)
