@@ -59,3 +59,4 @@ dwl_output=$(Rscript ${workflow_basedir}/atlas-analysis/deconvolution/DWLS_run.R
 wait
 
 echo "Deconvolution status: $DECONV_STATUS"
+echo $DECONV_STATUS
