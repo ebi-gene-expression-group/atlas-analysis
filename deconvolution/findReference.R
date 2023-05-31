@@ -50,34 +50,43 @@ get_semantic_tag <- function(tissue, ontology) {
   }
     
 }
+                 
 # Function to match tissues to a list of available tissues, if mapping is
 # succesfull, mapped tissue is returned
 find_reference = function(uberon_id_for_deconv, sig_dir, ont){
-    
-    # list fiel names in signature dir to know which tissues we have references for
-    sig_files = list.files(sig_dir, '*C0_scaled.rds')
-    # extract uberon ids from all filenames
-    reference_uberon_ids = c()
-    for (file in sig_files){
-        reference_uberon_ids = append(reference_uberon_ids,  extract_id_from_file(file))
+  
+  # list fiel names in signature dir to know which tissues we have references for
+  sig_files = list.files(sig_dir, '*C0_scaled.rds')
+  print(sig_files)
+  # extract uberon ids from all filenames
+  reference_uberon_ids = c()
+  for (file in sig_files){
+    reference_uberon_ids = append(reference_uberon_ids,  extract_id_from_file(file))
+    print(reference_uberon_ids)
+  }
+  # get mapping for tissues
+  for (id in reference_uberon_ids){
+    mapping = suppressMessages(getOntoMapping(ont = ont, uberon_id_for_deconv, id))
+    if (length(mapping) != 0){
+      break
     }
-    # get mapping for tissues
-    mapping = suppressMessages(getOntoMapping(ont = ont, uberon_id_for_deconv, reference_uberon_ids))
-    # split into labels and ids
-    tissue_to_deconvolve = names(mapping)
-    mapped_to = unname(mapping)
-    # if tissue could be mapped to a reference tissue return the first tissue in the list
-    # not sure how else to deal with tissues that have multile possible references
-    if (length(mapping) > 0 && sum(mapped_to %in% reference_uberon_ids) > 0){
-        # check if term mapped to something and make sure mapped_to term is available
-        reference = unname(mapping)
-        reference = sub(':', '_',reference)
-        return(reference[1])
-    }
-    else {
-        return('noref')
-    }
+  }
+  # split into labels and ids
+  tissue_to_deconvolve = names(mapping)
+  mapped_to = unname(mapping)
+  # if tissue could be mapped to a reference tissue return the first tissue in the list
+  # not sure how else to deal with tissues that have multile possible references
+  if (length(mapping) > 0 && sum(mapped_to %in% reference_uberon_ids) > 0){
+    # check if term mapped to something and make sure mapped_to term is available
+    reference = unname(mapping)
+    reference = sub(':', '_',reference)
+    return(reference[1])
+  }
+  else {
+    return('noref')
+  }
 }
+
 
 # Run functions 
 args <- commandArgs(trailingOnly = TRUE)
