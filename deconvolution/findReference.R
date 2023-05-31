@@ -57,12 +57,10 @@ find_reference = function(uberon_id_for_deconv, sig_dir, ont){
   
   # list fiel names in signature dir to know which tissues we have references for
   sig_files = list.files(sig_dir, '*C0_scaled.rds')
-  print(sig_files)
   # extract uberon ids from all filenames
   reference_uberon_ids = c()
   for (file in sig_files){
     reference_uberon_ids = append(reference_uberon_ids,  extract_id_from_file(file))
-    print(reference_uberon_ids)
   }
   # get mapping for tissues
   for (id in reference_uberon_ids){
