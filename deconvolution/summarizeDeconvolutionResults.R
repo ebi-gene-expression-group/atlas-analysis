@@ -56,39 +56,64 @@ if (length(filenames) != 3){ #...if not just append rund ids
 } else { #...if yes, get the average proportions and sds
   # populate file with results
   files <- lapply(filenames, readRDS)
-  # add proportions per run and cell type
-  sum_props = Reduce('+',files)
-  # get average of the three results
-  prop = sum_props/length(files)
-
-  # get standard derivation of the three measurements we have per run and cell type
-  vec <- unlist(files, use.names = TRUE)
-  DIM <- dim(files[[1]])
-  n <- length(files)
-  list.mean <- tapply(vec, rep(1:prod(DIM),times = n), mean)
-  attr(list.mean, "dim") <- DIM
-  list.mean <- as.data.frame(list.mean)
-
-  list.sd <- tapply(vec, rep(1:prod(DIM),times = n), sd)
-  attr(list.sd, "dim") <- DIM
-  list.sd <- as.data.frame(list.sd)
-  colnames(list.sd) = colnames(files[[1]])
-
-  sd_norm = rowMeans(list.sd)/rowMeans(list.mean)
-  rownames(list.sd) = rownames(prop)
-
-  list.sd$CL_term = rownames(prop)
-
-  # pivot table
-  prop = as.data.frame(prop)
-  prop$CL_term = rownames(prop)
-  pivoted_mean = pivot_longer(prop, cols = !CL_term, names_to = "ENA_RUN", values_to = "proportion")
-  pivoted_sd = pivot_longer(list.sd, cols = !CL_term, names_to = "ENA_RUN", values_to = "sd")
-
-  MergedDF <- merge(pivoted_sd, pivoted_mean, by =c("ENA_RUN", 'CL_term'))
-  MergedDF$organism_part = tissue
-  MergedDF$sc_reference = sc_reference
+  # calculare pearson corr for each RUN between the three methods
+  # to see if the difference between methods is too big
+  mean_vector = c()
+  for (i in 1:dim(files[[1]])[2]){
+    cor_mat = cor(data.frame(files[[1]][,i], files[[2]][,i], files[[3]][,i]))
+    # set diagonal to NA
+    diag(cor_mat) <- NA
+    mean_value <- mean(cor_mat, na.rm = TRUE)
+    mean_vector[i] = (mean_value)
+  }
   
-  write.table(MergedDF, output, sep = "\t", col.names = FALSE, append = TRUE, row.names = FALSE)
+  print(paste('mean correaltion between the three methods is', (mean(mean_vector))))
+  if (mean(mean_vector) < 0.7) {
+    print('corelation for methods lower than 0.7')
+    # get the run ids from the runs were we dont have deconvolution results
+    runs = rownames(sdrf[sdrf$Characteristics.organism.part. == tissue_name, ])
+    MergedDF = data.frame(ENA_RUN = runs,
+                          CL_term = character(length(runs)),
+                          sd = numeric(length(runs)),
+                          proportion = numeric(length(runs)),
+                          organism_part = tissue,
+                          sc_reference = 'no reference found/deconvolution failed')
+    write.table(MergedDF, output, sep = "\t", col.names = FALSE, append = TRUE, row.names = FALSE)
+  } else {
+     # add proportions per run and cell type
+     sum_props = Reduce('+',files)
+     # get average of the three results
+     prop = sum_props/length(files)
+
+     # get standard derivation of the three measurements we have per run and cell type
+     vec <- unlist(files, use.names = TRUE)
+     DIM <- dim(files[[1]])
+     n <- length(files)
+     list.mean <- tapply(vec, rep(1:prod(DIM),times = n), mean)
+     attr(list.mean, "dim") <- DIM
+     list.mean <- as.data.frame(list.mean)
+
+     list.sd <- tapply(vec, rep(1:prod(DIM),times = n), sd)
+     attr(list.sd, "dim") <- DIM
+     list.sd <- as.data.frame(list.sd)
+     colnames(list.sd) = colnames(files[[1]])
+
+     sd_norm = rowMeans(list.sd)/rowMeans(list.mean)
+     rownames(list.sd) = rownames(prop)
+
+     list.sd$CL_term = rownames(prop)
+
+     # pivot table
+     prop = as.data.frame(prop)
+     prop$CL_term = rownames(prop)
+     pivoted_mean = pivot_longer(prop, cols = !CL_term, names_to = "ENA_RUN", values_to = "proportion")
+     pivoted_sd = pivot_longer(list.sd, cols = !CL_term, names_to = "ENA_RUN", values_to = "sd")
+
+     MergedDF <- merge(pivoted_sd, pivoted_mean, by =c("ENA_RUN", 'CL_term'))
+     MergedDF$organism_part = tissue
+     MergedDF$sc_reference = sc_reference
+  
+     write.table(MergedDF, output, sep = "\t", col.names = FALSE, append = TRUE, row.names = FALSE)
+     }  
   
 }
