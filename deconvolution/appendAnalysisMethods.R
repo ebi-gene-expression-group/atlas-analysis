@@ -87,7 +87,7 @@ scxa_url = "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accession
 
 # add information about references 
 if (deconv_status != "deconvolution_successful") {
-    reference_info <- paste0(tissue, ": No suitable reference for deconvolution found.")
+    reference_info <- paste0(tissue, ": " ,deconv_status)
   } else {
     deconv_tissue = getOntologyName(ont = ont, 
                                     onto_id = extract_id_from_file(deconv_reference))
