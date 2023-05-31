@@ -85,8 +85,8 @@ if (! nrow(merge(version_info, analysis_methods))>0) {
 
 scxa_url = "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accession</a>."
 
-# add information about references 
-if (deconv_status != "deconvolution_successful") {
+# add information about references
+if (!grepl('mean_correlation', deconv_status, fixed=T)){
     reference_info <- paste0(tissue, ": " ,deconv_status)
   } else {
     deconv_tissue = getOntologyName(ont = ont, 
