@@ -17,9 +17,11 @@ if(length(args) != 2) {
 
 #in case whitespace in tissue name was replaced by '_' revert that
 tissue_name = gsub('_', ' ', tissue)
+tissue_pattern = gsub("\\(", "\\\\(", tissue)
+tissue_pattern = gsub('\\)', '\\\\)', tissue_pattern)
 
 # check if all three deconvolution results are there
-filenames <- paste0('Output/',accession , '/', list.files(paste0("Output/", accession), pattern=paste0(accession,'-', tissue)))
+filenames <- paste0('Output/',accession , '/', list.files(paste0("Output/", accession), pattern=paste0(accession,'-', tissue_pattern)))
 # check if all three deconvolution tools produced output
 if (length(filenames) == 3) {
   # Read RDS files
