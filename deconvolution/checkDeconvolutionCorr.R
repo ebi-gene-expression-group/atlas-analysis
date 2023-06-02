@@ -42,7 +42,7 @@ if (length(filenames) == 3) {
   
   # Check mean correlation
   if (mean(mean_vector) < 0.7) {
-    cat('correlation_between_methods_lower_than_0.7')
+    cat(paste0('correlation_between_methods_lower_than_0.7','_mean_correlation:', round(mean(mean_vector), 3)))
   } else {
     cat(paste0('mean_correlation:', round(mean(mean_vector), 3)))
   }
