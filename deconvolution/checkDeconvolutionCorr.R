@@ -42,10 +42,10 @@ if (length(filenames) == 3) {
   
   # Check mean correlation
   if (mean(mean_vector) < 0.7) {
-    cat('correlation_too_low')
+    cat('correlation_between_methods_lower_than_0.7')
   } else {
     cat(paste0('mean_correlation:', round(mean(mean_vector), 3)))
   }
 } else {
-  cat('deconvolution_unsuccessful')
+  cat('no_reference_found_or_deconvolution_tool_failed')
 }
