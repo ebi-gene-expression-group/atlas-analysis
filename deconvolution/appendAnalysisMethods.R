@@ -87,11 +87,11 @@ scxa_url = "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accession
 
 # add information about references
 if (!grepl('mean_correlation', deconv_status, fixed=T)){
-    reference_info <- paste0(tissue, ": " ,deconv_status)
+    reference_info <- paste0(tissue, ": " ,gsub('_', ' ', deconv_status))
   } else {
     deconv_tissue = getOntologyName(ont = ont, 
                                     onto_id = extract_id_from_file(deconv_reference))
-    reference_info <- paste0(tissue, ": deconvolved with ", deconv_tissue, " from ", 
+    reference_info <- paste0(tissue, ": successfully deconvolved with ", deconv_tissue, " from ", 
                              gsub('accession',  extract_accession(deconv_reference), scxa_url))
   }
   # create a new data frame with the reference information
