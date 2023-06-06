@@ -26,7 +26,11 @@ filenames <- paste0('Output/',accession , '/', list.files(paste0("Output/", acce
 if (length(filenames) == 3) {
   # Read RDS files
   files <- lapply(filenames, readRDS)
-  
+  # make sure all results have the same row/colnames order
+  for (i in 1:length(files)){
+    files[[i]] <- files[[i]][,order(colnames(files[[i]]))]
+    files[[i]] <- files[[i]][order(rownames(files[[i]])),]
+  }
   # Calculate Pearson correlation for each RUN between the three methods
   # to see if the difference between methods is too big
   mean_vector <- numeric()
