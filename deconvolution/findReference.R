@@ -62,11 +62,11 @@ find_reference = function(uberon_id_for_deconv, sig_dir, ont){
   for (file in sig_files){
     reference_uberon_ids = append(reference_uberon_ids,  extract_id_from_file(file))
   }
-  # get mapping for tissues
-  for (id in reference_uberon_ids){
+  # get mapping for tissues, sort to get 'finer' terms first
+  for (id in reference_uberon_ids[order(reference_uberon_ids, decreasing = T)]){
     mapping = suppressMessages(getOntoMapping(ont = ont, uberon_id_for_deconv, id))
     if (length(mapping) != 0){
-      break
+     break
     }
   }
   # split into labels and ids
@@ -84,8 +84,7 @@ find_reference = function(uberon_id_for_deconv, sig_dir, ont){
     return('noref')
   }
 }
-
-
+                 
 # Run functions 
 args <- commandArgs(trailingOnly = TRUE)
 tissue = args[1]
