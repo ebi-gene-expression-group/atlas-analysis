@@ -71,8 +71,8 @@ if (length(filenames) != 3){ #...if not just append rund ids
   }
   
   print(paste('mean correaltion between the three methods is', (mean(mean_vector))))
-  if (mean(mean_vector) < 0.7) {
-    print('corelation for methods lower than 0.7')
+  if (mean(mean_vector) < 0.6) {
+    print('corelation for methods lower than 0.6')
     # get the run ids from the runs were we dont have deconvolution results
     runs = rownames(sdrf[sdrf$Characteristics.organism.part. == tissue_name, ])
     MergedDF = data.frame(ENA_RUN = runs,
