@@ -54,7 +54,7 @@ if (length(filenames) != 3){ #...if not just append rund ids
                           sd = numeric(length(runs)),
                           proportion = numeric(length(runs)),
                           organism_part = tissue,
-                          sc_reference = 'no reference found/deconvolution failed')
+                          sc_reference = 'correlation between methods too low')
     write.table(MergedDF, output, sep = "\t", col.names = FALSE, append = TRUE, row.names = FALSE)
 } else { #...if yes, get the average proportions and sds
   # populate file with results
