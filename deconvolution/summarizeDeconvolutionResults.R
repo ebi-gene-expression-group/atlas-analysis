@@ -6,6 +6,18 @@
 
 suppressMessages(library(tidyr))
 suppressMessages(library(dplyr))
+suppressMessages(library(stringr)
+
+# Function to extract accession from scxa reference
+extract_accession <- function(string) {
+  pattern <- "(?<=_)[A-Z]-[A-Z]+-[0-9]+"
+  matches <- regmatches(string, regexpr(pattern, string, perl = TRUE))
+  if (length(matches) > 0) {
+    return(matches)
+    } else {
+    return(NA)
+    }
+  }
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -42,6 +54,7 @@ if (!file.exists(output)) {
                         proportion = numeric(),
                         organism_part = character(),
                         sc_reference = character()),
+                        SCXA_experiment = character()),
                         output, sep = "\t", row.names = FALSE, col.names = TRUE)
 }
 # add consensus proportions to output file if deconvolution was succesfull
@@ -80,6 +93,7 @@ if (grepl('mean_correlation', deconv_status, fixed=T)){
    MergedDF <- merge(pivoted_sd, pivoted_mean, by =c("ENA_RUN", 'CL_term'))
    MergedDF$organism_part = tissue
    MergedDF$sc_reference = sc_reference
+   MergedDF$SCXA_experiment = extract_accession(basename(sc_reference))
    # append the output file with proportions
    write.table(MergedDF, output, sep = "\t", col.names = FALSE, append = TRUE, row.names = FALSE)
   } else {
