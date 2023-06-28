@@ -95,7 +95,7 @@ if(length(args) != 3) {
    stop("Not correct number of arguments. Please supply two arguments")
 }
 
-#read in UBERON ontologys
+# read in UBERON ontologys
 obo_file = paste0(workflow_base_dir, '/atlas-analysis/deconvolution/basic.obo') #download here: http://purl.obolibrary.org/obo/uberon/basic.obo
 propagate_relationships = c('is_a', 'part_of', 'relationship: part_of', 'synonym')
 # create UBRERON ontology object
