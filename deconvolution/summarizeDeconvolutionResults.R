@@ -2,7 +2,7 @@
 
 ## script to collect devonvolution results from diffrent organism parts accross an atlas
 ## experiment and create final output. If deconvolution runs was not succesful for 
-## an organism part, Cell type column will be empty and sd and proportin will be "0"
+## an organism part, runs will not be included in file
 
 suppressMessages(library(tidyr))
 suppressMessages(library(dplyr))
@@ -59,7 +59,8 @@ if (!file.exists(output)) {
 }
 # add consensus proportions to output file if deconvolution was succesfull
 if (grepl('mean_correlation', deconv_status, fixed=T)){
-   filenames <- paste0('Output/',accession , '/', list.files(paste0("Output/", accession), pattern=paste0(accession,'-', tissue_pattern)))
+   filenames <- paste0('Output/',accession , '/', list.files(paste0("Output/", accession), 
+                                                             pattern=paste0(accession,'-', tissue_pattern)))
    
    files <- lapply(filenames, readRDS)
    # add proportions per run and cell type
