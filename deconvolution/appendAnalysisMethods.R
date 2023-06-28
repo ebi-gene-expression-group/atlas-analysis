@@ -71,7 +71,7 @@ version_info <- data.frame(
                 'For reference creation see',
                 '<a href=https://github.com/ebi-gene-expression-group/atlas-deconvolution-references>atlas-deconvolution-references</a>.',
                 'Cell type predictions displayed are averages of results from EpiDISH (version: ', as.character(epidish_version),'),',
-                'FARDEEP (version: ',  as.character(fardeep_version), ') and DWLS (version: ',  as.character(dwls_version), ')')
+                'FARDEEP (version: ',  as.character(fardeep_version), ') and DWLS (version: ',  as.character(dwls_version), ').')
 )
 # append the version_info data frame as a new line to the analysis_methods data frame if it is not already in there
 # Check if the row already exists in the DataFrame
@@ -87,12 +87,12 @@ scxa_url = "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accession
 
 # add information about references
 if (!grepl('mean_correlation', deconv_status, fixed=T)){
-    reference_info <- paste0(tissue, ": " ,gsub('_', ' ', deconv_status))
+    reference_info <- paste0(tissue, ": " ,gsub('_', ' ', deconv_status),'.')
   } else {
     deconv_tissue = getOntologyName(ont = ont, 
                                     onto_id = extract_id_from_file(deconv_reference))
     reference_info <- paste0(tissue, ": successfully deconvolved with ", deconv_tissue, " from ", 
-                             gsub('accession',  extract_accession(deconv_reference), scxa_url))
+                             gsub('accession',  extract_accession(deconv_reference), scxa_url), '.')
   }
   # create a new data frame with the reference information
   tissue_info <- data.frame(V1 = "",
