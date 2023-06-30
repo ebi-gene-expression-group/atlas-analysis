@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 ## script to run deconvolution with FARDEEP
 ##
-## @zgr2788
+## written by @zgr2788
 
 # load FARDEEP
 if (!requireNamespace("FARDEEP", quietly = TRUE)) {
