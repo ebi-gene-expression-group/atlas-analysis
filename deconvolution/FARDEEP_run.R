@@ -16,11 +16,10 @@ if(length(args) != 3) {
 
 filename_fpkms <- args[1]
 filename_sc_reference <- args[2]
-filename_O <- args[3]
+filename_output <- args[3]
 
 fpkms <- readRDS(filename_fpkms)
 sc_reference <- readRDS(filename_sc_reference)
-
 
 #Toss out the genes tossed out in T normalization from C as well
 common <- intersect(rownames(sc_reference), rownames(fpkms))
@@ -32,10 +31,8 @@ result <- fardeep(sc_reference, fpkms, nn = TRUE, intercept = TRUE, permn = 10, 
 
 p_val = result$pval
 result <- t(result$abs.beta)
-
-
 result <- apply(result,2,function(x) x/sum(x)) #explicit STO constraint
 #if (filename_P != 'Modules/Psuedobulk/dummy_props.rds') res <- res[order(match(rownames(res), rownames(P))),]
 
 # save and exit
-saveRDS(result, file=filename_O)
+saveRDS(result, file=filename_output)
