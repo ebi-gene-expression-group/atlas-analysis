@@ -36,12 +36,13 @@ message("Started running sig...")
 Signature <- buildSignatureMatrixMAST(scdata = sc_reference, id = phenData[,"cellType"], path = scratchDir, diff.cutoff = 0.5, pval.cutoff = 0.01)
 
 
-#Get results and reorder the matrices for correspondence
-result <- future_apply(fpkms,2, function(x){
-  b = setNames(x, rownames(fpkms))
+# Get results and reorder the matrices for correspondence
+result <- future_apply(fpkms, 2, function(x) {
+  b <- setNames(x, rownames(fpkms))
   tr <- trimData(Signature, b)
   RES <- t(solveDampenedWLS(tr$sig, tr$bulk))
 }, future.seed = TRUE)
+
 
 rownames(result) <- as.character(unique(phenData$cellType))
 result[result < 10^-5] <- 0 #Convergence error tolerance = 10^-5
