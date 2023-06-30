@@ -2,7 +2,7 @@
 
 ## script to run deconvolution with EpiDISH
 ##
-## @zgr2788
+## written by @zgr2788
 
 suppressMessages(library('EpiDISH'))
 
