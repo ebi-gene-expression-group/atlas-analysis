@@ -34,8 +34,8 @@ get_semantic_tag <- function(tissue, ontology) {
   res <- GET(paste0(url, tissue) )
   stop_for_status(res)
   data <- fromJSON(rawToChar(res$content))
-  #filter to only get organism part ontologies
-  data = data[ grepl(ontology,(data$semanticTags) ),]
+  # filter to only get organism part ontologies
+  data <- data[ grepl(ontology,(data$semanticTags) ),]
   #check confidence of zooma maping
   if (nrow(data) > 0){
     data = data[1, ]
