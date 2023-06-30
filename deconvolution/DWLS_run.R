@@ -7,7 +7,7 @@
 suppressMessages(library(future.apply))
 suppressMessages(library(DWLS))
 
-#Get args and load files
+# get args and load files
 args <- commandArgs(trailingOnly = TRUE)
 
 if(length(args) != 6) {
