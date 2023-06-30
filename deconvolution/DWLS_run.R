@@ -35,7 +35,6 @@ rm(common)
 message("Started running sig...")
 Signature <- buildSignatureMatrixMAST(scdata = sc_reference, id = phenData[,"cellType"], path = scratchDir, diff.cutoff = 0.5, pval.cutoff = 0.01)
 
-
 # Get results and reorder the matrices for correspondence
 result <- future_apply(fpkms, 2, function(x) {
   b <- setNames(x, rownames(fpkms))
@@ -43,10 +42,9 @@ result <- future_apply(fpkms, 2, function(x) {
   RES <- t(solveDampenedWLS(tr$sig, tr$bulk))
 }, future.seed = TRUE)
 
-
 rownames(result) <- as.character(unique(phenData$cellType))
+# convert values smaller than 0.00001 t0 0
 result[result < 10^-5] <- 0 #Convergence error tolerance = 10^-5
-#if (filename_P != 'Modules/Psuedobulk/dummy_props.rds') res <- res[order(match(rownames(res), rownames(P))),]
 
 #Save and exit
 saveRDS(result, file=filename_O)
