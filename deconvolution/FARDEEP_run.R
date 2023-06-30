@@ -37,5 +37,5 @@ result <- t(result$abs.beta)
 result <- apply(result,2,function(x) x/sum(x)) #explicit STO constraint
 #if (filename_P != 'Modules/Psuedobulk/dummy_props.rds') res <- res[order(match(rownames(res), rownames(P))),]
 
-#Save and exit
+# save and exit
 saveRDS(result, file=filename_O)
