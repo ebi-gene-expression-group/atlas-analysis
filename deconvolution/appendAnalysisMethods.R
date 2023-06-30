@@ -1,12 +1,10 @@
 #!/usr/bin/env Rscript
 ### script to append analysis methods file with information (tools and references) about deconvolution analysis
 
-suppressMessages(library('EpiDISH'))
-suppressMessages(library('DWLS'))
-suppressMessages(library('FARDEEP'))
-suppressMessages(library(scOntoMatch))
-suppressMessages(library(ontologyIndex))
-suppressMessages(library('stringr'))
+# List of libraries to load
+libraries <- c("EpiDISH", "DWLS", "FARDEEP", "scOntoMatch", "ontologyIndex", "stringr")
+# Load libraries with messages suppressed
+suppressMessages(sapply(libraries, library, character.only = TRUE))
 
 
 # Function to extract UBERON id from filename
