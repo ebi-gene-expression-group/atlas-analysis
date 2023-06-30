@@ -34,7 +34,7 @@ fpkms  <- fpkms[common, ]
 # get results and reorder the matrices for correspondence
 result <- fardeep(sc_reference, fpkms, nn = TRUE, intercept = TRUE, permn = 10, QN = FALSE)
 
-p_val = result$pval
+p_val <- result$pval
 result <- t(result$abs.beta)
 result <- apply(result,2,function(x) x/sum(x)) #explicit STO constraint
 
