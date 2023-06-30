@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 ## script to run deconvolution with DWLS
 ##
-## @zgr2788 
+## written by @zgr2788 
 
 # Load DWLS
 suppressMessages(library(future.apply))
