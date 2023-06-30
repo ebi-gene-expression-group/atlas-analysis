@@ -25,8 +25,7 @@ fpkms <- readRDS(filename_fpkms)
 sc_reference <- readRDS(filename_sc_reference)
 phenData <- readRDS(filename_phenData)
 
-
-#Match genes in rows for both references
+# match genes in rows for both references
 common <- intersect(rownames(sc_reference), rownames(fpkms))
 sc_reference <- sc_reference[common,]
 fpkms <- fpkms[common,]
