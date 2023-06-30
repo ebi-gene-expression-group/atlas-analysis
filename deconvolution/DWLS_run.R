@@ -11,7 +11,7 @@ suppressMessages(library(DWLS))
 args <- commandArgs(trailingOnly = TRUE)
 
 if(length(args) != 6) {
-   stop("Not correct number of arguments. Please supply six arguments")
+   stop("Not correct number of arguments. Please supply six arguments to DWLS")
 }
 
 filename_fpkms <- args[1]
