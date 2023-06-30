@@ -3,7 +3,7 @@
 ##
 ## @zgr2788 
 
-#Load DWLS
+# Load DWLS
 suppressMessages(library(future.apply))
 suppressMessages(library(DWLS))
 
