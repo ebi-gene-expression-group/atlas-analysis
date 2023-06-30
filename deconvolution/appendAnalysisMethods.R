@@ -19,11 +19,11 @@ extract_id_from_file = function(filename){
 extract_accession <- function(string) {
   pattern <- "(?<=_)[A-Z]-[A-Z]+-[0-9]+"
   matches <- regmatches(string, regexpr(pattern, string, perl = TRUE))
-  if (length(matches) > 0) {
-    return(matches)
-    } else {
-    return(NA)
-    }
+if (length(matches) > 0) {
+  return(matches)
+} else {
+  return(NA)
+}
   }
 
 args <- commandArgs(trailingOnly = TRUE)
