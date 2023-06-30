@@ -9,9 +9,9 @@ suppressMessages(sapply(libraries, library, character.only = TRUE))
 
 # Function to extract UBERON id from filename
 extract_id_from_file = function(filename){
-    base = basename(filename)
-    uberon_id = str_extract(base, "UBERON_\\d{7}")
-    uberon_id = sub("_", ":", uberon_id)
+    base <- basename(filename)
+    uberon_id <- str_extract(base, "UBERON_\\d{7}")
+    uberon_id <- sub("_", ":", uberon_id)
     return(uberon_id)
 }
 
