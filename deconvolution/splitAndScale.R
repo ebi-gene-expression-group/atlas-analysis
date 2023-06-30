@@ -88,8 +88,7 @@ for (i in seq_along(tissue_splits)){
     "TMM" = {
         suppressMessages(library(edgeR))
 
-        tissue_split <- edgeR::DGEList(counts = tissue_split, 
-                                       group = colnames(tissue_split))
+        tissue_split <- edgeR::DGEList(counts = tissue_split, group = colnames(tissue_split))
         tissue_split <- edgeR::calcNormFactors(tissue_split, method = "TMM")
         tissue_split <- edgeR::cpm(tissue_split)
     }
