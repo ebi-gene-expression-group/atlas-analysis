@@ -59,9 +59,11 @@ dwls_version <- packageVersion("DWLS")
 obo_file = paste0(workflow_base_dir, '/atlas-analysis/deconvolution/basic.obo') #download here: http://purl.obolibrary.org/obo/uberon/basic.obo
 propagate_relationships = c('is_a', 'part_of', 'relationship: part_of', 'synonym')
 # create UBRERON ontology object
-ont <- ontologyIndex::get_OBO(obo_file, 
-                              propagate_relationships =propagate_relationships, 
-                              extract_tags = 'everything')
+ont <- ontologyIndex::get_OBO(
+  obo_file,
+  propagate_relationships = propagate_relationships,
+  extract_tags = "everything"
+)
 
 # create a new data frame with the package version information
 version_info <- data.frame(
