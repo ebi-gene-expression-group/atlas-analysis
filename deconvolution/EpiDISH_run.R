@@ -28,7 +28,7 @@ if (length(common) == 0) {
 }
 sc_reference <- sc_reference[common,]
 fpkms  <- fpkms[common,]
-sc_reference <- as.matrix(sc_reference) #Explicit typecasting needed
+sc_reference <- as.matrix(sc_reference)  # explicit typecasting needed
 
 # get res and reorder the matrices for correspondence
 results <- t(EpiDISH::epidish(beta.m = fpkms, ref.m = sc_reference, method = "RPC")$estF)
