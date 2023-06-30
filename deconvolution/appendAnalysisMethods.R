@@ -50,7 +50,7 @@ if (!file.exists(methods_file)) {
 }
 analysis_methods <- read.csv(methods_file, sep = "\t", header = F)
 
-#get the versions of the packeages
+# get the versions of the packeages
 epidish_version <- packageVersion("EpiDISH")
 fardeep_version <- packageVersion("FARDEEP")
 dwls_version <- packageVersion("DWLS")
