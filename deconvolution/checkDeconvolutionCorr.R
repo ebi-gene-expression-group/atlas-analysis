@@ -8,8 +8,8 @@ suppressMessages(library(dplyr))
 
 args <- commandArgs(trailingOnly = TRUE)
 
-accession = args[1]
-tissue =  args[2]
+accession <- args[1]
+tissue <- args[2]
 
 if(length(args) != 2) {
   stop("Not correct number of arguments. Please supply two arguments")
