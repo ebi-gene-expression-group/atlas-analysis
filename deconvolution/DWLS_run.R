@@ -27,13 +27,21 @@ phenData <- readRDS(filename_phenData)
 
 # match genes in rows for both references
 common <- intersect(rownames(sc_reference), rownames(fpkms))
+# check if common contains values
+if (length(common) == 0) {
+  stop("No common genes between sc reference and fpkms found. Check that both have ENSEMBLE ids as rownames")
+}
 sc_reference <- sc_reference[common,]
 fpkms <- fpkms[common,]
 rm(common)
 
 # preprocess
 message("Started running sig...")
-Signature <- buildSignatureMatrixMAST(scdata = sc_reference, id = phenData[,"cellType"], path = scratchDir, diff.cutoff = 0.5, pval.cutoff = 0.01)
+Signature <- buildSignatureMatrixMAST(scdata = sc_reference, 
+                                      id = phenData[,"cellType"], 
+                                      path = scratchDir, 
+                                      diff.cutoff = 0.5, 
+                                      pval.cutoff = 0.01)
 
 # get results and reorder the matrices for correspondence
 result <- future_apply(fpkms, 2, function(x) {
