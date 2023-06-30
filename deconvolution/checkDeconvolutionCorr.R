@@ -15,10 +15,10 @@ if(length(args) != 2) {
   stop("Not correct number of arguments. Please supply two arguments")
 }
 
-#in case whitespace in tissue name was replaced by '_' revert that
-tissue_name = gsub('_', ' ', tissue)
-tissue_pattern = gsub("\\(", "\\\\(", tissue)
-tissue_pattern = gsub('\\)', '\\\\)', tissue_pattern)
+# in case whitespace in tissue name was replaced by '_' revert that
+tissue_name <- gsub('_', ' ', tissue)
+tissue_pattern <- gsub("\\(", "\\\\(", tissue)
+tissue_pattern <- gsub('\\)', '\\\\)', tissue_pattern)
 
 # check if all three deconvolution results are there
 filenames <- paste0('Output/',accession , '/', list.files(paste0("Output/", accession), pattern=paste0(accession,'-', tissue_pattern)))
