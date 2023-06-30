@@ -9,8 +9,8 @@ suppressMessages(library('EpiDISH'))
 # Get args and load files
 args <- commandArgs(trailingOnly = TRUE)
 
-if(length(args) != 3) {
-   stop("Not correct number of arguments. Please supply three arguments")
+if (length(args) != 3) {
+  stop("Incorrect number of arguments. Please supply three arguments.")
 }
 
 filename_fpkms <- args[1]
