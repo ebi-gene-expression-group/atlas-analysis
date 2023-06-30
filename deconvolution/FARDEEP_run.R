@@ -21,8 +21,12 @@ filename_output <- args[3]
 fpkms <- readRDS(filename_fpkms)
 sc_reference <- readRDS(filename_sc_reference)
 
-# toss out the genes tossed out in T normalization from C as well
+# get intersection of genes
 common <- intersect(rownames(sc_reference), rownames(fpkms))
+# check if common contains values
+if (length(common) == 0) {
+  stop("No common genes between sc reference and fpkms found. Check that both have ENSEMBLE ids as rownames")
+}
 sc_reference <- sc_reference[common, ]
 fpkms  <- fpkms[common, ]
 # get results and reorder the matrices for correspondence
