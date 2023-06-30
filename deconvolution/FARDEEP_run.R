@@ -4,8 +4,10 @@
 ## @zgr2788
 
 # load FARDEEP
-if (!require("FARDEEP", quietly = TRUE))
-    install.packages("FARDEEP", repos='http://cran.us.r-project.org')
+if (!requireNamespace("FARDEEP", quietly = TRUE)) {
+  install.packages("FARDEEP", repos = "http://cran.us.r-project.org")
+}
+
 suppressMessages(library("FARDEEP"))
 
 # get args and load files
