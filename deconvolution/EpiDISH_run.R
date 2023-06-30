@@ -15,7 +15,7 @@ if (length(args) != 3) {
 
 filename_fpkms <- args[1]
 filename_sc_reference <- args[2]
-filename_O <- args[3]
+filename_output <- args[3]
 
 fpkms <- readRDS(filename_fpkms)
 sc_reference <- readRDS(filename_sc_reference)
@@ -33,4 +33,4 @@ results <- apply(results,2,function(x) ifelse(x < 0, 0, x)) #explicit non-negati
 results <- apply(results, 2,function(x) x/sum(x)) #explicit STO constraint
 
 # Save and exit
-saveRDS(results, file=filename_O)
+saveRDS(results, file=filename_output)
