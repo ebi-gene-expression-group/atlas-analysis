@@ -98,5 +98,5 @@ if (grepl('mean_correlation', deconv_status, fixed=T)){
    # append the output file with proportions
    write.table(MergedDF, output, sep = "\t", col.names = FALSE, append = TRUE, row.names = FALSE)
   } else {
-   print(paste('Deconvolution not succesful: no results for', tissue, 'added to', output))
+   print(paste('Deconvolution not successful: no results for', tissue, 'added to', output))
   }
