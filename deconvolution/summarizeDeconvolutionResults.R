@@ -53,8 +53,8 @@ if (!file.exists(output)) {
                         sd = numeric(),
                         proportion = numeric(),
                         organism_part = character(),
-                        sc_reference = character()),
-                        SCXA_experiment = character()),
+                        sc_reference = character(),
+                        SCXA_experiment = character(),
                         output, sep = "\t", row.names = FALSE, col.names = TRUE)
 }
 # add consensus proportions to output file if deconvolution was succesfull
