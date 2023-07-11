@@ -60,7 +60,7 @@ fpkms <- fpkms %>%
 
 sdrf = read.csv(sdrf_filename, sep = "\t", row.names = NULL)
 
-> # Check if all values in "Comment.ENA_RUN." or "Comment..ENA_RUN." columns are NA
+# Check if all values in "Comment.ENA_RUN." or "Comment..ENA_RUN." columns are NA
 if ("Comment.ENA_RUN." %in% colnames(sdrf)) {
   col_values <- sdrf$Comment.ENA_RUN.
 } else if ("Comment..ENA_RUN." %in% colnames(sdrf)) {
