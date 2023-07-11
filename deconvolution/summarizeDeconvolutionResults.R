@@ -6,7 +6,7 @@
 
 suppressMessages(library(tidyr))
 suppressMessages(library(dplyr))
-suppressMessages(library(stringr)
+suppressMessages(library(stringr))
 
 # Function to extract accession from scxa reference
 extract_accession <- function(string) {
