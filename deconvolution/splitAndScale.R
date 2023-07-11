@@ -60,15 +60,22 @@ fpkms <- fpkms %>%
 
 sdrf = read.csv(sdrf_filename, sep = "\t", row.names = NULL)
 
-# Rename row names to values in "Comment.ENA_RUN." or "Comment..ENA_RUN." column
+> # Check if all values in "Comment.ENA_RUN." or "Comment..ENA_RUN." columns are NA
 if ("Comment.ENA_RUN." %in% colnames(sdrf)) {
-  sdrf <- sdrf[!duplicated(sdrf[ , "Comment.ENA_RUN."]),]
-  rownames(sdrf) <- sdrf$Comment.ENA_RUN.
+  col_values <- sdrf$Comment.ENA_RUN.
 } else if ("Comment..ENA_RUN." %in% colnames(sdrf)) {
-  sdrf <- sdrf[!duplicated(sdrf[ , "Comment..ENA_RUN."]),]
-  rownames(sdrf) <- sdrf$Comment..ENA_RUN.
+  col_values <- sdrf$Comment..ENA_RUN.
 } else {
   stop("Neither 'Comment.ENA_RUN.' nor 'Comment..ENA_RUN.' column found in file.")
+}
+
+# use RUN_NAME as rownames when ENA_RUNS NA (this is the case for e.g. TCGA)
+if (all(is.na(col_values))) {
+  rownames(sdrf) <- sdrf$Comment.RUN_NAME.
+} else {
+  # Rename row names to values in "Comment.ENA_RUN." or "Comment..ENA_RUN." column
+  sdrf <- sdrf[!duplicated(col_values),]
+  rownames(sdrf) <- col_values
 }
 
 # split fpkms into runs per organism part
