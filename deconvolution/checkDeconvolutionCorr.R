@@ -51,5 +51,5 @@ if (length(results_filenames) == 3) {
     cat(paste0('mean_correlation:', round(mean(mean_vector), 3)))
   }
 } else {
-  cat('no_reference_found_or_deconvolution_tool_failed')
+  cat('one_deconvolution_tool_failed')
 }
