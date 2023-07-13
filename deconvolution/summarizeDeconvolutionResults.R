@@ -21,24 +21,15 @@ extract_accession <- function(string) {
 
 args <- commandArgs(trailingOnly = TRUE)
 
-sdrf = args[1]
-accession = args[2]
-tissue =  args[3]
-sc_reference = args[4]
-output = args[5]
-deconv_status = args[6]
+accession = args[1]
+tissue =  args[2]
+sc_reference = args[3]
+output = args[4]
+deconv_status = args[5]
 
-if(length(args) != 6) {
+if(length(args) != 5) {
    stop("Not correct number of arguments. Please supply six arguments")
 }
-
-sdrf = read.csv(sdrf, sep = "\t", row.names = NULL)
-# convert "Comment.ENA_RUN." to "Comment..ENA_RUN."
-colnames(sdrf) = gsub("[[:punct:]]+", '.', colnames(sdrf))
-# remove rows with duplicated run ids in "Comment.ENA_RUN."
-sdrf = sdrf[!duplicated(sdrf[ , "Comment.ENA.RUN."]),]
-rownames(sdrf) = sdrf$Comment.ENA.RUN.
-sdrf$Comment.ENA.RUN. = NULL
 
 # in case whitespace in tissue name was replaced by '_', revert that
 tissue_name = gsub('_', ' ', tissue)
