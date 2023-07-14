@@ -82,7 +82,7 @@ if (! nrow(merge(version_info, analysis_methods))>0) {
   analysis_methods <- rbind(analysis_methods, version_info)
 }
 
-scxa_url <- "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accession</a>."
+scxa_url <- "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accession</a>"
 
 # add information about references
 if (!grepl('mean_correlation', deconv_status, fixed=TRUE)){
