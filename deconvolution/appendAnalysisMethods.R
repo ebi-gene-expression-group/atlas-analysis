@@ -84,21 +84,20 @@ if (! nrow(merge(version_info, analysis_methods))>0) {
 
 scxa_url <- "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accession</a>"
 
-# add information about references
+# add information about references if deconvolution was succesful
 if ( grepl('mean_correlation', deconv_status, fixed=TRUE)){
-    reference_info <- paste0(tissue, ": " ,gsub('_', ' ', deconv_status),'.')
     deconv_tissue = getOntologyName(ont = ont, 
                                     onto_id = extract_id_from_file(deconv_reference))
     reference_info <- paste0(tissue, ": successfully deconvolved with ", deconv_tissue, " from ", 
                              gsub('accession',  extract_accession(deconv_reference), scxa_url), '.')
-}
-# create a new data frame with the reference information
-tissue_info <- data.frame(V1 = "",
-                          V2 = reference_info)
+    # create a new data frame with the reference information
+    tissue_info <- data.frame(V1 = "",
+                           V2 = reference_info)
                               
-  
-# append the tissue_info data frame as a new line to the analysis_methods data frame
-analysis_methods <- rbind(analysis_methods, tissue_info)
+    # append the tissue_info data frame as a new line to the analysis_methods data frame
+    analysis_methods <- rbind(analysis_methods, tissue_info)
+}
+
 
 # write the updated analysis_methods data frame to the input file with a .updated.tsv extension
 write.table(analysis_methods, file = out_file, sep = "\t", row.names = FALSE, col.names = FALSE)
