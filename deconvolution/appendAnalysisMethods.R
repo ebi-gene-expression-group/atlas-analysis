@@ -88,14 +88,17 @@ scxa_url <- "<a href=https://www.ebi.ac.uk/gxa/sc/experiments/accession>accessio
 if ( grepl('mean_correlation', deconv_status, fixed=TRUE)){
     deconv_tissue = getOntologyName(ont = ont, 
                                     onto_id = extract_id_from_file(deconv_reference))
-    reference_info <- paste0(tissue, ": successfully deconvolved with ", deconv_tissue, " from ", 
+    reference_info <- paste0(tissue, ": deconvolved with ", deconv_tissue, " from ", 
                              gsub('accession',  extract_accession(deconv_reference), scxa_url), '.')
     # create a new data frame with the reference information
     tissue_info <- data.frame(V1 = "",
                            V2 = reference_info)
                               
     # append the tissue_info data frame as a new line to the analysis_methods data frame
-    analysis_methods <- rbind(analysis_methods, tissue_info)
+    # if it doesn't exist
+    if (! nrow(merge(tissue_info, analysis_methods))>0) {
+        analysis_methods <- rbind(analysis_methods, tissue_info)
+    }
 }
 
 
