@@ -249,9 +249,17 @@ sub makeArraysToAssaysToFiles {
 			next;
 		}
 
-		# Get technology from Array design file using peach API. 
-		my $adfInfoUrl = $atlasSiteConfig->get_arrayexpress_adf_info_url;
-		my $arrayDataTech=`curl -s $adfInfoUrl$arrayDesign`;
+		# Get technology from Array design file using biostudies API. 
+		my $arrayDataTech = "";
+		if($exptAccession eq "E-CURD-50" || $exptAccession eq "E-CURD-51"){
+   			print("BioStudies E-MTAB-800 was split into E-CURD-50 and E-CURD-51 \n");
+			$arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/E-MTAB-800`;
+		}elsif($exptAccession eq "E-CURD-61" || $exptAccession eq "E-CURD-63"){
+			print("Not included in bioStudies \n");
+			$arrayDataTech="Affymetrix";
+		}else{
+   			$arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/$exptAccession`;
+		}
 
 		# Raw data filename.
 		my $arrayDataFile = File::Spec->catfile( $loadDir, $assay4atlas->get_array_data_file );
@@ -266,12 +274,13 @@ sub makeArraysToAssaysToFiles {
 			else {
 				$logger->logdie( "Error $arrayDataTech not found for $arrayDesign " )
 			}
-			} elsif( $experimentType =~ /2colour/ ) {
-				$normalizationMode = "agil2";
-
+		} elsif( $experimentType =~ /2colour/ ) {
+			$normalizationMode = "agil2";
+			
 			# Remove label name from assay name which was added by Atlas::Magetab4Atlas.
 			$assayName =~ s/\.Cy\d$//;
 		}
+		print $normalizationMode;
 
 		# Add data to hash.
 		$H_arraysToAssaysToFiles->{ $arrayDesign }->{ $assayName } = $arrayDataFile;

@@ -86,6 +86,8 @@ unless( can_run( $islResultsScript ) ) {
 	);
 }
 
+$logger->info( "isl results script is $islResultsScript" );
+
 my $atlasXMLfile = "$expAcc-configuration.xml";
 
 unless( -r $atlasXMLfile ) {
@@ -153,8 +155,8 @@ foreach my $row ( @resultsRows ) {
 	my $runAcc = $splitRow[ 1 ];
 	my $qcStatus = $splitRow[ 6 ];
 
-    # Save the run accession.
-    $qcRuns->{ $runAcc } = 1;
+    	# Save the run accession.
+    	$qcRuns->{ $runAcc } = 1;
 
 	# Skip if this run is not in the experiment config.
 	unless( $configRuns->{ $runAcc } ) { next; }

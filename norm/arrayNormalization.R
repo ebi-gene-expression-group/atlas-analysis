@@ -165,8 +165,11 @@ agilentArray <- function(files, mode, assayNames, outFile, miRBaseFile) {
 
 affymetrixArray <- function(files, assayNames, outFile) {
 
-	# Load oligo
 	library(oligo)
+	
+	print( files )
+	print( assayNames )
+	print( outFile )
 
 	# Read in data from CEL files using read.celfiles().
 	# read.celfiles() creates a Biobase object whose class varies

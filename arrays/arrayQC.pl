@@ -279,9 +279,17 @@ sub make_arrays_to_factors_to_files {
 		# Get the raw data filename
 		my $arrayDataFile = File::Spec->catfile( $loadDir, $assay4atlas->get_array_data_file );
 
-        # Get technology from Array design file using peach API. 
-        my $adfInfoUrl = $atlasSiteConfig->get_arrayexpress_adf_info_url;
-        my $arrayDataTech=`curl -s $adfInfoUrl$arrayDesign`;
+        	# Get technology from Array design file using BioStudies API 
+		my $arrayDataTech = "";
+		if($exptAccession eq "E-CURD-50" || $exptAccession eq "E-CURD-51"){
+   			print("BioStudies E-MTAB-800 was split into E-CURD-50 and E-CURD-51 \n");
+			$arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/E-MTAB-800`;
+		}elsif($exptAccession eq "E-CURD-61" || $exptAccession eq "E-CURD-63"){
+			print("Not included in bioStudies \n");
+			$arrayDataTech="Affymetrix";
+		}else{
+   			$arrayDataTech=`curl -s https://www.ebi.ac.uk/biostudies/api/v1/studies/$exptAccession`;
+		}
 
 		# For 1-colour array data, need to tell the R script whether this is
 		# Affymetrix or Agilent (or other -- for now we only handle Affy and Agil
@@ -299,6 +307,7 @@ sub make_arrays_to_factors_to_files {
 		} elsif($experimentType eq "two-colour array") {
 			$experimentType = "agil2";
 		}
+		print $experimentType "\t$arrayDesign\n";
 
 		# Push all factor values onto an array.
 		my @factorValues = ();
