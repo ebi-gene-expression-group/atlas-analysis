@@ -91,7 +91,7 @@ if ( grepl('mean_correlation', deconv_status, fixed=TRUE)){
     reference_info <- paste0(tissue, ": deconvolved with ", deconv_tissue, " from ", 
                              gsub('accession',  extract_accession(deconv_reference), scxa_url), '.')
     # create a new data frame with the reference information
-    tissue_info <- data.frame(V1 = paste0("ref ", seq( length(reference_info) ) ),
+    tissue_info <- data.frame(V1 = "ref: ",
                            V2 = reference_info)
                               
     # append the tissue_info data frame as a new line to the analysis_methods data frame
