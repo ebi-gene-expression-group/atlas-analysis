@@ -65,11 +65,11 @@ ont <- ontologyIndex::get_OBO(
 # create a new data frame with the package version information
 version_info <- data.frame(
     V1 = "Deconvolution",
-    V2 = paste0('Cell type proportion predictions of FPKMs per organism', 
-                'part with organism part specific scRNA-seq as reference.',
-                'For reference creation see',
-                '<a href=https://github.com/ebi-gene-expression-group/atlas-deconvolution-references>atlas-deconvolution-references</a>.',
-                'Cell type predictions displayed are averages of results from EpiDISH (version: ', as.character(epidish_version),'),',
+    V2 = paste0('Cell type proportion predictions of FPKMs per organism ', 
+                'part with organism part specific scRNA-seq as reference. ',
+                'For reference creation see ',
+                '<a href=https://github.com/ebi-gene-expression-group/atlas-deconvolution-references>atlas-deconvolution-references</a>. ',
+                'Cell type predictions displayed are averages of results from EpiDISH (version: ', as.character(epidish_version),'), ',
                 'FARDEEP (version: ',  as.character(fardeep_version), ') and DWLS (version: ',  as.character(dwls_version), '). Deconvolution results are available for the following organism parts of this experiment:')
 )
 # append the version_info data frame as a new line to the analysis_methods data frame if it is not already in there
@@ -91,7 +91,7 @@ if ( grepl('mean_correlation', deconv_status, fixed=TRUE)){
     reference_info <- paste0(tissue, ": deconvolved with ", deconv_tissue, " from ", 
                              gsub('accession',  extract_accession(deconv_reference), scxa_url), '.')
     # create a new data frame with the reference information
-    tissue_info <- data.frame(V1 = "",
+    tissue_info <- data.frame(V1 = paste0("ref ", seq( length(reference_info) ) ),
                            V2 = reference_info)
                               
     # append the tissue_info data frame as a new line to the analysis_methods data frame
