@@ -84,8 +84,34 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
        # Now we have all the info we need, we can create the DESeqDataSet object.
        cat( "Creating DESeqDataSet object...\n" )
 
-       # for studies with technical replicated colData (here that is experiment) should contain a row for each sample in the analysis,
-       # which your countData (here countsForFormula) should contain one column for each sample. 
+       ## few fixes for experiments with technical replicates before calling DESeqDataSetFromMatrix
+       # for studies with technical replicates, colData (here 'experiment') should contain a row for each sample in the analysis,
+       # and countData (here 'countsForFormula') should contain one column for each sample
+       tech_reps <- duplicated(experiment$BioRepName)
+
+       if ( any( tech_reps ) ){
+        subset <- experiment[ tech_reps == FALSE, ]
+
+        # get order to match the order of the countData
+        countsForFormula.order <- colnames(countsForFormula)
+        filtered_data <- data.frame()
+
+        # if there are technical replicates, the BioRepName column in the colData should be unique
+        for (value in countsForFormula.order) {
+          subset_tmp <- subset[subset[["BioRepName"]] == value, ]
+          filtered_data <- rbind(filtered_data, subset_tmp)
+          rm(subset_tmp)
+        }
+        rownames(filtered_data) <- countsForFormula.order
+
+        experiment <- filtered_data
+        rm(subset, filtered_data, countsForFormula.order)
+
+        # DESeqDataSet needs countData to be non-negative integers
+        # This is not true when technical replicates have been averaged
+        countsForFormula <- round(countsForFormula)
+       }
+
 
        deseqDataSet <- DESeqDataSetFromMatrix(
          countData = countsForFormula,
