@@ -84,6 +84,9 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
        # Now we have all the info we need, we can create the DESeqDataSet object.
        cat( "Creating DESeqDataSet object...\n" )
 
+       # for studies with technical replicated colData (here that is experiment) should contain a row for each sample in the analysis,
+       # which your countData (here countsForFormula) should contain one column for each sample. 
+
        deseqDataSet <- DESeqDataSetFromMatrix(
          countData = countsForFormula,
          colData = experiment,
