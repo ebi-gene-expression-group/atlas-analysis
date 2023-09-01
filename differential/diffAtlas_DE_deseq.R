@@ -112,11 +112,6 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
         countsForFormula <- round(countsForFormula)
        }
 
-       cat( "countData head:\n" )
-       print( head(countsForFormula) )
-       cat( "colData:\n" )
-       print( experiment )
-
        deseqDataSet <- DESeqDataSetFromMatrix(
          countData = countsForFormula,
          colData = experiment,
