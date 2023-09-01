@@ -90,6 +90,8 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
        tech_reps <- duplicated(experiment$BioRepName)
 
        if ( any( tech_reps ) ){
+        
+        cat( "Duplicates detected in experiment BioRepName. Possible technical replicates .\n" )
         subset <- experiment[ tech_reps == FALSE, ]
 
         # get order to match the order of the countData
@@ -111,6 +113,11 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
         # This is not true when technical replicates have been averaged
         countsForFormula <- round(countsForFormula)
        }
+
+       cat( "countData head:\n" )
+       print( head(countsForFormula) )
+       cat( "colData:\n" )
+       print( experiment )
 
        deseqDataSet <- DESeqDataSetFromMatrix(
          countData = countsForFormula,
