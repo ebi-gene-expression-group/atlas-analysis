@@ -17,6 +17,7 @@ check_file_exists <- function( filename ) {
     }
 }
 
+
 # Get command line arguments -- filename for input and filename for output.
 args <- commandArgs( TRUE )
 
@@ -53,8 +54,15 @@ assayGroupMappingsList <- lapply( assayGroups, function( assayGroup ) {
     # Get the row indices of this assay group in the data frame.
     rowIndices <- which( assayGroupMappingsDF$AssayGroupID == assayGroup )
 
-    # Return the column headings at those row indices.
-    make.names( assayGroupMappingsDF$ColumnHeading[ rowIndices ] )
+    
+    # Get the column headings at those row indices
+    columnHeadings <- assayGroupMappingsDF$ColumnHeading[rowIndices]
+    # Sanitize the column headings if they do not contain "GTEX"
+    if(any(!grepl("GTEX", columnHeadings))) {
+        columnHeadings <- make.names( columnHeadings )
+    }
+    return(columnHeadings)
+    
 })
 
 # Create a list of data frames containing normalized data, one data frame for
