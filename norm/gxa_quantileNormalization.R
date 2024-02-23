@@ -38,6 +38,16 @@ check_file_exists( inputFile )
 
 # Read in the matrix file and add rownames.
 fpkmsDF <- read.delim( inputFile, header = TRUE )
+
+column_names_fpkmsDF <- colnames(fpkmsDF)
+# Check if any element contains the string "GTEX"
+if (any(grepl("GTEX", column_names_fpkmsDF))) {
+  print("At least one column name contains 'GTEX'.  Reading again table with check.names=FALSE ")
+  fpkmsDF <- read.delim( inputFile, header = TRUE, check.names = FALSE )
+} else {
+  print("No column name contains 'GTEX'")
+}
+
 rownames( fpkmsDF ) <- fpkmsDF[ , 1 ]
 fpkmsDF[ , 1 ] <- NULL
 
