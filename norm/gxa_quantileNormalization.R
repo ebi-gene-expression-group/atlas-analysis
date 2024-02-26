@@ -38,6 +38,18 @@ check_file_exists( inputFile )
 
 # Read in the matrix file and add rownames.
 fpkmsDF <- read.delim( inputFile, header = TRUE )
+
+column_names_fpkmsDF <- colnames(fpkmsDF)
+IS_GTEX <- FALSE
+# Check if any element contains the string "GTEX"
+if (any(grepl("GTEX", column_names_fpkmsDF))) {
+  print("At least one column name contains 'GTEX'.  Reading again table with check.names=FALSE ")
+  IS_GTEX <- TRUE
+  fpkmsDF <- read.delim( inputFile, header = TRUE, check.names = FALSE )
+} else {
+  print("No column name contains 'GTEX'")
+}
+
 rownames( fpkmsDF ) <- fpkmsDF[ , 1 ]
 fpkmsDF[ , 1 ] <- NULL
 
@@ -58,7 +70,7 @@ assayGroupMappingsList <- lapply( assayGroups, function( assayGroup ) {
     # Get the column headings at those row indices
     columnHeadings <- assayGroupMappingsDF$ColumnHeading[rowIndices]
     # Sanitize the column headings if they do not contain "GTEX"
-    if(any(!grepl("GTEX", columnHeadings))) {
+    if (! IS_GTEX ) {
         columnHeadings <- make.names( columnHeadings )
     }
     return(columnHeadings)
@@ -80,16 +92,27 @@ normalizedFpkmsList <- lapply( assayGroupMappingsList, function( columnHeadings 
     thisAssayGroupNormalizedMatrix <- normalizeBetweenArrays( thisAssayGroupMatrix, method = "quantile" )
 
     # Return a dataframe with the gene IDs in a column using the normalized matrix.
-    data.frame( thisAssayGroupNormalizedMatrix )
+    if ( IS_GTEX ) {
+        data.frame( thisAssayGroupNormalizedMatrix , check.names = FALSE )
+    } else {
+        data.frame( thisAssayGroupNormalizedMatrix )
+    }
 })
 
 # Combine the data frames into one data frame.
-normalizedFpkmDF <- data.frame( normalizedFpkmsList[ names( normalizedFpkmsList ) ] )
+if ( IS_GTEX ) {
+    normalizedFpkmDF <- data.frame( normalizedFpkmsList[ names( normalizedFpkmsList ) ] , check.names = FALSE )
+} else {
+    normalizedFpkmDF <- data.frame( normalizedFpkmsList[ names( normalizedFpkmsList ) ] )
+}
 # Remove the assay group IDs from the column headings.
 colnames( normalizedFpkmDF ) <- sub( "^g\\d+\\.", "", colnames( normalizedFpkmDF ) )
 
 # Add the gene IDs as the first column.
-normalizedFpkmDF <- data.frame( GeneID = rownames( normalizedFpkmDF ), normalizedFpkmDF )
-
+if ( IS_GTEX ) {
+    normalizedFpkmDF <- data.frame( GeneID = rownames( normalizedFpkmDF ), normalizedFpkmDF , check.names = FALSE )
+} else {
+    normalizedFpkmDF <- data.frame( GeneID = rownames( normalizedFpkmDF ), normalizedFpkmDF )
+}
 # Write the data frame containing normalized data to a new file.
 write.table( normalizedFpkmDF, file = outputFile, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE )
