@@ -43,7 +43,6 @@ cat("\n")
 SPECIFICITY_SCORE_CUTOFF  <- args[5]    # between 0 and 1
 EXPRESSION_CUTOFF  <- args[6]           # in tpms or fpkms
 
-
 ####################################
 # read xml file
 ####################################
@@ -75,8 +74,6 @@ summary_df <- assay_df %>%
     summarise(n_assays = n(), .groups = "drop")
 
 print(summary_df)
-
-
 
 ################################################
 # Read <accession>-<metric>.tsv.undecorated 
@@ -119,13 +116,11 @@ result_dt <- data.table(`Gene ID` = gene_ids, setNames(as.data.table(averaged_li
 result_dt <- result_dt[rowSums(result_dt[, -1, with = FALSE] != 0) > 0]
 dim(result_dt)
 
-
 # Remove 'Gene ID' column and convert remaining data to matrix
 mat <- as.matrix(result_dt[, !"Gene ID", with = FALSE])
 
 # Set rownames from 'Gene ID'
 rownames(mat) <- result_dt[["Gene ID"]]
-
 
 ####################################
 # run MGFR to get marker genes
@@ -169,8 +164,6 @@ print(duplicated_genes)
 # Stop execution if duplicates are found
 if (nrow(duplicated_genes) > 0) stop("Error: Duplicated genes found across gene marker lists.")
 
-
-
 ############################################################################
 # Filter all marker lists by SPECIFICITY_SCORE_CUTOFF
 ############################################################################
@@ -186,7 +179,6 @@ markers.list <- lapply(markers.list, function(marker_vec) {
 })
 
 print( markers.list )
-
 
 ############################################################################
 # save table to data frame
@@ -223,16 +215,12 @@ for (name in names(markers.list)) {
 }
 
 
-
-
 # Combine all data frames into one - List of final expression markers
 all_markers_df <- do.call(rbind, marker_tables)   
 
 # Optional: View result
 print( head(all_markers_df ) )
 print( dim(all_markers_df ) )
-
-
 
 #############################################################################################################
 # update the table to include rows for all samples, for all these genes identified as marker in one sample  
@@ -271,10 +259,6 @@ final_df <- final_df %>%
 
 
 print( head(final_df) )
-
-#  final_df [ which(final_df$GENE_ID=='ENSG00000206899'),]
-
-
 
 ##############################################################################
 # add correct gene expression
@@ -345,7 +329,6 @@ filtered_df <- filtered_df %>%
     ungroup()
 
 
-
 # get unique genes ordered by RANKING within each group using reframe()
 ordered_genes <- filtered_df %>%
     filter(RANKING > 0) %>%
@@ -354,13 +337,11 @@ ordered_genes <- filtered_df %>%
     reframe(GENE_ID = unique(GENE_ID)) %>%
     pull(GENE_ID)
 
-
 # Use those ordered genes to sort the full dataframe
 filtered_df_sorted <- filtered_df %>%
     filter(GENE_ID %in% ordered_genes) %>%
     mutate(GENE_ID = factor(GENE_ID, levels = ordered_genes)) %>%
     arrange(GENE_ID, GROUP_NAME)
-
 
 # replace -1 with NULL for sql loading
 filtered_df_sorted <- filtered_df_sorted %>%
@@ -380,6 +361,3 @@ write.table(x = filtered_df_sorted, file = args[4], append = FALSE, quote = FALS
             eol = "\n", na = "NA", dec = ".", row.names = FALSE,
             col.names = TRUE, qmethod = c("escape", "double"),
             fileEncoding = "")
-
-
-
