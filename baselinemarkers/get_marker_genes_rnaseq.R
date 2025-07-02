@@ -27,10 +27,6 @@ if (length(args) != 6) {
   stop("This script requires exactly 6 arguments: <config_xml> <expression_data.undecorated>  <expression_data>  <output_file> <specificity_score_cuttoff> <expression_cuttoff>")
 }
 
-metric <- as.character( sub(".*-(.*)\\.tsv\\.undecorated", "\\1", args[2]) )
-accession <- sub("-(tpms|fpkms)\\.tsv\\.undecorated$", "", args[2])
-
-
 arg_names <- c("Configuration XML file", "Expression data file (undecorated)", "Expression data file", "Output file", "Specificity Score Cutt-off", "Expression Cutoff")
 names(args) <- arg_names
 
@@ -42,6 +38,10 @@ cat("\n")
 
 SPECIFICITY_SCORE_CUTOFF  <- args[5]    # between 0 and 1
 EXPRESSION_CUTOFF  <- args[6]           # in tpms or fpkms
+
+metric <- as.character( sub(".*-(.*)\\.tsv\\.undecorated", "\\1", args[2]) )
+accession <- sub("-(tpms|fpkms)\\.tsv\\.undecorated$", "", args[2])
+
 
 ####################################
 # read xml file
