@@ -46,7 +46,6 @@ EXPRESSION_CUTOFF  <- args[6]           # in tpms or fpkms
 ####################################
 # read xml file
 ####################################
-# load XML file
 doc <- read_xml( args[1] )
 
 # Find all assay_group nodes
