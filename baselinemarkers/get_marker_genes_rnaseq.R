@@ -77,8 +77,6 @@ print(summary_df)
 ################################################
 # Read <accession>-<metric>.tsv.undecorated 
 ################################################
-
-# Read large file
 dt <- fread( args[2] )
 
 # Ensure dt is a data.table
