@@ -187,7 +187,10 @@ markers.list <- lapply(markers.list, function(marker_vec) {
     # Filter out entries with score >= cutoff
     marker_vec[!is.na(scores) & scores <= SPECIFICITY_SCORE_CUTOFF]
 })
-
+total_markers <- sum(sapply(markers.list, length))
+if (total_markers == 0) {
+  stop("No markers found after applying specificity score cutoff. Consider lowering the cutoff value.", call. = FALSE)
+}
 print( markers.list )
 
 ############################################################################
