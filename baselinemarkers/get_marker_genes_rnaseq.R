@@ -363,9 +363,9 @@ filtered_df_sorted <- filtered_df_sorted %>%
         SPECIFICITY_SCORE = ifelse(SPECIFICITY_SCORE == -1, "NULL", as.character(SPECIFICITY_SCORE))
     )
 
-print ( head(filtered_df_sorted) )
+colnames(filtered_df_sorted) <- c("experiment_accession", "assay_id", "assay", "gene_id", "specificity_score", "marker_gene_rank", "expression_unit", "number_assays", "expression_level", "gene_name")
 
-colnames(filtered_df) <- c("ACCESSION", "GROUP", "GROUP_NAME", "GENE_ID", "SPECIFICITY_SCORE", "RANKING", "METRIC", "NUMBER_SAMPLES", "EXPRESSION", "GENE_NAME")
+print ( head(filtered_df_sorted) )
 
 ####################################
 # save table
