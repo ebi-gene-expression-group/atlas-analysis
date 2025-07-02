@@ -19,25 +19,38 @@ for (pkg in required_packages) {
 cat("All required packages are loaded successfully.\n")
 
 
-
-## parse arguments
+# parse arguments
 args <- commandArgs(trailingOnly = TRUE)
 
-if (length(args) != 6) {
-  stop("This script requires exactly 6 arguments: <config_xml> <expression_data.undecorated>  <expression_data>  <output_file> <specificity_score_cuttoff> <expression_cuttoff>")
+if (length(args) < 4 || length(args) > 6) {
+    stop("Usage: Rscript script.R <config_xml> <expression_data.undecorated> <expression_data> <output_file> [<specificity_score_cutoff> <expression_cutoff>]")
 }
+
+# Default values
+default_specificity_cutoff <- 0.25   # between 0 and 1
+default_expression_cutoff  <- 0.5    # in tpms or fpkms
+
+if (length(args) == 4){
+    args[5] <- default_specificity_cutoff
+    args[6] <- default_expression_cutoff
+}
+
+if (length(args) == 5){
+    args[6] <- default_expression_cutoff
+}
+
 
 arg_names <- c("Configuration XML file", "Expression data file (undecorated)", "Expression data file", "Output file", "Specificity Score Cutt-off", "Expression Cutoff")
 names(args) <- arg_names
 
-cat("Arguments received:\n")
+cat("Arguments to be used:\n")
 for (name in names(args)) {
   cat(name, ":", args[[name]], "\n")
 }
 cat("\n")
 
-SPECIFICITY_SCORE_CUTOFF  <- args[5]    # between 0 and 1
-EXPRESSION_CUTOFF  <- args[6]           # in tpms or fpkms
+SPECIFICITY_SCORE_CUTOFF  <- args[5]
+EXPRESSION_CUTOFF  <- args[6]
 
 metric <- as.character( sub(".*-(.*)\\.tsv\\.undecorated", "\\1", args[2]) )
 accession <- sub("-(tpms|fpkms)\\.tsv\\.undecorated$", "", args[2])
