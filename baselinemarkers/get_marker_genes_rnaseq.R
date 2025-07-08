@@ -97,6 +97,9 @@ dt <- fread( args[2] )
 # Ensure dt is a data.table
 setDT(dt)
 
+# remove any possible duplicated columns with same name
+dt <- dt[, !duplicated(names(dt)), with = FALSE]
+
 # Create a named vector: names are old (assay), values are new (label)
 assay_to_label <- setNames(assay_df$label, assay_df$assay)
 
