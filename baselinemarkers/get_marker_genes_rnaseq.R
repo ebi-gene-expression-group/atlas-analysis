@@ -59,12 +59,12 @@ accession <- sub("-(tpms|fpkms)\\.tsv\\.undecorated$", "", args[2])
 ####################################
 # read xml file
 ####################################
-doc <- read_xml( args[1] )
+doc <- read_xml(args[1])
 
 # Find all assay_group nodes
 groups <- xml_find_all(doc, ".//assay_group")
 
-# extract information into a data frame
+# Extract information into a data frame
 assay_df <- bind_rows(lapply(groups, function(group) {
     group_id <- xml_attr(group, "id")
     group_label <- xml_attr(group, "label")
@@ -74,18 +74,20 @@ assay_df <- bind_rows(lapply(groups, function(group) {
         group = group_id,
         label = group_label,
         assay = xml_text(assays),
+        tech_rep = xml_attr(assays, "technical_replicate_id"),
         stringsAsFactors = FALSE
     )
 }))
 
 print(assay_df)
 
-# summary group
+# summary per group (number of assays regardless of technical replicate info)
 summary_df <- assay_df %>%
     group_by(group, label) %>%
     summarise(n_assays = n(), .groups = "drop")
 
 print(summary_df)
+
 
 ################################################
 # Read <accession>-<metric>.tsv.undecorated 
