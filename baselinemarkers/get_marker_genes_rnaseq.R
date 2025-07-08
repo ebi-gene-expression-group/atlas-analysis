@@ -104,6 +104,10 @@ columns_to_rename <- intersect(names(assay_to_label), colnames(dt))
 # Rename those columns
 setnames(dt, columns_to_rename, assay_to_label[columns_to_rename])
 
+# Remove columns not included in the config XML 
+dt <- dt[, c(1, which(names(dt)[-1] %in% assay_df$label ) + 1), with = FALSE]
+
+
 # Exclude "Gene ID" column
 dt_numeric <- dt[, -1, with = FALSE]
 gene_ids <- dt[[1]]  # save Gene ID separately
@@ -120,6 +124,10 @@ averaged_list <- lapply(unique_names, function(name) {
 
 # Combine into a new data.table with Gene ID
 result_dt <- data.table(`Gene ID` = gene_ids, setNames(as.data.table(averaged_list), unique_names))
+
+# Replaces NA with 0. Skips the first column (Gene ID)
+result_dt[, (2:ncol(result_dt)) := lapply(.SD, function(x) fifelse(is.na(x), 0, x)), .SDcols = 2:ncol(result_dt)]
+
 
 # Assuming 'Gene ID' is the first column and the rest are numeric
 # remove Genes with no expression in any column (won't be used for marker identification) 
