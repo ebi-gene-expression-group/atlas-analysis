@@ -104,9 +104,12 @@ setDT(dt)
 
 # dt columns names in the form: g1.WithInSampleAbundance g2.WithInSampleAbundance etc
 
+# Keep only 'Gene ID' and all columns with 'WithInSampleAbundance' (case-insensitive)
+dt_temp <- dt[, c("Gene ID", grep("WithInSampleAbundance", names(dt), ignore.case = TRUE, value = TRUE)), with = FALSE]
+dt <- dt_temp
+
 # Keep rows where Gene ID is not NA, not empty, and not purely numeric
 dt <- dt[!is.na(`Gene ID`) & `Gene ID` != "" & !grepl("^\\d+$", `Gene ID`)]
-
 
 # rename columns to assay name
 setnames(dt, old = names(dt)[-1], new = sapply(names(dt)[-1], function(n) assay_df$assay[assay_df$group == sub("\\..*", "", n)][1]))
