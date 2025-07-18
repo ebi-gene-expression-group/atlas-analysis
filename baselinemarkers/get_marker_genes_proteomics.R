@@ -438,6 +438,9 @@ colnames(filtered_df_sorted) <- c("experiment_accession", "assay_id", "assay", "
 # remove 'assay_id' and 'number_assays' columns, for now
 filtered_df_sorted <- filtered_df_sorted[, !(names(filtered_df_sorted) %in% c("assay_id", "number_assays"))]
 
+# replace NA in expression_level with 0
+filtered_df_sorted$expression_level[is.na(filtered_df_sorted$expression_level)] <- 0
+
 print ( head(filtered_df_sorted) )
 
 # temporal fix - sometimes and Gene.Name column is empty (Gene.ID is the Gene Name)
