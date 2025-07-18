@@ -343,16 +343,19 @@ filtered_df <- final_df %>%
     filter(!GENE_ID %in% genes_to_remove)
 
 # reassign RANKING within each GROUP_NAME for remaining valid rows
+# Re-rank genes within each group by ascending specificity, then descending expression, then gene ID (if RANKING != -1)
 
 filtered_df <- filtered_df %>%
-    group_by(GROUP_NAME) %>%
-    mutate(
-        new_rank = NA_integer_,  # initialize with NA of proper type
-        new_rank = replace(new_rank, RANKING != -1, dense_rank(SPECIFICITY_SCORE[RANKING != -1])),
-        RANKING = if_else(is.na(new_rank), -1L, new_rank)
-    ) %>%
-    select(-new_rank) %>%
-    ungroup()
+  group_by(GROUP_NAME) %>%
+  arrange(SPECIFICITY_SCORE, desc(EXPRESSION), GENE_ID, .by_group = TRUE) %>%
+  mutate(
+    new_rank = NA_integer_,  # initialize
+    new_rank = replace(new_rank, RANKING != -1, row_number()),  # assign ranks where applicable
+    RANKING = if_else(is.na(new_rank), -1L, new_rank)
+  ) %>%
+  select(-new_rank) %>%
+  ungroup()
+
 
 
 # get unique genes ordered by RANKING within each group using reframe()
