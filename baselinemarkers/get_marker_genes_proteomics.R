@@ -21,7 +21,16 @@ cat("All required packages are loaded successfully.\n")
 
 
  # parse arguments
- args <- commandArgs(trailingOnly = TRUE)
+args <- commandArgs(trailingOnly = FALSE)
+
+# Get path to the currently running script
+script.path <- normalizePath(sub("--file=", "", args[grep("--file=", args)]))
+script.dir <- dirname(script.path)
+
+source(file.path(script.dir, "marker_gene_utils.R"))
+
+args <- args[-(1:5)]
+print(args)
  
  if (length(args) < 4 || length(args) > 6) {
         stop("Usage: Rscript script.R <config_xml> <expression_data.undecorated.aggregated> <expression_data> <output_file> [<specificity_score_cutoff> <expression_cutoff>]")
@@ -229,7 +238,10 @@ markers.list <- lapply(markers.list, function(marker_vec) {
 
 total_markers <- sum(sapply(markers.list, length))
 if (total_markers == 0) {
-    stop("No markers found after applying specificity score cutoff. Consider lowering the cutoff value.", call. = FALSE)
+    message <- "No markers found after applying specificity score cutoff. Consider lowering the cutoff value."
+    info_file <- paste0(args[4], ".info")
+    writeLines(message, info_file)
+    stop(message, call. = FALSE)
 }
 
 print( markers.list )
