@@ -379,10 +379,10 @@ filtered_df_sorted <- filtered_df_sorted %>%
         SPECIFICITY_SCORE = ifelse(SPECIFICITY_SCORE == -1, "NULL", as.character(SPECIFICITY_SCORE))
     )
 
-colnames(filtered_df_sorted) <- c("experiment_accession", "assay_id", "assay", "gene_id", "specificity_score", "marker_gene_rank", "expression_unit", "number_assays", "expression_level", "gene_name")
+colnames(filtered_df_sorted) <- c("experiment_accession", "assay", "gene_id", "specificity_score", "marker_gene_rank", "expression_unit", "number_assays", "expression_level", "gene_name", "assay_id")
 
 # remove 'assay_id' and 'number_assays' columns, for now
-filtered_df_sorted <- filtered_df_sorted[, !(names(filtered_df_sorted) %in% c("assay_id", "number_assays"))]
+filtered_df_sorted <- filtered_df_sorted[, !(names(filtered_df_sorted) %in% c("number_assays"))]
 
 print ( head(filtered_df_sorted) )
 
