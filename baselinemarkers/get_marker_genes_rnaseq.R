@@ -379,6 +379,8 @@ filtered_df_sorted <- filtered_df_sorted %>%
         SPECIFICITY_SCORE = ifelse(SPECIFICITY_SCORE == -1, "NULL", as.character(SPECIFICITY_SCORE))
     )
 
+filtered_df_sorted <- filtered_df_sorted[c(setdiff(names(filtered_df_sorted), "assay_id"), "assay_id")]
+                     
 colnames(filtered_df_sorted) <- c("experiment_accession", "assay", "gene_id", "specificity_score", "marker_gene_rank", "expression_unit", "number_assays", "expression_level", "gene_name", "assay_id")
 
 # remove 'assay_id' and 'number_assays' columns, for now
