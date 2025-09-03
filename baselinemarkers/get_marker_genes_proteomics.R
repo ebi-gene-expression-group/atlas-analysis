@@ -446,9 +446,11 @@ filtered_df_sorted$expression_level[is.na(filtered_df_sorted$expression_level)] 
 
 print ( head(filtered_df_sorted) )
 
-filtered_df_sorted <- filtered_df_sorted[c(setdiff(names(filtered_df_sorted), "assay_id"), "assay_id")]
+filtered_df_sorted_resorted <- filtered_df_sorted[c(setdiff(names(filtered_df_sorted), "assay_id"), "assay_id")]
 
-print ( head(filtered_df_sorted) )
+filtered_df_sorted <- filtered_df_sorted_resorted
+                     
+print ( head(filtered_df_sorted_resorted) )
 
 # temporal fix - sometimes and Gene.Name column is empty (Gene.ID is the Gene Name)
 if (all(is.na(filtered_df_sorted$gene_name))) {
