@@ -300,7 +300,7 @@ final_df <- final_df %>%
     left_join(expression_decorated %>% select(GENE_ID = GeneID, GENE_NAME = Gene.Name),
               by = "GENE_ID")
 
-
+final_df$GENE_NAME[is.na(final_df$GENE_NAME)] <- ""
 
 head(final_df)
 dim(final_df)
