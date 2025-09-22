@@ -343,7 +343,8 @@ new_names <- colnames(expression_decorated)
 
 # Loop over group codes and replace them in column names
 for (code in names(name_map)) {
-    new_names <- sub(code, name_map[[code]], new_names)
+          pattern <- paste0("^", code, "(?=\\.|$)")
+          new_names <- sub(pattern, name_map[[code]], new_names, perl = TRUE)
 }
 
 # if necessary: remove '.WithInSampleAbundance' from the column names
