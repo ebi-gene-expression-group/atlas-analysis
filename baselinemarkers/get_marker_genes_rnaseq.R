@@ -88,63 +88,121 @@ summary_df <- assay_df %>%
 
 print(summary_df)
 
+if (file.exists(args[2])) {
+  ################################################
+  # Read <accession>-<metric>.tsv.undecorated 
+  ################################################
+  dt <- fread( args[2] )
+  
+  # Ensure dt is a data.table
+  setDT(dt)
+  
+  # remove any possible duplicated columns with same name
+  dt <- dt[, !duplicated(names(dt)), with = FALSE]
+  
+  # Create a named vector: names are old (assay), values are new (label)
+  assay_to_label <- setNames(assay_df$label, assay_df$assay)
+  
+  # Get intersecting assays (columns in dt that match assays in assay_df)
+  columns_to_rename <- intersect(names(assay_to_label), colnames(dt))
+  
+  # Rename those columns
+  setnames(dt, columns_to_rename, assay_to_label[columns_to_rename])
+  
+  # Remove columns not included in the config XML 
+  dt <- dt[, c(1, which(names(dt)[-1] %in% assay_df$label ) + 1), with = FALSE]
+  
+  
+  # Exclude "Gene ID" column
+  dt_numeric <- dt[, -1, with = FALSE]
+  gene_ids <- dt[[1]]  # save Gene ID separately
+  
+  # get the column names
+  col_names <- colnames(dt_numeric)
+  unique_names <- unique(col_names)
+  
+  # For each unique name, average all columns with that name
+  averaged_list <- lapply(unique_names, function(name) {
+      cols <- which(col_names == name)
+      rowMeans(dt_numeric[, ..cols], na.rm = TRUE)
+  })
+  
+  # Combine into a new data.table with Gene ID
+  result_dt <- data.table(`Gene ID` = gene_ids, setNames(as.data.table(averaged_list), unique_names))
+  
+  # Replaces NA with 0. Skips the first column (Gene ID)
+  result_dt[, (2:ncol(result_dt)) := lapply(.SD, function(x) fifelse(is.na(x), 0, x)), .SDcols = 2:ncol(result_dt)]
+  
+  
+  # Assuming 'Gene ID' is the first column and the rest are numeric
+  # remove Genes with no expression in any column (won't be used for marker identification) 
+  result_dt <- result_dt[rowSums(result_dt[, -1, with = FALSE] != 0) > 0]
+  dim(result_dt)
+  
+  # Remove 'Gene ID' column and convert remaining data to matrix
+  mat <- as.matrix(result_dt[, !"Gene ID", with = FALSE])
+  
+  # Set rownames from 'Gene ID'
+  rownames(mat) <- result_dt[["Gene ID"]]
 
-################################################
-# Read <accession>-<metric>.tsv.undecorated 
-################################################
-dt <- fread( args[2] )
+} else if (file.exists(args[3])) {
+  # Decorated file: use directly, columns are group IDs, no replicates
+  dt <- read.csv2(args[3], sep="\t")
+  # Ensure dt is a data.table
+  setDT(dt)
 
-# Ensure dt is a data.table
-setDT(dt)
-
-# remove any possible duplicated columns with same name
-dt <- dt[, !duplicated(names(dt)), with = FALSE]
-
-# Create a named vector: names are old (assay), values are new (label)
-assay_to_label <- setNames(assay_df$label, assay_df$assay)
-
-# Get intersecting assays (columns in dt that match assays in assay_df)
-columns_to_rename <- intersect(names(assay_to_label), colnames(dt))
-
-# Rename those columns
-setnames(dt, columns_to_rename, assay_to_label[columns_to_rename])
-
-# Remove columns not included in the config XML 
-dt <- dt[, c(1, which(names(dt)[-1] %in% assay_df$label ) + 1), with = FALSE]
+  dt <- dt[, !duplicated(names(dt)), with = FALSE]
 
 
-# Exclude "Gene ID" column
-dt_numeric <- dt[, -1, with = FALSE]
-gene_ids <- dt[[1]]  # save Gene ID separately
-
-# get the column names
-col_names <- colnames(dt_numeric)
-unique_names <- unique(col_names)
-
-# For each unique name, average all columns with that name
-averaged_list <- lapply(unique_names, function(name) {
-    cols <- which(col_names == name)
-    rowMeans(dt_numeric[, ..cols], na.rm = TRUE)
-})
-
-# Combine into a new data.table with Gene ID
-result_dt <- data.table(`Gene ID` = gene_ids, setNames(as.data.table(averaged_list), unique_names))
-
-# Replaces NA with 0. Skips the first column (Gene ID)
-result_dt[, (2:ncol(result_dt)) := lapply(.SD, function(x) fifelse(is.na(x), 0, x)), .SDcols = 2:ncol(result_dt)]
+  # Remove columns not included in the config XML 
+  dt <- dt[, c(1:2, which(names(dt)[-(1:2)] %in% assay_df$group) + 2), with = FALSE]
 
 
-# Assuming 'Gene ID' is the first column and the rest are numeric
-# remove Genes with no expression in any column (won't be used for marker identification) 
-result_dt <- result_dt[rowSums(result_dt[, -1, with = FALSE] != 0) > 0]
-dim(result_dt)
+  # Exclude "Gene Name and Gene ID" column
+  dt_numeric <- dt[, -(1:2), with = FALSE]
 
-# Remove 'Gene ID' column and convert remaining data to matrix
-mat <- as.matrix(result_dt[, !"Gene ID", with = FALSE])
+  dt_numeric_clean <- dt_numeric[, lapply(.SD, function(x) {
+    sapply(strsplit(x, ","), `[`, 3)
+  })]
 
-# Set rownames from 'Gene ID'
-rownames(mat) <- result_dt[["Gene ID"]]
 
+  gene_ids <- dt[[1]]  # save Gene ID separately
+
+
+  # get the column names
+  col_names <- colnames(dt_numeric)
+  unique_names <- unique(col_names)
+
+  # For each unique name, average all columns with that name
+  averaged_list <- dt_numeric[, lapply(.SD, function(x) {
+    sapply(strsplit(x, ","), `[`, 3)
+  })]
+
+  # Combine into a new data.table with Gene ID
+  # Combine into a new data.table with Gene ID
+  result_dt <- data.table(`Gene ID` = gene_ids, setNames(as.data.table(averaged_list), unique_names))
+
+
+
+  # Replaces NA with 0. Skips the first column (Gene ID)
+  result_dt[, (2:ncol(result_dt)) := lapply(.SD, function(x) {
+    xnum <- as.numeric(x)            # coerce to numeric
+    fcoalesce(xnum, 0)               # replace NA with 0
+  }), .SDcols = 2:ncol(result_dt)]
+
+  # Assuming 'Gene ID' is the first column and the rest are numeric
+  # remove Genes with no expression in any column (won't be used for marker identification) 
+  result_dt <- result_dt[rowSums(result_dt[, -1, with = FALSE] != 0) > 0]
+  dim(result_dt)
+
+  # Remove 'Gene ID' column and convert remaining data to matrix
+  mat <- as.matrix(result_dt[, !"Gene ID", with = FALSE])
+
+  # Set rownames from 'Gene ID'
+  rownames(mat) <- result_dt[["Gene ID"]]
+} else {
+  stop("Neither undecorated nor decorated expression data file is available.")
+}
 ####################################
 # run MGFR to get marker genes
 ####################################
@@ -213,31 +271,41 @@ print( markers.list )
 # initialize list to store results
 marker_tables <- list()
 
+if (file.exists(args[2])){
+  lookup <- "label"
+} else {
+  lookup <- "group"
+}
+  
 # Loop over each entry in markers.list
 for (name in names(markers.list)) {
-    marker_vec <- markers.list[[name]]
-    
-    # Skip if fewer than 1 markers
-    if (length(marker_vec) < 1) next
-    
-    # Split into gene and score
-    split_vals <- strsplit(marker_vec, " : ")
-    GENE_ID <- sapply(split_vals, `[`, 1)
-    specificity_score <- as.numeric(sapply(split_vals, `[`, 2))
-    
-    df <- data.frame(
-        ACCESSION=accession ,
-        GROUP= summary_df %>%  filter(label == sub("_markers$", "", name) ) %>% pull(group),
-        GROUP_NAME=sub("_markers$", "", name),
-        GENE_ID = GENE_ID,
-        SPECIFICITY_SCORE = specificity_score,
-        RANKING = seq_along(GENE_ID),
-        METRIC = metric,
-        NUMBER_SAMPLES= summary_df %>%  filter(label == sub("_markers$", "", name) ) %>% pull(n_assays),
-        EXPRESSION = 0
-    )
-    
-    marker_tables[[name]] <- df
+  marker_vec <- markers.list[[name]]
+  
+  # Skip if fewer than 1 markers
+  if (length(marker_vec) < 1) next
+  
+  # Split into gene and score
+  split_vals <- strsplit(marker_vec, " : ")
+  GENE_ID <- sapply(split_vals, `[`, 1)
+  specificity_score <- as.numeric(sapply(split_vals, `[`, 2))
+  key_val <- sub("_markers$", "", name)
+  row <- summary_df %>%
+    filter(.data[[lookup]] == key_val) %>%
+    slice(1)
+  
+  df <- data.frame(
+    ACCESSION=accession ,
+    GROUP= if (lookup == "label") row[[ "group" ]] else key_val,
+    GROUP_NAME=if (lookup == "label") key_val else row[[ "label" ]],
+    GENE_ID = GENE_ID,
+    SPECIFICITY_SCORE = specificity_score,
+    RANKING = seq_along(GENE_ID),
+    METRIC = metric,
+    NUMBER_SAMPLES= summary_df %>%  filter(group == sub("_markers$", "", name) ) %>% pull(n_assays),
+    EXPRESSION = 0
+  )
+  
+  marker_tables[[name]] <- df
 }
 
 
