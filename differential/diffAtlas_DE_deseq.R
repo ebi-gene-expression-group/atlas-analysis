@@ -114,7 +114,6 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
         # nf-core count data can be float so rounding them
 
 	   countsForFormula <- round(countsForFormula)
-       storage.mode(countsForFormula) <- "integer"
 
        cat( "countData head:\n" )
        print( head(countsForFormula) )
