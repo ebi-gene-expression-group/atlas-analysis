@@ -27,7 +27,22 @@ if (is.na(top_n) || top_n < 1) {
 clean_title <- function(x) {
   lines <- trimws(strsplit(x, "\n", fixed = TRUE)[[1]])
   lines <- lines[nzchar(lines)]
-  paste(strwrap(paste(lines, collapse = " "), width = 75), collapse = "\n")
+  paste(strwrap(paste(lines, collapse = " "), width = 62), collapse = "\n")
+}
+
+gene_set_label <- function(x) {
+  labels <- c(
+    go = "GO terms",
+    reactome = "Reactome pathways",
+    interpro = "InterPro domains"
+  )
+
+  key <- tolower(x)
+  if (key %in% names(labels)) {
+    labels[[key]]
+  } else {
+    paste(x, "terms")
+  }
 }
 
 wrap_label <- function(x, width = 48) {
@@ -226,8 +241,8 @@ subtitle <- paste0(
   "Top ",
   nrow(plot_data),
   " ",
-  gene_set_type,
-  " terms by adjusted p-value"
+  gene_set_label(gene_set_type),
+  " by adjusted p-value"
 )
 
 dotplot <- ggplot(plot_data, aes(x = effect_size, y = label)) +
@@ -252,7 +267,7 @@ dotplot <- ggplot(plot_data, aes(x = effect_size, y = label)) +
     panel.grid.minor = element_blank(),
     axis.text.y = element_text(size = 10, color = "grey15"),
     axis.text.x = element_text(color = "grey25"),
-    plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 13),
     plot.subtitle = element_text(hjust = 0.5, color = "grey35", margin = margin(b = 12)),
     legend.position = "right",
     plot.margin = margin(18, 24, 18, 18)
