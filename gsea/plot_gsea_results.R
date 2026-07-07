@@ -4,7 +4,7 @@ suppressPackageStartupMessages(library(ggplot2))
 
 usage <- paste(
   "Usage:",
-  "plot_gsea_results.R <gsea.tsv> <plot.png> <plot.svg> <title> <gene_set_type> [top_n]",
+  "plot_gsea_results.R <gsea.tsv> <plot.png> <plot.svg> <title> <gene_set_type> [top_n] [gene_set_file] [significant_gene_file]",
   sep = "\n"
 )
 
@@ -19,6 +19,8 @@ svg_file <- args[[3]]
 plot_title <- args[[4]]
 gene_set_type <- args[[5]]
 top_n <- if (length(args) >= 6) as.integer(args[[6]]) else 10
+gene_set_file <- if (length(args) >= 7) args[[7]] else ""
+significant_gene_file <- if (length(args) >= 8) args[[8]] else ""
 
 if (is.na(top_n) || top_n < 1) {
   top_n <- 10
@@ -81,6 +83,102 @@ looks_like_accession <- function(x) {
   grepl("^(GO:|R-[A-Z]+-|IPR[0-9]+)", as.character(x))
 }
 
+read_significant_genes <- function(path) {
+  if (!nzchar(path) || !file.exists(path) || file.info(path)$size == 0) {
+    return(character())
+  }
+
+  tokens <- unlist(strsplit(readLines(path, warn = FALSE), "\t", fixed = TRUE))
+  tokens <- trimws(tokens)
+  tokens <- tokens[nzchar(tokens)]
+  tokens <- tokens[!tolower(tokens) %in% c("x", "v1", "gene", "genes")]
+  unique(tokens)
+}
+
+read_gene_sets <- function(path, significant_genes, term_ids) {
+  if (!nzchar(path) || !file.exists(path) || file.info(path)$size == 0) {
+    return(list())
+  }
+  if (length(significant_genes) == 0 || length(term_ids) == 0) {
+    return(list())
+  }
+
+  mapping <- tryCatch(
+    read.table(path, sep = "\t", header = FALSE, quote = "\"", comment.char = "!", fill = TRUE, stringsAsFactors = FALSE),
+    error = function(e) data.frame()
+  )
+  if (ncol(mapping) < 2 || nrow(mapping) == 0) {
+    return(list())
+  }
+
+  mapping <- mapping[, 1:2, drop = FALSE]
+
+  first_term_matches <- sum(as.character(mapping[[1]]) %in% term_ids, na.rm = TRUE)
+  second_term_matches <- sum(as.character(mapping[[2]]) %in% term_ids, na.rm = TRUE)
+  if (first_term_matches > second_term_matches) {
+    mapping <- mapping[, c(2, 1), drop = FALSE]
+  }
+
+  colnames(mapping) <- c("gene", "term")
+  mapping$gene <- as.character(mapping$gene)
+  mapping$term <- as.character(mapping$term)
+  mapping <- mapping[mapping$term %in% term_ids & mapping$gene %in% significant_genes, , drop = FALSE]
+
+  split(mapping$gene, mapping$term)
+}
+
+find_overlap_groups <- function(plot_data, gene_sets, min_shared = 3, min_jaccard = 0.20, min_overlap = 0.50) {
+  n_terms <- nrow(plot_data)
+  if (n_terms < 2 || length(gene_sets) == 0) {
+    return(rep(NA_integer_, n_terms))
+  }
+
+  adjacency <- matrix(FALSE, n_terms, n_terms)
+  for (i in seq_len(n_terms - 1)) {
+    for (j in (i + 1):n_terms) {
+      genes_i <- unique(gene_sets[[plot_data$accession[[i]]]])
+      genes_j <- unique(gene_sets[[plot_data$accession[[j]]]])
+      if (length(genes_i) == 0 || length(genes_j) == 0) {
+        next
+      }
+
+      shared <- length(intersect(genes_i, genes_j))
+      union_size <- length(union(genes_i, genes_j))
+      smaller_size <- min(length(genes_i), length(genes_j))
+      jaccard <- if (union_size > 0) shared / union_size else 0
+      overlap <- if (smaller_size > 0) shared / smaller_size else 0
+
+      if (shared >= min_shared && (jaccard >= min_jaccard || overlap >= min_overlap)) {
+        adjacency[i, j] <- TRUE
+        adjacency[j, i] <- TRUE
+      }
+    }
+  }
+
+  groups <- rep(NA_integer_, n_terms)
+  group_id <- 0L
+  for (start in seq_len(n_terms)) {
+    if (!is.na(groups[[start]]) || !any(adjacency[start, ])) {
+      next
+    }
+
+    group_id <- group_id + 1L
+    queue <- start
+    groups[[start]] <- group_id
+    while (length(queue) > 0) {
+      current <- queue[[1]]
+      queue <- queue[-1]
+      neighbours <- which(adjacency[current, ] & is.na(groups))
+      if (length(neighbours) > 0) {
+        groups[neighbours] <- group_id
+        queue <- c(queue, neighbours)
+      }
+    }
+  }
+
+  groups
+}
+
 make_placeholder_plot <- function(message) {
   ggplot() +
     annotate("text", x = 0, y = 0, label = message, size = 5) +
@@ -104,7 +202,7 @@ save_plot <- function(plot, rows = top_n) {
     if (requireNamespace("svglite", quietly = TRUE)) {
       ggsave(svg_file, plot = plot, width = width, height = height, device = svglite::svglite, bg = "white")
     } else {
-      ggsave(svg_file, plot = plot, width = width, height = height, device = grDevices::svg, bg = "white")
+      FALSE
     }
     file.exists(svg_file) && file.info(svg_file)$size > 0
   }, error = function(e) {
@@ -227,6 +325,27 @@ if (all(is.na(plot_data$sig_genes))) {
 
 plot_data <- plot_data[order(plot_data$padj, -plot_data$effect_size), , drop = FALSE]
 plot_data <- head(plot_data, top_n)
+plot_data$original_rank <- seq_len(nrow(plot_data))
+
+significant_genes <- read_significant_genes(significant_gene_file)
+gene_sets <- read_gene_sets(gene_set_file, significant_genes, plot_data$accession)
+plot_data$overlap_group <- find_overlap_groups(plot_data, gene_sets)
+has_overlap_groups <- any(!is.na(plot_data$overlap_group))
+
+if (has_overlap_groups) {
+  group_order <- aggregate(
+    plot_data$padj,
+    by = list(group = ifelse(is.na(plot_data$overlap_group), paste0("single_", plot_data$original_rank), paste0("group_", plot_data$overlap_group))),
+    FUN = function(x) {
+      x <- x[is.finite(x)]
+      if (length(x) == 0) Inf else min(x)
+    }
+  )
+  names(group_order)[[2]] <- "group_min_padj"
+  plot_data$sort_group <- ifelse(is.na(plot_data$overlap_group), paste0("single_", plot_data$original_rank), paste0("group_", plot_data$overlap_group))
+  plot_data <- merge(plot_data, group_order, by.x = "sort_group", by.y = "group", all.x = TRUE, sort = FALSE)
+  plot_data <- plot_data[order(plot_data$group_min_padj, plot_data$padj, -plot_data$effect_size), , drop = FALSE]
+}
 
 plot_data$label <- wrap_label(plot_data$term)
 duplicated_labels <- duplicated(plot_data$label) | duplicated(plot_data$label, fromLast = TRUE)
@@ -236,6 +355,26 @@ plot_data$label[duplicated_labels] <- paste0(
   plot_data$accession[duplicated_labels]
 )
 plot_data$label <- factor(plot_data$label, levels = rev(plot_data$label))
+
+strip_data <- plot_data[!is.na(plot_data$overlap_group), , drop = FALSE]
+if (nrow(strip_data) > 0) {
+  strip_data$overlap_group <- factor(strip_data$overlap_group, levels = sort(unique(strip_data$overlap_group)))
+}
+
+x_min <- min(c(0.9, plot_data$effect_size), na.rm = TRUE)
+x_max <- max(c(1, plot_data$effect_size), na.rm = TRUE)
+x_range <- max(x_max - x_min, 0.1)
+x_strip <- x_min + (x_range * 0.025)
+x_strip_width <- x_range * 0.012
+
+overlap_palette <- c(
+  "#0072B2", "#D55E00", "#009E73", "#CC79A7",
+  "#E69F00", "#56B4E9", "#7E57C2", "#666666"
+)
+if (nrow(strip_data) > length(overlap_palette)) {
+  overlap_palette <- grDevices::colorRampPalette(overlap_palette)(nrow(strip_data))
+}
+overlap_colors <- overlap_palette[seq_len(max(1, length(levels(strip_data$overlap_group))))]
 
 subtitle <- paste0(
   "Top ",
@@ -259,8 +398,10 @@ dotplot <- ggplot(plot_data, aes(x = effect_size, y = label)) +
     title = clean_title(plot_title),
     subtitle = subtitle,
     x = "Observed / expected",
-    y = NULL
+    y = NULL,
+    caption = if (has_overlap_groups) "Matching coloured strips mark terms with meaningful significant-gene overlap." else NULL
   ) +
+  scale_x_continuous(limits = c(x_min, x_max + x_range * 0.06)) +
   theme_minimal(base_size = 12) +
   theme(
     panel.grid.major.y = element_blank(),
@@ -269,8 +410,22 @@ dotplot <- ggplot(plot_data, aes(x = effect_size, y = label)) +
     axis.text.x = element_text(color = "grey25"),
     plot.title = element_text(face = "bold", hjust = 0.5, size = 13),
     plot.subtitle = element_text(hjust = 0.5, color = "grey35", margin = margin(b = 12)),
+    plot.caption = element_text(color = "grey40", size = 9),
     legend.position = "right",
     plot.margin = margin(18, 24, 18, 18)
   )
+
+if (nrow(strip_data) > 0) {
+  dotplot <- dotplot +
+    geom_tile(
+      data = strip_data,
+      aes(x = x_strip, y = label, fill = overlap_group),
+      width = x_strip_width,
+      height = 0.72,
+      inherit.aes = FALSE,
+      show.legend = FALSE
+    ) +
+    scale_fill_manual(values = overlap_colors)
+}
 
 save_plot(dotplot, rows = nrow(plot_data))
