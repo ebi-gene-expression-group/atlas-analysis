@@ -371,10 +371,11 @@ overlap_palette <- c(
   "#0072B2", "#D55E00", "#009E73", "#CC79A7",
   "#E69F00", "#56B4E9", "#7E57C2", "#666666"
 )
-if (nrow(strip_data) > length(overlap_palette)) {
-  overlap_palette <- grDevices::colorRampPalette(overlap_palette)(nrow(strip_data))
+n_groups <- max(1, length(levels(strip_data$overlap_group)))
+if (n_groups > length(overlap_palette)) {
+  overlap_palette <- grDevices::colorRampPalette(overlap_palette)(n_groups)
 }
-overlap_colors <- overlap_palette[seq_len(max(1, length(levels(strip_data$overlap_group))))]
+overlap_colors <- overlap_palette[seq_len(n_groups)]
 
 subtitle <- paste0(
   "Top ",
