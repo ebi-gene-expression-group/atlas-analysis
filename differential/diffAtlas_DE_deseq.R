@@ -108,11 +108,12 @@ diffAtlas_DE_deseq2 <- function( expAcc, atlasProcessingDirectory ) {
 
         experiment <- filtered_data
         rm(subset, filtered_data, countsForFormula.order)
-
+		}
+		 
         # DESeqDataSet needs countData to be non-negative integers
-        # This is not true when technical replicates have been averaged
-        countsForFormula <- round(countsForFormula)
-       }
+        # nf-core count data can be float so rounding them
+
+	   countsForFormula <- round(countsForFormula)
 
        cat( "countData head:\n" )
        print( head(countsForFormula) )

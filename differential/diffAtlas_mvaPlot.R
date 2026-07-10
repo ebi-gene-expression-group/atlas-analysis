@@ -18,14 +18,40 @@ diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 	# data (e.g. "NA"s).
 	madf <- madf[complete.cases(madf),]
 
-	if(techType == "microarray") {
+	requiredColumns <- c("avgExpr", "logFC", "adjPval")
+	missingColumns <- setdiff(requiredColumns, colnames(madf))
+	if(length(missingColumns) > 0) {
+		stop(paste("Missing required MvA plot columns:", paste(missingColumns, collapse=", ")))
+	}
 
-		# Find minimum and maximum values for doing the ticks on the axes. Not
-		# using for DESeq results for RNA-seq data because for that we'll use
-		# log10 scale on x-axis.
-		minLogFC <- floor(min(madf$logFC))
-		maxLogFC <- ceiling(max(madf$logFC))
-		maxAvgExpr <- ceiling(max(madf$avgExpr))
+	if(techType == "rnaseq") {
+		# The RNA-seq plot uses a log10 x-axis, so zero-count rows cannot be plotted.
+		madf <- madf[madf$avgExpr > 0,]
+	}
+
+	if(nrow(madf) == 0) {
+		stop("No complete rows with plottable MvA data found.")
+	}
+
+	fdrCutoff <- 0.05
+	foldChangeGuide <- 1
+
+	madf$deCall <- "Non-DE"
+	madf$deCall[madf$adjPval < fdrCutoff & madf$logFC > 0] <- "Up-regulated"
+	madf$deCall[madf$adjPval < fdrCutoff & madf$logFC < 0] <- "Down-regulated"
+	madf$deCall <- factor(madf$deCall, levels=c("Down-regulated", "Non-DE", "Up-regulated"))
+
+	upCount <- sum(madf$deCall == "Up-regulated")
+	downCount <- sum(madf$deCall == "Down-regulated")
+	nonDeCount <- sum(madf$deCall == "Non-DE")
+	summaryText <- paste0(
+		"FDR < ", fdrCutoff, ": ",
+		upCount, " up, ",
+		downCount, " down, ",
+		nonDeCount, " non-DE genes"
+	)
+
+	if(techType == "microarray") {
 
 		# label for x-axis
 		xAxisLabel = "average intensity"
@@ -39,33 +65,37 @@ diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 	# load ggplot2
 	library(ggplot2)
 
-	# Plot!
-	#  - Start process with ggplot() function, give it the data for x and y, tell
-	#    it how to colour the points (using the "adjPval" column in the data
-	#    frame). "factor(adjPval < 0.05)" gives FALSE or TRUE. The levels
-	#    should be in the order: FALSE, TRUE. So later specify colour values
-	#    with "scale_colour_manual" in that order.
-	#  - Use geom_jitter() to reduce "overplotting" so that we can see points
-	#    that overlap easier. pass it alpha value for transparency of points
-	#    (lower=more transparent) and size for point size.
-	mvaPlot <- ggplot(madf, aes(x=avgExpr, y=logFC, colour=factor(adjPval < 0.05))) + geom_jitter(alpha=0.8, size=1) +
-		
-		# Apply the colours to the points in the plot. These should be in order
-		# "non-DE-colour, DE-colour". What's in the "name" argument ends up as
-		# the title of the legend/key.
-		scale_colour_manual(name="DE call (FDR < 0.05):", values=c("dimgrey", "red"), labels=c("non-DE", "DE")) +
-		
-		# Remove the default grey grid background to the plot and legend; add
-		# back the axis lines.
-		theme(panel.grid=element_blank(), panel.background=element_blank(), legend.key=element_blank(), axis.line=element_line()) +
-		
-		# Position the legend
-		theme(legend.position="bottom", legend.direction="horizontal") 
+	nonDeData <- madf[madf$deCall == "Non-DE",]
+	deData <- madf[madf$deCall != "Non-DE",]
+
+	mvaPlot <- ggplot(madf, aes(x=avgExpr, y=logFC)) +
+		geom_hline(yintercept=0, colour="grey35", linewidth=0.4) +
+		geom_hline(yintercept=c(-foldChangeGuide, foldChangeGuide), colour="grey70", linetype="dotted", linewidth=0.35) +
+		geom_point(data=nonDeData, aes(colour=deCall), alpha=0.28, size=0.55) +
+		geom_point(data=deData, aes(colour=deCall), alpha=0.7, size=0.85) +
+		scale_colour_manual(
+			name=paste0("DE call (FDR < ", fdrCutoff, ")"),
+			values=c("Down-regulated"="#2b6cb0", "Non-DE"="grey55", "Up-regulated"="#d73027"),
+			drop=FALSE
+		) +
+		theme_minimal(base_size=12) +
+		theme(
+			panel.grid.minor=element_blank(),
+			axis.line=element_line(colour="grey25", linewidth=0.35),
+			legend.position="bottom",
+			legend.direction="horizontal",
+			legend.title=element_text(face="bold"),
+			plot.title=element_text(face="bold", hjust=0.5, size=14),
+			plot.subtitle=element_text(hjust=0.5, colour="grey35", margin=margin(b=10)),
+			plot.caption=element_text(colour="grey40", size=9),
+			plot.margin=margin(14, 18, 12, 14)
+		)
 
 	if(techType == "microarray") {
 			
-		# Add numbers to the axes, with minima and maxima from above.
-		mvaPlot <- mvaPlot + scale_y_continuous(breaks=minLogFC:maxLogFC) + scale_x_continuous(breaks=1:maxAvgExpr)
+		mvaPlot <- mvaPlot +
+			scale_y_continuous(breaks=pretty(madf$logFC, n=7)) +
+			scale_x_continuous(breaks=pretty(madf$avgExpr, n=6))
 	
 	} else if(techType == "rnaseq") {
 		
@@ -78,14 +108,13 @@ diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 
 		# Add the title (the description for this contrast). Use strwrap()
 		# function to make it wrap after 70 characters.
-		ggtitle(paste(strwrap(contrastName, width=70), collapse="\n"))
+		labs(
+			title=paste(strwrap(contrastName, width=70), collapse="\n"),
+			subtitle=summaryText,
+			caption=paste0("Horizontal guide lines mark log2 fold-change 0 and +/-", foldChangeGuide, ".")
+		)
 	
-	# Save the plot to a file (type specified by filename extension). Pass
-	# type="cairo" for the graphics library as the default doesn't seem to work
-	# on lime. The trouble with this is that for some reason it creates a file
-	# called "Rplots.pdf". Also, it doesn't make as nice an image as on my
-	# MacBook (lower res).
-	ggsave(mvaPlot, file=plotFile, dpi=150, type="cairo")
+	ggsave(filename=plotFile, plot=mvaPlot, width=7, height=6, dpi=300, bg="white")
 }
 
 
