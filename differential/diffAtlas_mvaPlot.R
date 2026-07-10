@@ -114,7 +114,7 @@ diffAtlas_mvaPlot <<- function(plotDataFile, contrastName, plotFile, techType) {
 			caption=paste0("Horizontal guide lines mark log2 fold-change 0 and +/-", foldChangeGuide, ".")
 		)
 	
-	ggsave(mvaPlot, file=plotFile, width=7, height=6, dpi=300, bg="white")
+	ggsave(filename=plotFile, plot=mvaPlot, width=7, height=6, dpi=300, bg="white")
 }
 
 
