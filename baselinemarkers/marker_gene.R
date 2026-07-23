@@ -435,14 +435,7 @@ if (grepl("\\.tsv(\\.|$)", expr_decorated_path, ignore.case = TRUE)) {
 
 print(head(expression_decorated))
 
-if (is_rnaseq) {
-  # Join gene names
-  final_df <- final_df |>
-    dplyr::left_join(
-      expression_decorated |> dplyr::select(GENE_ID = .data$GeneID, GENE_NAME = .data$Gene.Name),
-      by = "GENE_ID"
-    )
-} else {
+if (!is_rnaseq) {
   # Map group codes to labels and clean decorated column names
   name_map <- setNames(summary_df$label, summary_df$group)
   new_names <- colnames(expression_decorated)
@@ -453,13 +446,53 @@ if (is_rnaseq) {
   }
   new_names <- sub("\\.WithInSampleAbundance", "", new_names)
   colnames(expression_decorated) <- new_names
-
-  final_df <- final_df |>
-    dplyr::left_join(
-      expression_decorated |> dplyr::select(GENE_ID = .data$Gene.ID, GENE_NAME = .data$Gene.Name),
-      by = "GENE_ID"
-    )
 }
+
+find_col <- function(df, candidates, label, required = TRUE) {
+  hit <- candidates[candidates %in% names(df)]
+  if (length(hit) > 0) return(hit[[1]])
+
+  if (required) {
+    stop(
+      paste0(
+        "Decorated expression file must contain ", label,
+        ". Tried: ", paste(candidates, collapse = ", "),
+        ". Available columns: ", paste(names(df), collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+
+  NA_character_
+}
+
+gene_id_col <- find_col(
+  expression_decorated,
+  c("GeneID", "Gene ID", "Gene.ID", "gene_id", "gene.id"),
+  "gene ID column"
+)
+
+gene_name_col <- find_col(
+  expression_decorated,
+  c("Gene.Name", "Gene Name", "GeneName", "gene_name", "gene.name"),
+  "gene name column",
+  required = FALSE
+)
+
+if (is.na(gene_name_col)) {
+  expression_decorated$GENE_NAME_FALLBACK <- ""
+  gene_name_col <- "GENE_NAME_FALLBACK"
+}
+
+final_df <- final_df |>
+  dplyr::left_join(
+    data.frame(
+      GENE_ID = expression_decorated[[gene_id_col]],
+      GENE_NAME = expression_decorated[[gene_name_col]],
+      stringsAsFactors = FALSE
+    ),
+    by = "GENE_ID"
+  )
 
 # Compute expression for each row (vectorized where possible)
 final_df$EXPRESSION <- NA_real_
@@ -467,10 +500,7 @@ final_df$EXPRESSION <- NA_real_
 if (is_rnaseq) {
   # For RNA-seq, expression_decorated columns named by GROUP (assay code), values as "x,y,z" strings; take 3rd value.
   # Build a fast lookup for GeneID rows
-  if (!"GeneID" %in% names(expression_decorated)) {
-    stop("Decorated RNA-seq file must contain 'GeneID' column.", call. = FALSE)
-  }
-  gid_index <- match(final_df$GENE_ID, expression_decorated$GeneID)
+  gid_index <- match(final_df$GENE_ID, expression_decorated[[gene_id_col]])
 
   # Safe extraction helper
   extract_third <- function(x) {
@@ -490,10 +520,7 @@ if (is_rnaseq) {
   }
 } else {
   # Proteomics: columns named by GROUP_NAME, numeric single values
-  if (!"Gene.ID" %in% names(expression_decorated)) {
-    stop("Decorated proteomics file must contain 'Gene.ID' column.", call. = FALSE)
-  }
-  gid_index <- match(final_df$GENE_ID, expression_decorated$Gene.ID)
+  gid_index <- match(final_df$GENE_ID, expression_decorated[[gene_id_col]])
   for (i in seq_len(nrow(final_df))) {
     row_idx <- gid_index[i]
     if (is.na(row_idx)) next
