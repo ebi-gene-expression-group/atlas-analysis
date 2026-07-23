@@ -541,21 +541,17 @@ genes_to_remove <- final_df |>
 
 filtered_df <- final_df |> dplyr::filter(!GENE_ID %in% genes_to_remove)
 
-filtered_df <- filtered_df |>
+ranked_markers <- filtered_df |>
+  dplyr::filter(RANKING != -1) |>
   dplyr::group_by(GROUP_NAME) |>
-  dplyr::arrange(
-    RANKING == -1,
-    SPECIFICITY_SCORE,
-    dplyr::desc(EXPRESSION),
-    GENE_ID,
-    .by_group = TRUE
-  ) |>
-  dplyr::mutate(
-    marker_rank_tmp = cumsum(RANKING != -1),
-    RANKING = dplyr::if_else(RANKING != -1, marker_rank_tmp, -1L)
-  ) |>
-  dplyr::select(-marker_rank_tmp) |>
+  dplyr::arrange(SPECIFICITY_SCORE, dplyr::desc(EXPRESSION), GENE_ID, .by_group = TRUE) |>
+  dplyr::mutate(RANKING = dplyr::row_number()) |>
   dplyr::ungroup()
+
+non_markers <- filtered_df |>
+  dplyr::filter(RANKING == -1)
+
+filtered_df <- dplyr::bind_rows(ranked_markers, non_markers)
 
 ordered_genes <- filtered_df |>
   dplyr::filter(RANKING > 0) |>
