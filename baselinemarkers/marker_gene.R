@@ -585,7 +585,7 @@ filtered_df_sorted <- filtered_df_sorted[, !(names(filtered_df_sorted) %in% c("n
 if (!is_rnaseq) {
   # Replace missing proteomics expression with a large sentinel as in original
   na_idx <- is.na(filtered_df_sorted$expression_level)
-  if (any(na_idx)) filtered_df_sorted$expression_level[na_idx] <- 1000
+  if (any(na_idx)) filtered_df_sorted$expression_level[na_idx] <- 0
 
   # Move assay_id to the end
   filtered_df_sorted <- filtered_df_sorted[c(setdiff(names(filtered_df_sorted), "assay_id"), "assay_id")]
